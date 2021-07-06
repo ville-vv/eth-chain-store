@@ -27,3 +27,9 @@ func TestClient_GetContractTotalSupply(t *testing.T) {
 	fmt.Println(totalSup, err)
 	fmt.Println(strconv.ParseInt(totalSup, 0, 64))
 }
+
+func TestClient_GetCode(t *testing.T) {
+	cli := NewClient("https://mainnet.infura.io/v3/21628f8f9b9b423a9ea05a708016b119")
+	totalSup, err := cli.GetCode("0x4798df7745db6000c0c7585c1ba83d3491ac379c")
+	fmt.Println(totalSup, err)
+}

@@ -133,3 +133,12 @@ func (sel *Client) GetContractTotalSupply(contract string) (string, error) {
 	}
 	return hexutil.Encode(respData), nil
 }
+
+// 获取合约地址的编译后的代码，如果是非合约地址，返回 0x
+func (sel *Client) GetCode(addr string) (string, error) {
+	respData, err := sel.ethCli.CodeAt(context.Background(), common.HexToAddress(addr), nil)
+	if err != nil {
+		return "", err
+	}
+	return hexutil.Encode(respData), nil
+}
