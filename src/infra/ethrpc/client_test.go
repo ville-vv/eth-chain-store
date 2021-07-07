@@ -30,6 +30,24 @@ func TestClient_GetContractTotalSupply(t *testing.T) {
 
 func TestClient_GetCode(t *testing.T) {
 	cli := NewClient("https://mainnet.infura.io/v3/21628f8f9b9b423a9ea05a708016b119")
-	totalSup, err := cli.GetCode("0x4798df7745db6000c0c7585c1ba83d3491ac379c")
+	totalSup, err := cli.GetCode("0xdAC17F958D2ee523a2206206994597C13D831ec7")
 	fmt.Println(totalSup, err)
+}
+
+func TestClient_GetBlockByNumber(t *testing.T) {
+	cli := NewClient("https://mainnet.infura.io/v3/21628f8f9b9b423a9ea05a708016b119")
+	block, err := cli.GetBlockLatest()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	for _, val := range block.Transactions {
+		fmt.Println(val, err)
+	}
+}
+
+func TestClient_GetBlockNumber(t *testing.T) {
+	cli := NewClient("https://mainnet.infura.io/v3/21628f8f9b9b423a9ea05a708016b119")
+	block, err := cli.GetBlockNumber()
+	fmt.Println(block, err)
 }

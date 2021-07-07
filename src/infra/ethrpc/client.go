@@ -1,11 +1,10 @@
 package ethrpc
 
 import (
-	"context"
 	"github.com/ville-vv/eth-chain-store/src/common/go-ethereum"
 	"github.com/ville-vv/eth-chain-store/src/common/go-ethereum/common"
 	"github.com/ville-vv/eth-chain-store/src/common/go-ethereum/common/hexutil"
-	"github.com/ville-vv/eth-chain-store/src/common/go-ethereum/ethclient"
+	"github.com/ville-vv/eth-chain-store/src/common/go-ethereum/rpc"
 	"golang.org/x/crypto/sha3"
 	"math/big"
 	"strings"
@@ -51,106 +50,185 @@ func (sel ContractCallParam) String() string {
 
 // Client
 type Client struct {
-	ethCli *ethclient.Client
+	ethCli *rpc.Client
 }
 
 func NewClient(endpoint string) *Client {
-	ethCli, err := ethclient.Dial(endpoint)
+	ethCli, err := rpc.Dial(endpoint)
 	if err != nil {
 		panic(err)
 	}
 	return &Client{ethCli: ethCli}
 }
+func toCallArg(msg ethereum.CallMsg) interface{} {
+	arg := map[string]interface{}{
+		"from": msg.From,
+		"to":   msg.To,
+	}
+	if len(msg.Data) > 0 {
+		arg["data"] = hexutil.Bytes(msg.Data)
+	}
+	if msg.Value != nil {
+		arg["value"] = (*hexutil.Big)(msg.Value)
+	}
+	if msg.Gas != 0 {
+		arg["gas"] = hexutil.Uint64(msg.Gas)
+	}
+	if msg.GasPrice != nil {
+		arg["gasPrice"] = (*hexutil.Big)(msg.GasPrice)
+	}
+	return arg
+}
+func toBlockNumArg(number *big.Int) string {
+	if number == nil {
+		return "latest"
+	}
+	pending := big.NewInt(-1)
+	if number.Cmp(pending) == 0 {
+		return "pending"
+	}
+	return hexutil.EncodeBig(number)
+}
 
 // GetBalance 获取ETH最新余额
 func (sel *Client) GetBalance(addr string) (string, error) {
-	balance, err := sel.ethCli.BalanceAt(context.Background(), common.HexToAddress(addr), nil)
+	var result hexutil.Big
+	err := sel.ethCli.Call(&result, "eth_getBalance", common.HexToAddress(addr), "latest")
 	if err != nil {
 		return "0", err
 	}
-	return balance.String(), nil
+	return result.String(), nil
 }
 
 // GetBalanceByBlockNumber 获取ETH指定区块余额
 func (sel *Client) GetBalanceByBlockNumber(addr string, blockNumber int64) (string, error) {
-	balance, err := sel.ethCli.BalanceAt(context.Background(), common.HexToAddress(addr), big.NewInt(blockNumber))
+	var result hexutil.Big
+	err := sel.ethCli.Call(&result, "eth_getBalance", common.HexToAddress(addr), big.NewInt(blockNumber))
 	if err != nil {
 		return "0", err
 	}
-	return balance.String(), nil
+	return result.String(), nil
 }
 
 // GetContractBalance 获取ERC20合约代币最新余额
 func (sel *Client) GetContractBalance(contract, addr string) (string, error) {
 	toAddr := common.HexToAddress(contract)
-	msg := ethereum.CallMsg{
-		From: common.HexToAddress(contract),
-		To:   &toAddr,
-		Data: (ContractCallParam{
+	//msg := ethereum.CallMsg{
+	//	From: common.HexToAddress(contract),
+	//	To:   &toAddr,
+	//	Data: (ContractCallParam{
+	//		MethodID: ERC20MethodIDForBalanceOf,
+	//		Params:   []string{addr},
+	//	}).HexByte(),
+	//}
+	arg := map[string]interface{}{
+		"from": common.HexToAddress(contract),
+		"to":   &toAddr,
+		"data": (ContractCallParam{
 			MethodID: ERC20MethodIDForBalanceOf,
 			Params:   []string{addr},
-		}).HexByte(),
+		}).String(),
 	}
-	respData, err := sel.ethCli.CallContract(context.Background(), msg, nil)
+	var hex hexutil.Bytes
+	err := sel.ethCli.Call(&hex, "eth_call", arg, "latest")
 	if err != nil {
 		return "0x0", err
 	}
-	return hexutil.Encode(respData), nil
+	return hex.String(), nil
 }
 
 // GetContractBalanceByBlockNumber 获取ERC20合约代币指定区块时余额
 func (sel *Client) GetContractBalanceByBlockNumber(contract, addr string, blockNumber int64) (string, error) {
 	toAddr := common.HexToAddress(contract)
-	msg := ethereum.CallMsg{
-		From: common.HexToAddress(addr),
-		To:   &toAddr,
-		Data: (ContractCallParam{
+	//msg := ethereum.CallMsg{
+	//	From: common.HexToAddress(addr),
+	//	To:   &toAddr,
+	//	Data: (ContractCallParam{
+	//		MethodID: ERC20MethodIDForBalanceOf,
+	//		Params:   []string{addr},
+	//	}).HexByte(),
+	//}
+	arg := map[string]interface{}{
+		"from": common.HexToAddress(contract),
+		"to":   &toAddr,
+		"data": (ContractCallParam{
 			MethodID: ERC20MethodIDForBalanceOf,
 			Params:   []string{addr},
-		}).HexByte(),
+		}).String(),
 	}
-	respData, err := sel.ethCli.CallContract(context.Background(), msg, big.NewInt(blockNumber))
+
+	var hex hexutil.Bytes
+	err := sel.ethCli.Call(&hex, "eth_call", arg, big.NewInt(blockNumber))
 	if err != nil {
 		return "0x0", err
 	}
-	return hexutil.Encode(respData), nil
+	return hex.String(), nil
 }
 
 // GetContractTotalSupply 获取ERC 20 代币 发行总量
 func (sel *Client) GetContractTotalSupply(contract string) (string, error) {
 	toAddr := common.HexToAddress(contract)
-	msg := ethereum.CallMsg{
-		From: common.HexToAddress(contract),
-		To:   &toAddr,
-		Data: (ContractCallParam{
+	//msg := ethereum.CallMsg{
+	//	From: common.HexToAddress(contract),
+	//	To:   &toAddr,
+	//	Data: (ContractCallParam{
+	//		MethodID: ERC20MethodIDForTotalSupply,
+	//		Params:   []string{contract},
+	//	}).HexByte(),
+	//}
+
+	arg := map[string]interface{}{
+		"from": common.HexToAddress(contract),
+		"to":   &toAddr,
+		"data": (ContractCallParam{
 			MethodID: ERC20MethodIDForTotalSupply,
 			Params:   []string{contract},
-		}).HexByte(),
+		}).String(),
 	}
-	respData, err := sel.ethCli.CallContract(context.Background(), msg, nil)
+	var hex hexutil.Bytes
+	err := sel.ethCli.Call(&hex, "eth_call", arg, "latest")
 	if err != nil {
 		return "0x0", err
 	}
-	return hexutil.Encode(respData), nil
+	return hex.String(), nil
 }
 
 // 获取合约地址的编译后的代码，如果是非合约地址，返回 0x
 func (sel *Client) GetCode(addr string) (string, error) {
-	respData, err := sel.ethCli.CodeAt(context.Background(), common.HexToAddress(addr), nil)
+	var result hexutil.Bytes
+	err := sel.ethCli.Call(&result, "eth_getCode", common.HexToAddress(addr), "latest")
 	if err != nil {
 		return "", err
 	}
-	return hexutil.Encode(respData), nil
+	return result.String(), err
 }
 
-// GetBlockByNumber 获取交易
-func (sel *Client) GetBlockByNumber(blockNumber int64) error {
-	blockInfo, err := sel.ethCli.BlockByNumber(context.Background(), big.NewInt(blockNumber))
-	if err != nil {
-		return err
-	}
-	for _, txData := range blockInfo.Body().Transactions {
-		txData.Data()
-	}
-	return nil
+type TransactionContext interface {
+	Hash() common.Hash
+	Data() []byte
+	Value() *big.Int
+	Gas() uint64
+	GasPrice() *big.Int
+	To() *common.Address
+	Cost() *big.Int
+}
+
+// GetBlockByNumber 获取交易记录
+func (sel *Client) GetBlockByNumber(blockNumber int64) (*RpcBlock, error) {
+	var block *RpcBlock
+	err := sel.ethCli.Call(&block, "eth_getBlockByNumber", toBlockNumArg(big.NewInt(blockNumber)), true)
+	return block, err
+}
+
+// GetBlockByNumber 获取交易记录
+func (sel *Client) GetBlockLatest() (*RpcBlock, error) {
+	var block *RpcBlock
+	err := sel.ethCli.Call(&block, "eth_getBlockByNumber", "latest", true)
+	return block, err
+}
+
+func (sel *Client) GetBlockNumber() (uint64, error) {
+	var result hexutil.Uint64
+	err := sel.ethCli.Call(&result, "eth_blockNumber")
+	return uint64(result), err
 }
