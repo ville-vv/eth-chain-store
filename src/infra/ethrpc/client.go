@@ -142,3 +142,13 @@ func (sel *Client) GetCode(addr string) (string, error) {
 	}
 	return hexutil.Encode(respData), nil
 }
+
+// GetTransactionByBlockNumber
+func (sel *Client) GetBlockByNumber(blockNumber int64) error {
+	blockInfo, err := sel.ethCli.BlockByNumber(context.Background(), big.NewInt(blockNumber))
+	if err != nil {
+		return err
+	}
+	blockInfo.Body()
+	return nil
+}
