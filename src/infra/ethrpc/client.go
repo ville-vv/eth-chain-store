@@ -11,23 +11,28 @@ import (
 )
 
 const (
-	ERC20MethodIDForBalanceOf    = "0x70a08231" // balanceOf(address)
-	ERC20MethodIDForTransfer     = "0xa9059cbb" // transfer(address,uint256)
-	ERC20MethodIDForDecimals     = "0x313ce567" // decimals()
-	ERC20MethodIDForAllowance    = "0xdd62ed3e" // allowance(address,address)
-	ERC20MethodIDForSymbol       = "0x95d89b41" // symbol()
-	ERC20MethodIDForTotalSupply  = "0x18160ddd" // totalSupply()
-	ERC20MethodIDForName         = "0x06fdde03" // name()
-	ERC20MethodIDForApprove      = "0x095ea7b3" // approve(address,uint256)
-	ERC20MethodIDForTransferFrom = "0x23b872dd" // transferFrom(address,address,uint256)
+	ERC20MethodIDForBalanceOf    = "0x70a08231"                                                         // balanceOf(address)
+	ERC20MethodIDForTransfer     = "0xa9059cbb"                                                         // transfer(address,uint256)
+	ERC20MethodIDForDecimals     = "0x313ce567"                                                         // decimals()
+	ERC20MethodIDForAllowance    = "0xdd62ed3e"                                                         // allowance(address,address)
+	ERC20MethodIDForSymbol       = "0x95d89b41"                                                         // symbol()
+	ERC20MethodIDForTotalSupply  = "0x18160ddd"                                                         // totalSupply()
+	ERC20MethodIDForName         = "0x06fdde03"                                                         // name()
+	ERC20MethodIDForApprove      = "0x095ea7b3"                                                         // approve(address,uint256)
+	ERC20MethodIDForTransferFrom = "0x23b872dd"                                                         // transferFrom(address,address,uint256)
+	ERC20EventIDForTransfer      = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" // Transfer(address,address,uint256)
 )
 
 // GenMethodId 可以使这个方法生成 method id， 比如：GenMethodId("balanceOf(address)") 得到 0x70a08231
 func GenMethodId(method string) string {
+	return Keccak256Hash(method)[:10]
+}
+
+func Keccak256Hash(string string) string {
 	kek := sha3.NewLegacyKeccak256()
 	kek.Reset()
-	kek.Write([]byte("balanceOf(address)"))
-	return hexutil.Encode(kek.Sum(nil))[:10]
+	kek.Write([]byte(string))
+	return hexutil.Encode(kek.Sum(nil))
 }
 
 type ContractCallParam struct {
@@ -231,4 +236,10 @@ func (sel *Client) GetBlockNumber() (uint64, error) {
 	var result hexutil.Uint64
 	err := sel.ethCli.Call(&result, "eth_blockNumber")
 	return uint64(result), err
+}
+
+func (sel *Client) GetTransactionReceipt(hash string) (*RpcTransactionReceipt, error) {
+	var result *RpcTransactionReceipt
+	err := sel.ethCli.Call(&result, "eth_getTransactionReceipt", common.HexToHash(hash))
+	return result, err
 }

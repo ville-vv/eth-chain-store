@@ -50,4 +50,11 @@ func TestClient_GetBlockNumber(t *testing.T) {
 	cli := NewClient("https://mainnet.infura.io/v3/21628f8f9b9b423a9ea05a708016b119")
 	block, err := cli.GetBlockNumber()
 	fmt.Println(block, err)
+	//fmt.Println(Keccak256Hash("Transfer(address,address,uint256)"))
+}
+
+func TestClient_GetTransactionReceipt(t *testing.T) {
+	cli := NewClient("https://mainnet.infura.io/v3/21628f8f9b9b423a9ea05a708016b119")
+	receipt, err := cli.GetTransactionReceipt("0xe6600a046d6ba96d475aa7bf9ee98b3218a713aaf89e1d968651dfe1599280f7")
+	fmt.Println(receipt, err)
 }
