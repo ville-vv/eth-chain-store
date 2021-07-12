@@ -14,7 +14,12 @@ func (p *PullChainServer) Init() error {
 }
 
 func (p *PullChainServer) Start() error {
+
 	return nil
+}
+
+func (p *PullChainServer) pull() {
+
 }
 
 func (p *PullChainServer) Exit(ctx context.Context) error {
