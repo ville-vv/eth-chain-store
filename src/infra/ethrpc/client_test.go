@@ -36,11 +36,12 @@ func TestClient_GetCode(t *testing.T) {
 
 func TestClient_GetBlockByNumber(t *testing.T) {
 	cli := NewClient("https://mainnet.infura.io/v3/21628f8f9b9b423a9ea05a708016b119")
-	block, err := cli.GetBlockLatest()
+	block, err := cli.GetBlock()
 	if err != nil {
 		t.Error(err)
 		return
 	}
+	fmt.Println("head", block.RpcBlockHeader)
 	for _, val := range block.Transactions {
 		fmt.Println(val, err)
 	}
@@ -56,5 +57,13 @@ func TestClient_GetBlockNumber(t *testing.T) {
 func TestClient_GetTransactionReceipt(t *testing.T) {
 	cli := NewClient("https://mainnet.infura.io/v3/21628f8f9b9b423a9ea05a708016b119")
 	receipt, err := cli.GetTransactionReceipt("0xe6600a046d6ba96d475aa7bf9ee98b3218a713aaf89e1d968651dfe1599280f7")
-	fmt.Println(receipt, err)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	for _, lg := range receipt.Logs {
+		if lg.IsTransfer() {
+			fmt.Println(lg.Value(), lg.From(), lg.To())
+		}
+	}
 }

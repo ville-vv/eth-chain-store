@@ -44,9 +44,11 @@ require (
 	github.com/naoina/go-stringutil v0.1.0 // indirect
 	github.com/naoina/toml v0.1.1
 	github.com/olekukonko/tablewriter v0.0.5
+	github.com/panjf2000/ants/v2 v2.4.6
 	github.com/peterh/liner v1.2.1
 	github.com/prometheus/tsdb v0.10.0
 	github.com/rjeczalik/notify v0.9.2
+	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/cors v1.8.0
 	github.com/shirou/gopsutil v3.21.6+incompatible
 	github.com/status-im/keycard-go v0.0.0-20200402102358-957c09536969
@@ -63,5 +65,6 @@ require (
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce
 	gopkg.in/olebedev/go-duktape.v3 v3.0.0-20210326210528-650f7c854440
 	gopkg.in/urfave/cli.v1 v1.20.0
+	gorm.io/gorm v1.21.6
 	gotest.tools/v3 v3.0.3 // indirect
 )

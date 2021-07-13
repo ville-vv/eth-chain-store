@@ -1,4 +1,4 @@
-package eth_native
+package model
 
 import "time"
 
@@ -10,4 +10,4 @@ type TbBlockNumber struct {
 	BlockNumber BlockNumber `json:"block_number" gorm:"column:block_number;COMMENT:" name:""`
 }
 
-type BlockNumber int64
+type BlockNumber uint64

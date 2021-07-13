@@ -208,25 +208,15 @@ func (sel *Client) GetCode(addr string) (string, error) {
 	return result.String(), err
 }
 
-type TransactionContext interface {
-	Hash() common.Hash
-	Data() []byte
-	Value() *big.Int
-	Gas() uint64
-	GasPrice() *big.Int
-	To() *common.Address
-	Cost() *big.Int
-}
-
-// GetBlockByNumber 获取交易记录
+// GetBlockByNumber 获取指定块交易记录
 func (sel *Client) GetBlockByNumber(blockNumber int64) (*RpcBlock, error) {
 	var block *RpcBlock
 	err := sel.ethCli.Call(&block, "eth_getBlockByNumber", toBlockNumArg(big.NewInt(blockNumber)), true)
 	return block, err
 }
 
-// GetBlockByNumber 获取交易记录
-func (sel *Client) GetBlockLatest() (*RpcBlock, error) {
+// GetLatestBlock 获取最新的交易记录
+func (sel *Client) GetBlock() (*RpcBlock, error) {
 	var block *RpcBlock
 	err := sel.ethCli.Call(&block, "eth_getBlockByNumber", "latest", true)
 	return block, err
@@ -238,6 +228,7 @@ func (sel *Client) GetBlockNumber() (uint64, error) {
 	return uint64(result), err
 }
 
+// GetTransactionReceipt 获取交易凭证， 一般提供给合约交易查询详细的交易日志的
 func (sel *Client) GetTransactionReceipt(hash string) (*RpcTransactionReceipt, error) {
 	var result *RpcTransactionReceipt
 	err := sel.ethCli.Call(&result, "eth_getTransactionReceipt", common.HexToHash(hash))

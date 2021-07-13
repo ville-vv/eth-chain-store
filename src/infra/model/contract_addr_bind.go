@@ -1,4 +1,4 @@
-package eth_native
+package model
 
 import "time"
 
