@@ -7,10 +7,10 @@ import (
 	"os"
 )
 
-func init()  {
+func Init() {
 	logLevel := vlog.LogLevelInfo
 	logFile := fmt.Sprintf("eth_chain_store_%s.log", utils.RandStringBytesMask(8))
-	if os.Getenv("ETH_CHAIN_STORE_ENV") == "local"{
+	if os.Getenv("ETH_CHAIN_STORE_ENV") == "local" {
 		logLevel = vlog.LogLevelDebug
 		logFile = "stdout"
 		return

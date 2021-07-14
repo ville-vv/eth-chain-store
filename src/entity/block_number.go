@@ -1,4 +1,4 @@
-package captor
+package entity
 
 import (
 	"github.com/ville-vv/eth-chain-store/src/infra/ethrpc"
