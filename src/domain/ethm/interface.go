@@ -1,4 +1,4 @@
-package entity
+package ethm
 
 import "github.com/ville-vv/eth-chain-store/src/infra/model"
 

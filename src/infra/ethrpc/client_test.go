@@ -1,7 +1,9 @@
 package ethrpc
 
 import (
+	"bytes"
 	"fmt"
+	"github.com/ville-vv/eth-chain-store/src/common/go-ethereum/common"
 	"github.com/ville-vv/eth-chain-store/src/common/go-ethereum/common/hexutil"
 	"golang.org/x/crypto/sha3"
 	"strconv"
@@ -32,6 +34,9 @@ func TestClient_GetCode(t *testing.T) {
 	cli := NewClient("https://mainnet.infura.io/v3/21628f8f9b9b423a9ea05a708016b119")
 	totalSup, err := cli.GetCode("0xdAC17F958D2ee523a2206206994597C13D831ec7")
 	fmt.Println(totalSup, err)
+
+	fmt.Println(bytes.Index(hexutil.Bytes(totalSup), common.FromHex(ERC20MethodIDForBalanceOf)))
+
 }
 
 func TestClient_GetBlockByNumber(t *testing.T) {
@@ -41,7 +46,7 @@ func TestClient_GetBlockByNumber(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	fmt.Println("head", block.RpcBlockHeader)
+	fmt.Println("head", block.EthBlockHeader)
 	for _, val := range block.Transactions {
 		fmt.Println(val, err)
 	}
@@ -66,4 +71,10 @@ func TestClient_GetTransactionReceipt(t *testing.T) {
 			fmt.Println(lg.Value(), lg.From(), lg.To())
 		}
 	}
+}
+
+func TestClient_GetSymbol(t *testing.T) {
+	cli := NewClient("https://mainnet.infura.io/v3/21628f8f9b9b423a9ea05a708016b119")
+	symbol, err := cli.GetContractSymbol("0xdAC17F958D2ee523a2206206994597C13D831ec7")
+	fmt.Println(symbol, err)
 }

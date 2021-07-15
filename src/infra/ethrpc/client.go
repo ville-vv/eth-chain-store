@@ -5,7 +5,6 @@ import (
 	"github.com/ville-vv/eth-chain-store/src/common/go-ethereum/common"
 	"github.com/ville-vv/eth-chain-store/src/common/go-ethereum/common/hexutil"
 	"github.com/ville-vv/eth-chain-store/src/common/go-ethereum/rpc"
-	"golang.org/x/crypto/sha3"
 	"math/big"
 	"strings"
 )
@@ -22,18 +21,6 @@ const (
 	ERC20MethodIDForTransferFrom = "0x23b872dd"                                                         // transferFrom(address,address,uint256)
 	ERC20EventIDForTransfer      = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" // Transfer(address,address,uint256)
 )
-
-// GenMethodId 可以使这个方法生成 method id， 比如：GenMethodId("balanceOf(address)") 得到 0x70a08231
-func GenMethodId(method string) string {
-	return Keccak256Hash(method)[:10]
-}
-
-func Keccak256Hash(string string) string {
-	kek := sha3.NewLegacyKeccak256()
-	kek.Reset()
-	kek.Write([]byte(string))
-	return hexutil.Encode(kek.Sum(nil))
-}
 
 type ContractCallParam struct {
 	MethodID string
@@ -52,6 +39,8 @@ func (sel ContractCallParam) String() string {
 	}
 	return param
 }
+
+var _ EthRPC = &Client{}
 
 // Client
 type Client struct {
@@ -190,12 +179,12 @@ func (sel *Client) GetContractTotalSupply(contract string) (string, error) {
 			Params:   []string{contract},
 		}).String(),
 	}
-	var hex hexutil.Bytes
+	var hex string
 	err := sel.ethCli.Call(&hex, "eth_call", arg, "latest")
 	if err != nil {
 		return "0x0", err
 	}
-	return hex.String(), nil
+	return hex, nil
 }
 
 // 获取合约地址的编译后的代码，如果是非合约地址，返回 0x
@@ -209,15 +198,15 @@ func (sel *Client) GetCode(addr string) (string, error) {
 }
 
 // GetBlockByNumber 获取指定块交易记录
-func (sel *Client) GetBlockByNumber(blockNumber int64) (*RpcBlock, error) {
-	var block *RpcBlock
+func (sel *Client) GetBlockByNumber(blockNumber int64) (*EthBlock, error) {
+	var block *EthBlock
 	err := sel.ethCli.Call(&block, "eth_getBlockByNumber", toBlockNumArg(big.NewInt(blockNumber)), true)
 	return block, err
 }
 
 // GetLatestBlock 获取最新的交易记录
-func (sel *Client) GetBlock() (*RpcBlock, error) {
-	var block *RpcBlock
+func (sel *Client) GetBlock() (*EthBlock, error) {
+	var block *EthBlock
 	err := sel.ethCli.Call(&block, "eth_getBlockByNumber", "latest", true)
 	return block, err
 }
@@ -229,8 +218,59 @@ func (sel *Client) GetBlockNumber() (uint64, error) {
 }
 
 // GetTransactionReceipt 获取交易凭证， 一般提供给合约交易查询详细的交易日志的
-func (sel *Client) GetTransactionReceipt(hash string) (*RpcTransactionReceipt, error) {
-	var result *RpcTransactionReceipt
+func (sel *Client) GetTransactionReceipt(hash string) (*EthTransactionReceipt, error) {
+	var result *EthTransactionReceipt
 	err := sel.ethCli.Call(&result, "eth_getTransactionReceipt", common.HexToHash(hash))
 	return result, err
+}
+
+func (sel *Client) GetContractSymbol(contract string) (string, error) {
+	toAddr := common.HexToAddress(contract)
+	arg := map[string]interface{}{
+		"to": &toAddr,
+		"data": (ContractCallParam{
+			MethodID: ERC20MethodIDForSymbol,
+			Params:   []string{contract},
+		}).String(),
+	}
+	var hex string
+	err := sel.ethCli.Call(&hex, "eth_call", arg, "latest")
+	if err != nil {
+		return "0x0", err
+	}
+	return parseErc20StringProperty(hex), nil
+}
+
+func (sel *Client) GetContractName(contract string) (string, error) {
+	toAddr := common.HexToAddress(contract)
+	arg := map[string]interface{}{
+		"to": &toAddr,
+		"data": (ContractCallParam{
+			MethodID: ERC20MethodIDForName,
+			Params:   []string{contract},
+		}).String(),
+	}
+	var hex string
+	err := sel.ethCli.Call(&hex, "eth_call", arg, "latest")
+	if err != nil {
+		return "0x0", err
+	}
+	return parseErc20StringProperty(hex), nil
+}
+
+func (sel *Client) GetContractDecimals(contract string) (string, error) {
+	toAddr := common.HexToAddress(contract)
+	arg := map[string]interface{}{
+		"to": &toAddr,
+		"data": (ContractCallParam{
+			MethodID: ERC20MethodIDForDecimals,
+			Params:   []string{contract},
+		}).String(),
+	}
+	var hex string
+	err := sel.ethCli.Call(&hex, "eth_call", arg, "latest")
+	if err != nil {
+		return "18", err
+	}
+	return hex, nil
 }

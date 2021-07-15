@@ -1,14 +1,14 @@
-package entity
+package ethm
 
 import (
+	"github.com/ville-vv/eth-chain-store/src/domain/repo"
 	"github.com/ville-vv/eth-chain-store/src/infra/ethrpc"
-	"github.com/ville-vv/eth-chain-store/src/repo"
 	"github.com/ville-vv/vilgo/vlog"
 )
 
 type BlockNumberCaptor struct {
 	cntBlockNumber uint64
-	ethRequester   ethrpc.EthRpcClient
+	ethRequester   ethrpc.EthRPC
 	bkRepo         repo.IBlockNumberRepo
 }
 

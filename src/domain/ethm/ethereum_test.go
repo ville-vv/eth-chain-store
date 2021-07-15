@@ -1,4 +1,4 @@
-package entity
+package ethm
 
 import (
 	"fmt"
@@ -18,6 +18,6 @@ func TestBlockCaptor_PullBlockByNumber(t *testing.T) {
 		return nil
 	}
 
-	bc := &BlockCaptor{ethRpcCli: ethClt, txWrite: TxWriteFun(txWrite)}
+	bc := NewEthereumManager(ethClt, TxWriteFun(txWrite))
 	bc.PullBlockByNumber(12696216)
 }

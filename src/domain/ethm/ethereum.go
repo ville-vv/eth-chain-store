@@ -1,4 +1,4 @@
-package entity
+package ethm
 
 import (
 	"github.com/ville-vv/eth-chain-store/src/common/go-ethereum/common"
@@ -13,12 +13,16 @@ func (tw TxWriteFun) TxWrite(txData *model.TransactionData) error {
 	return tw(txData)
 }
 
-type BlockCaptor struct {
-	ethRpcCli ethrpc.EthRpcClient
+type EthereumManager struct {
+	ethRpcCli ethrpc.EthRPC
 	txWrite   TxWriter
 }
 
-func (sel *BlockCaptor) PullBlock() {
+func NewEthereumManager(ethRpcCli ethrpc.EthRPC, txWrite TxWriter) *EthereumManager {
+	return &EthereumManager{ethRpcCli: ethRpcCli, txWrite: txWrite}
+}
+
+func (sel *EthereumManager) PullBlock() {
 	// 获取块信息
 	block, err := sel.ethRpcCli.GetBlock()
 	if err != nil {
@@ -28,7 +32,7 @@ func (sel *BlockCaptor) PullBlock() {
 	sel.dealBlock(block)
 }
 
-func (sel *BlockCaptor) PullBlockByNumber(bkNumber int64) {
+func (sel *EthereumManager) PullBlockByNumber(bkNumber int64) {
 	// 获取块信息
 	block, err := sel.ethRpcCli.GetBlockByNumber(bkNumber)
 	if err != nil {
@@ -39,13 +43,13 @@ func (sel *BlockCaptor) PullBlockByNumber(bkNumber int64) {
 }
 
 // 处理块数据
-func (sel *BlockCaptor) dealBlock(block *ethrpc.RpcBlock) {
+func (sel *EthereumManager) dealBlock(block *ethrpc.EthBlock) {
 	var err error
 	for _, trfData := range block.Transactions {
 		block.TimeStamp = common.HexToHash(block.TimeStamp).Big().String()
 		if trfData.IsContract() {
 			// 合约交易
-			if err = sel.contractTransaction(&block.RpcBlockHeader, trfData); err != nil {
+			if err = sel.contractTransaction(&block.EthBlockHeader, trfData); err != nil {
 				vlog.ERROR("处理以太坊合约交易错误：hash=%s %s", trfData.Hash, err.Error())
 			}
 			continue
@@ -65,8 +69,29 @@ func (sel *BlockCaptor) dealBlock(block *ethrpc.RpcBlock) {
 	}
 }
 
+func (sel *EthereumManager) dealTransaction(header *ethrpc.EthBlockHeader, trfData *ethrpc.EthTransaction) (err error) {
+	header.TimeStamp = common.HexToHash(header.TimeStamp).Big().String()
+	if trfData.IsContract() {
+		// 合约交易
+		return sel.contractTransaction(header, trfData)
+	}
+	// 非合约交易
+	if err = sel.TxWrite(&model.TransactionData{
+		TimeStamp:   header.TimeStamp,
+		BlockHash:   trfData.BlockHash,
+		BlockNumber: trfData.BlockNumber,
+		From:        trfData.From,
+		Hash:        trfData.Hash,
+		To:          trfData.To,
+		Value:       common.HexToHash(trfData.Value).Big().String(),
+	}); err != nil {
+		vlog.ERROR("处理以太坊原生交易错误：hash=%s %s", trfData.Hash, err.Error())
+	}
+	return nil
+}
+
 // contractTransaction 合约交易
-func (sel *BlockCaptor) contractTransaction(header *ethrpc.RpcBlockHeader, tfData *ethrpc.RpcTransaction) error {
+func (sel *EthereumManager) contractTransaction(header *ethrpc.EthBlockHeader, tfData *ethrpc.EthTransaction) error {
 	if !tfData.IsTransfer() {
 		// 如果不是直接的转账交易，就获取合约的交易收据信息
 		tfReceipt, err := sel.ethRpcCli.GetTransactionReceipt(tfData.Hash)
@@ -111,7 +136,7 @@ func (sel *BlockCaptor) contractTransaction(header *ethrpc.RpcBlockHeader, tfDat
 	})
 }
 
-func (sel *BlockCaptor) TxWrite(txData *model.TransactionData) error {
+func (sel *EthereumManager) TxWrite(txData *model.TransactionData) error {
 	//var err error
 	//blockNumber := common.HexToHash(txData.BlockNumber).Big().Int64()
 	//// 获取当前交易的余额
@@ -127,4 +152,25 @@ func (sel *BlockCaptor) TxWrite(txData *model.TransactionData) error {
 	//	}
 	//}
 	return sel.txWrite.TxWrite(txData)
+}
+
+type EthereumWriter struct {
+	accountWriter     AccountManager
+	contractWriter    ContractManager
+	transactionWriter TransactionWriter
+}
+
+func (sel *EthereumWriter) TxWrite(txData *model.TransactionData) (err error) {
+	// 写入合约信息
+	if err = sel.contractWriter.TxWrite(txData); err != nil {
+		return nil
+	}
+
+	// 写入账户信息
+	if err = sel.accountWriter.TxWrite(txData); err != nil {
+		return
+	}
+
+	// 写入交易流水
+	return sel.transactionWriter.TxWrite(txData)
 }
