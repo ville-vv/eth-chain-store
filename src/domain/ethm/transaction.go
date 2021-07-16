@@ -7,11 +7,11 @@ import (
 )
 
 type TransactionWriter struct {
-	ethCli  ethrpc.EthRPC
-	actRepo repo.NormalAccountRepo
+	ethCli ethrpc.EthRPC
+	txRepo *repo.TransactionRepo
 }
 
 func (sel *TransactionWriter) TxWrite(txData *model.TransactionData) error {
-	// 查询该地址是否存在，写入地址
-	return nil
+	// 写入交易信息
+	return sel.txRepo.CreateTransactionRecord(txData)
 }

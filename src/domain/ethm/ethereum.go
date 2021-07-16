@@ -117,6 +117,7 @@ func (sel *EthereumManager) contractTransaction(header *ethrpc.EthBlockHeader, t
 				To:              lg.To(),
 				Value:           lg.Value(),
 				IsContract:      true,
+				TxType:          model.TxTypeTransfer,
 			}); err != nil {
 				return err
 			}
@@ -133,6 +134,7 @@ func (sel *EthereumManager) contractTransaction(header *ethrpc.EthBlockHeader, t
 		To:              to,
 		Value:           val,
 		IsContract:      true,
+		IsErc20:         true,
 	})
 }
 
@@ -154,16 +156,25 @@ func (sel *EthereumManager) TxWrite(txData *model.TransactionData) error {
 	return sel.txWrite.TxWrite(txData)
 }
 
+type TxWriterFilter interface {
+	Filter(addr string) (err error)
+}
+
 type EthereumWriter struct {
+	filter            TxWriterFilter
 	accountWriter     AccountManager
 	contractWriter    ContractManager
 	transactionWriter TransactionWriter
 }
 
 func (sel *EthereumWriter) TxWrite(txData *model.TransactionData) (err error) {
+	if err = sel.filter.Filter(txData.From); err != nil {
+		// 过滤发生错误不返回
+		return nil
+	}
 	// 写入合约信息
 	if err = sel.contractWriter.TxWrite(txData); err != nil {
-		return nil
+		return
 	}
 
 	// 写入账户信息

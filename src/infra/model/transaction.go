@@ -1,5 +1,9 @@
 package model
 
+const (
+	TxTypeTransfer = "transfer"
+)
+
 type TransactionData struct {
 	TimeStamp   string `json:"timestamp" name:""`
 	BlockHash   string `json:"blockHash" name:""` // 块hash
@@ -20,4 +24,6 @@ type TransactionData struct {
 	ContractAddress string `json:"contract_address" name:""`
 	IsContract      bool   `json:"is_contract" name:""`
 	Balance         string `json:"balance" name:""`
+	TxType          string `json:"tx_type" name:""` // 交易类型
+	IsErc20         bool   `json:"is_erc_20" name:""`
 }
