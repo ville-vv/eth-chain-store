@@ -56,13 +56,16 @@ type contractAccountManager struct {
 	accountRepo repo.ContractAccountRepo
 }
 
+// UpdateAccount 更新合约账户信息，如果该用户存在就更新余额信息，如果该用户不存在就创建一条记录
+// 以交易记录的 to 地址来进行判断
 func (sel *contractAccountManager) UpdateAccount(txData *model.TransactionData) error {
-	if sel.accountRepo.IsAccountExist(txData.From) {
-		// 该账户已经存在
-		balance, err := sel.ethCli.GetContractBalance(txData.ContractAddress, txData.From)
-		if err != nil {
-			return err
-		}
+	accountAddr := txData.To
+	balance, err := sel.ethCli.GetContractBalance(txData.ContractAddress, accountAddr)
+	if err != nil {
+		return err
+	}
+	// 该账户已经存在
+	if sel.accountRepo.IsAccountExist(accountAddr) {
 		return sel.accountRepo.UpdateBalance(balance)
 	}
 	// 如果该账户不存在
@@ -76,7 +79,7 @@ type normalAccountManager struct {
 }
 
 func (sel *normalAccountManager) UpdateAccount(txData *model.TransactionData) error {
-	var addr = txData.From
+	var addr = txData.To
 	if sel.accountRepo.IsAccountExist(addr) {
 		// 获取的余额
 		balance, err := sel.ethCli.GetBalance(addr)

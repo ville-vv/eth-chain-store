@@ -22,51 +22,54 @@ func NewEthereumManager(ethRpcCli ethrpc.EthRPC, txWrite TxWriter) *EthereumMana
 	return &EthereumManager{ethRpcCli: ethRpcCli, txWrite: txWrite}
 }
 
-func (sel *EthereumManager) PullBlock() {
+func (sel *EthereumManager) PullBlock() error {
 	// 获取块信息
 	block, err := sel.ethRpcCli.GetBlock()
 	if err != nil {
 		vlog.ERROR("")
-		return
+		return err
 	}
-	sel.dealBlock(block)
+	return sel.dealBlock(block)
 }
 
-func (sel *EthereumManager) PullBlockByNumber(bkNumber int64) {
+func (sel *EthereumManager) PullBlockByNumber(bkNumber int64) error {
 	// 获取块信息
 	block, err := sel.ethRpcCli.GetBlockByNumber(bkNumber)
 	if err != nil {
 		vlog.ERROR("get block by number %s error %s", bkNumber, err.Error())
-		return
+		return err
 	}
-	sel.dealBlock(block)
+	return sel.dealBlock(block)
 }
 
 // 处理块数据
-func (sel *EthereumManager) dealBlock(block *ethrpc.EthBlock) {
+func (sel *EthereumManager) dealBlock(block *ethrpc.EthBlock) error {
 	var err error
 	for _, trfData := range block.Transactions {
 		block.TimeStamp = common.HexToHash(block.TimeStamp).Big().String()
 		if trfData.IsContract() {
-			// 合约交易
+			// 合约交易,需要获取合约里面的交易内容
 			if err = sel.contractTransaction(&block.EthBlockHeader, trfData); err != nil {
 				vlog.ERROR("处理以太坊合约交易错误：hash=%s %s", trfData.Hash, err.Error())
+				return err
 			}
-			continue
 		}
-		// 非合约交易
+		// 无论合约交易还是非合约交易都需要记录以太坊交易的信息
 		if err = sel.TxWrite(&model.TransactionData{
 			TimeStamp:   block.TimeStamp,
 			BlockHash:   trfData.BlockHash,
 			BlockNumber: trfData.BlockNumber,
 			From:        trfData.From,
+			GasPrice:    trfData.GasPrice,
 			Hash:        trfData.Hash,
 			To:          trfData.To,
 			Value:       common.HexToHash(trfData.Value).Big().String(),
 		}); err != nil {
 			vlog.ERROR("处理以太坊原生交易错误：hash=%s %s", trfData.Hash, err.Error())
+			return err
 		}
 	}
+	return err
 }
 
 func (sel *EthereumManager) dealTransaction(header *ethrpc.EthBlockHeader, trfData *ethrpc.EthTransaction) (err error) {
@@ -118,6 +121,7 @@ func (sel *EthereumManager) contractTransaction(header *ethrpc.EthBlockHeader, t
 				Value:           lg.Value(),
 				IsContract:      true,
 				TxType:          model.TxTypeTransfer,
+				IsErc20:         true,
 			}); err != nil {
 				return err
 			}

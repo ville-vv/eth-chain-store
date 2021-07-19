@@ -23,9 +23,9 @@ type EthTransaction struct {
 	BlockNumber string `json:"blockNumber" name:""`
 	From        string `json:"from" name:""`
 	// Gas              string `json:"gas" name:""`
-	// GasPrice         string `json:"gasPrice" name:""`
-	Hash  string `json:"hash" name:""` // 交易hash
-	Input Input  `json:"input" name:""`
+	GasPrice string `json:"gasPrice" name:""`
+	Hash     string `json:"hash" name:""` // 交易hash
+	Input    Input  `json:"input" name:""`
 	// Nonce            string `json:"nonce" name:""`
 	// R                string `json:"r" name:""`
 	// S                string `json:"s" name:""`
@@ -40,6 +40,7 @@ func (t *EthTransaction) IsContract() bool {
 	return t.Input.IsContract()
 }
 
+// IsTransfer 判断是否为Erc20协议的合约交易转账
 func (t *EthTransaction) IsTransfer() bool {
 	return t.Input.IsTransfer()
 }

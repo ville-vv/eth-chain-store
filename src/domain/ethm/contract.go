@@ -26,6 +26,8 @@ type ContractManager struct {
 	erc20Mng     Erc20Manager
 }
 
+// GetErc20ContractInfo ERC20 协议的合约有固定的合约接口来获取合约的基本信息
+// return *Erc20Contract 合约的基本信息
 func (sel *ContractManager) GetErc20ContractInfo(contractAddr string) (*Erc20Contract, error) {
 	supply, err := sel.rpcCli.GetContractTotalSupply(contractAddr)
 	if err != nil {

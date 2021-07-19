@@ -10,8 +10,8 @@ type TransactionData struct {
 	BlockNumber string `json:"blockNumber" name:""`
 	From        string `json:"from" name:""`
 	// Gas              string `json:"gas" name:""`
-	// GasPrice         string `json:"gasPrice" name:""`
-	Hash string `json:"hash" name:""` // 交易 hash
+	GasPrice string `json:"gasPrice" name:""`
+	Hash     string `json:"hash" name:""` // 交易 hash
 	// Input string `json:"input" name:""`
 	// Nonce string `json:"nonce" name:""`
 	// R                string `json:"r" name:""`
