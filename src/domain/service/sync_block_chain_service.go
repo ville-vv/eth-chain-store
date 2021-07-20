@@ -8,27 +8,21 @@ import (
 	"time"
 )
 
-type SyncBlockNumberProgress interface {
-	IsLatest(blockNumber int64) bool
-	GetNow() (blockNumber int64, err error)
-	Next()
-}
-
 // SyncBlockChainService 同步区块链数据服务
 type SyncBlockChainService struct {
 	ethMng       *ethm.EthereumManager
+	syncCounter  *ethm.SyncBlockNumberCounter
 	syncInterval int64
 	maxSyncNum   chan int
-	syncPgs      SyncBlockNumberProgress
 	stopCh       chan int
 }
 
-func NewSyncBlockChainService(ethRpcCli ethrpc.EthRPC, txWrite ethm.TxWriter, syncPgs SyncBlockNumberProgress) *SyncBlockChainService {
+func NewSyncBlockChainService(ethRpcCli ethrpc.EthRPC, txWrite ethm.TxWriter, syncPgs *ethm.SyncBlockNumberCounter) *SyncBlockChainService {
 	s := &SyncBlockChainService{
 		ethMng:       ethm.NewEthereumManager(ethRpcCli, txWrite),
 		syncInterval: 0,
 		maxSyncNum:   make(chan int, 100),
-		syncPgs:      syncPgs,
+		syncCounter:  syncPgs,
 		stopCh:       make(chan int),
 	}
 	return s
@@ -51,6 +45,31 @@ func (s *SyncBlockChainService) Start() error {
 func (s *SyncBlockChainService) Exit(ctx context.Context) error {
 	close(s.stopCh)
 	return nil
+}
+
+// fastSync 快速的同步数据，间隔时间缩短
+func (s *SyncBlockChainService) fastSync() {
+	tk := time.NewTicker(time.Second)
+	for {
+		select {
+		case <-tk.C:
+			// 开启协程前添加一个控制，用于达到控制协程数量的目的
+			if s.syncCounter.IsLatestBlockNumber() {
+				goto startNormal
+			}
+			s.maxSyncNum <- 1
+			go func() {
+				s.syncBlockChain()
+				// 执行完成后就释放一个
+				<-s.maxSyncNum
+			}()
+		case <-s.stopCh:
+			tk.Stop()
+			return
+		}
+	}
+startNormal:
+	s.syncTimerTicker()
 }
 
 func (s *SyncBlockChainService) syncTimerTicker() {
@@ -76,21 +95,17 @@ func (s *SyncBlockChainService) syncTimerTicker() {
 // syncBlockChain 同步数据
 func (s *SyncBlockChainService) syncBlockChain() {
 	// 获取当前同步的区块
-	blockNumber, err := s.syncPgs.GetNow()
+	blockNumber, err := s.syncCounter.GetSyncBlockNumber()
 	if err != nil {
 		vlog.ERROR("获取区块错误")
 		return
 	}
-	if s.syncPgs.IsLatest(blockNumber) {
-		if err = s.ethMng.PullBlock(); err != nil {
-			vlog.ERROR("获取最新区块数据失败")
-			return
-		}
-	} else {
-		if err = s.ethMng.PullBlockByNumber(blockNumber); err != nil {
-			vlog.ERROR("获取指定区块数据失败")
-			return
-		}
+	if s.syncCounter.IsSyncing(blockNumber) {
+		return
 	}
-	s.syncPgs.Next()
+	if err = s.ethMng.PullBlockByNumber(blockNumber); err != nil {
+		vlog.ERROR("获取指定区块数据失败")
+		return
+	}
+	s.syncCounter.FinishThisSync(blockNumber)
 }

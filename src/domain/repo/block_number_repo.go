@@ -1,5 +1,5 @@
 package repo
 
-type IBlockNumberRepo interface {
-	UpdateBlockNumber(bkNum uint64) error
+type BlockNumberRepo interface {
+	UpdateBlockNumber(bkNum int64) error
 }

@@ -12,6 +12,7 @@ import (
 
 func TestClient_GetBalanceByBlockNumber(t *testing.T) {
 	cli := NewClient("https://mainnet.infura.io/v3/21628f8f9b9b423a9ea05a708016b119")
+	cli = NewClient("http://172.16.16.119:8545")
 	balance, err := cli.GetContractBalance("0xdAC17F958D2ee523a2206206994597C13D831ec7",
 		"0xdAC17F958D2ee523a2206206994597C13D831ec7")
 	fmt.Println(balance, err)
@@ -31,7 +32,8 @@ func TestClient_GetContractTotalSupply(t *testing.T) {
 }
 
 func TestClient_GetCode(t *testing.T) {
-	cli := NewClient("https://mainnet.infura.io/v3/21628f8f9b9b423a9ea05a708016b119")
+	//	cli := NewClient("https://mainnet.infura.io/v3/21628f8f9b9b423a9ea05a708016b119")
+	cli := NewClient("http://172.16.16.119:8545")
 	totalSup, err := cli.GetCode("0xdAC17F958D2ee523a2206206994597C13D831ec7")
 	fmt.Println(totalSup, err)
 

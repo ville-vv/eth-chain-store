@@ -2,20 +2,15 @@ package model
 
 import "time"
 
-// 所有以太坊地址表
-type TbEthAddress struct {
-	ID        int64     `gorm:"primary_key"`
-	CreatedAt time.Time `json:"created_at" gorm:"column:created_at;COMMENT:" name:""`
-	UpdatedAt time.Time `json:"updated_at" gorm:"column:updated_at;COMMENT:" name:""`
-	NativeAccount
-}
-
 // 原生以太坊地址信息
-type NativeAccount struct {
-	Address     string `json:"address" gorm:"column:address;COMMENT:" name:""`
-	FirstTxTime string `json:"first_transfer_time" gorm:"column:first_transfer_time;COMMENT:" name:""`
-	FirstTxHash string `json:"first_tx_hash" gorm:"column:first_tx_hash;COMMENT:" name:""`
-	Balance     string `json:"balance" gorm:"column:balance;COMMENT:" name:""`
+type EthereumAccount struct {
+	ID          int64     `gorm:"primary_key"`
+	CreatedAt   time.Time `json:"created_at" gorm:"column:created_at;COMMENT:" name:""`
+	UpdatedAt   time.Time `json:"updated_at" gorm:"column:updated_at;COMMENT:" name:""`
+	Address     string    `json:"address" gorm:"column:address;COMMENT:" name:""`
+	FirstTxTime string    `json:"first_transfer_time" gorm:"column:first_transfer_time;COMMENT:" name:""`
+	FirstTxHash string    `json:"first_tx_hash" gorm:"column:first_tx_hash;COMMENT:" name:""`
+	Balance     string    `json:"balance" gorm:"column:balance;COMMENT:" name:""`
 }
 
 // 合约地址表
@@ -23,11 +18,11 @@ type TbContractAddress struct {
 	ID        int64     `gorm:"primary_key"`
 	CreatedAt time.Time `json:"created_at" gorm:"column:created_at;COMMENT:" name:""`
 	UpdatedAt time.Time `json:"updated_at" gorm:"column:updated_at;COMMENT:" name:""`
-	ContractAccount
+	ContractContent
 }
 
 // 合约地址信息
-type ContractAccount struct {
+type ContractContent struct {
 	Symbol      string `json:"symbol" gorm:"column:symbol;COMMENT:" name:""`             // 合约代号
 	Address     string `json:"address" gorm:"column:address;COMMENT:" name:""`           // 合约地址
 	PublishTime string `json:"publish_time" gorm:"column:publish_time;COMMENT:" name:""` // 合约发布时间
@@ -37,7 +32,7 @@ type ContractAccount struct {
 	TotalSupply string `json:"total_supply" gorm:"column:total_supply;COMMENT:" name:""` // 代币总发行量
 }
 
-// 账户
+// 合约账户
 type AccountContent struct {
 	Contract string `json:"contract" name:""`                               // 账户的合约地址
 	Address  string `json:"address" gorm:"column:address;COMMENT:" name:""` // 账户地址

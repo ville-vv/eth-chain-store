@@ -19,6 +19,15 @@ func NewErc20TokenConfigDao(db DB) *Erc20TokenConfigDao {
 	return e
 }
 
+func (sel *Erc20TokenConfigDao) Get(key string) (string, error) {
+	data, ok := sel.st.Load(key)
+	if !ok {
+		return "", nil
+	}
+	ctx, _ := data.(*model.Erc20TokenConfigContent)
+	return ctx.Symbol, nil
+}
+
 func (sel *Erc20TokenConfigDao) TokenIsValid(addr string) bool {
 	_, ok := sel.st.Load(addr)
 	if !ok {

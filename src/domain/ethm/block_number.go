@@ -4,31 +4,82 @@ import (
 	"github.com/ville-vv/eth-chain-store/src/domain/repo"
 	"github.com/ville-vv/eth-chain-store/src/infra/ethrpc"
 	"github.com/ville-vv/vilgo/vlog"
+	"sync"
+	"time"
 )
 
-type BlockNumberCaptor struct {
-	cntBlockNumber uint64
-	ethRequester   ethrpc.EthRPC
-	bkRepo         repo.IBlockNumberRepo
+type SyncBlockNumberCounter struct {
+	haveDoneLock     sync.Mutex
+	syncLock         sync.Mutex
+	isLatest         bool
+	cntSyncingNumber int64
+	ethRpcCli        ethrpc.EthRPC
+	haveDoneCap      int
+	haveDoneIndex    int
+	haveDoneList     []int64
+	syncingList      []int64
+	latestNumber     int64
+	bkRepo           repo.BlockNumberRepo
 }
 
-// BlockNumberUpdater 从链上获取最新区块号并更新
-func (p *BlockNumberCaptor) UpdateBlockNumber() {
-	// 拉取数据
-	bkNumber, err := p.ethRequester.GetBlockNumber()
-	if err != nil {
-		vlog.ERROR("get block number is error %s", err.Error())
-		return
-	}
-	p.cntBlockNumber = bkNumber
-	// 更新数据库
-	if err = p.bkRepo.UpdateBlockNumber(bkNumber); err != nil {
-		vlog.ERROR("get block number is error %s", err.Error())
-		return
+func (sel *SyncBlockNumberCounter) loopSyncBlockNumber() {
+	for {
+		latestNumber, err := sel.ethRpcCli.GetBlockNumber()
+		if err != nil {
+			vlog.ERROR("get latest block number from main chain %s", err.Error())
+			time.Sleep(time.Second)
+			continue
+		}
+		sel.syncLock.Lock()
+		sel.latestNumber = int64(latestNumber)
+		sel.syncLock.Unlock()
+		// 更新数据库
+		if err = sel.bkRepo.UpdateBlockNumber(sel.latestNumber); err != nil {
+			vlog.ERROR("get block number is error %s", err.Error())
+		}
+		time.Sleep(time.Second * 15)
 	}
 }
 
-// GetBlockNumber 获取当前区块号
-func (p *BlockNumberCaptor) GetBlockNumber() uint64 {
-	return p.cntBlockNumber
+// IsLatestBlockNumber 是不是最新区块
+func (sel *SyncBlockNumberCounter) IsLatestBlockNumber() bool {
+	sel.syncLock.Lock()
+	latestNumber := sel.latestNumber
+	sel.syncLock.Unlock()
+	return sel.cntSyncingNumber >= latestNumber
+}
+
+func (sel *SyncBlockNumberCounter) IsSyncing(blockNumber int64) bool {
+	for i := 0; i < sel.haveDoneCap; i++ {
+		// 判断该区块是否正在同步
+		if sel.haveDoneList[i] == blockNumber {
+			return true
+		}
+	}
+	return false
+}
+
+func (sel *SyncBlockNumberCounter) GetSyncBlockNumber() (blockNumber int64, err error) {
+	sel.syncLock.Lock()
+	blockNumber = sel.cntSyncingNumber
+	sel.haveDoneList[sel.haveDoneIndex] = blockNumber
+	sel.cntSyncingNumber++
+	if sel.cntSyncingNumber > sel.latestNumber {
+		sel.cntSyncingNumber = sel.latestNumber
+	}
+	sel.syncLock.Unlock()
+
+	// 设置正在同步的区块
+	sel.haveDoneLock.Lock()
+	sel.haveDoneList[sel.haveDoneIndex] = blockNumber
+	sel.haveDoneIndex++
+	if sel.haveDoneIndex >= sel.haveDoneCap {
+		sel.haveDoneIndex++
+	}
+	sel.haveDoneLock.Unlock()
+	return blockNumber, nil
+}
+func (sel *SyncBlockNumberCounter) FinishThisSync(blockNumber int64) {
+	// 同步完成后设置到数据库中持久化存储
+	return
 }

@@ -160,10 +160,6 @@ func (sel *EthereumManager) TxWrite(txData *model.TransactionData) error {
 	return sel.txWrite.TxWrite(txData)
 }
 
-type TxWriterFilter interface {
-	Filter(addr string) (err error)
-}
-
 type EthereumWriter struct {
 	filter            TxWriterFilter
 	accountWriter     AccountManager

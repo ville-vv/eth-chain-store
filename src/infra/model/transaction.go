@@ -24,6 +24,6 @@ type TransactionData struct {
 	ContractAddress string `json:"contract_address" name:""`
 	IsContract      bool   `json:"is_contract" name:""`
 	Balance         string `json:"balance" name:""`
-	TxType          string `json:"tx_type" name:""` // 交易类型
-	IsErc20         bool   `json:"is_erc_20" name:""`
+	TxType          string `json:"tx_type" name:""`   // 交易类型
+	IsErc20         bool   `json:"is_erc_20" name:""` // 是否为erc20合约
 }

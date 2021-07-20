@@ -83,7 +83,7 @@ func (sel *ContractManager) TxWrite(txData *model.TransactionData) (err error) {
 			return err
 		}
 	}
-	return sel.contractRepo.CreateContract(&model.ContractAccount{
+	return sel.contractRepo.CreateContract(&model.ContractContent{
 		Symbol:      erc20ContractInfo.Symbol,
 		Address:     txData.ContractAddress,
 		PublishTime: txData.TimeStamp,

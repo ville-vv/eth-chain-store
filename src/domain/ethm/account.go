@@ -64,12 +64,25 @@ func (sel *contractAccountManager) UpdateAccount(txData *model.TransactionData) 
 	if err != nil {
 		return err
 	}
-	// 该账户已经存在
-	if sel.accountRepo.IsAccountExist(accountAddr) {
-		return sel.accountRepo.UpdateBalance(balance)
+	ok, err := sel.accountRepo.IsAccountExist(accountAddr, txData.ContractAddress)
+	if err != nil {
+		return err
+	}
+	if ok {
+		// 该账户已经存在
+		return sel.accountRepo.UpdateBalance(accountAddr, txData.ContractAddress, balance)
+	}
+	symbol, err := sel.ethCli.GetContractSymbol(txData.ContractAddress)
+	if err != nil {
+		return err
 	}
 	// 如果该账户不存在
-	return sel.accountRepo.CreateEthAccount()
+	return sel.accountRepo.CreateEthAccount(&model.ContractAccountBind{
+		Address:         accountAddr,
+		ContractAddress: txData.ContractAddress,
+		Symbol:          symbol,
+		Balance:         balance,
+	})
 }
 
 // normalAccountManager 以太坊账户管理
@@ -80,14 +93,24 @@ type normalAccountManager struct {
 
 func (sel *normalAccountManager) UpdateAccount(txData *model.TransactionData) error {
 	var addr = txData.To
-	if sel.accountRepo.IsAccountExist(addr) {
-		// 获取的余额
-		balance, err := sel.ethCli.GetBalance(addr)
-		if err != nil {
-			return err
-		}
-		return sel.accountRepo.UpdateBalance(balance)
+	ok, err := sel.accountRepo.IsAccountExist(addr)
+	if err != nil {
+		return err
+	}
+	// 获取的余额
+	balance, err := sel.ethCli.GetBalance(addr)
+	if err != nil {
+		return err
+	}
+	if ok {
+
+		return sel.accountRepo.UpdateBalance(addr, balance)
 	}
 	// 创建一个以太坊账户
-	return sel.accountRepo.CreateEthAccount()
+	return sel.accountRepo.CreateEthAccount(&model.EthereumAccount{
+		Address:     txData.To,
+		FirstTxTime: txData.TimeStamp,
+		FirstTxHash: txData.Hash,
+		Balance:     balance,
+	})
 }
