@@ -9,7 +9,7 @@ import (
 )
 
 type DB interface {
-	GetDB() *gorm.DB
+	vstore.DB
 	GetName() string
 }
 
@@ -28,6 +28,10 @@ func (sel *MysqlDB) GetDB() *gorm.DB {
 
 func (sel *MysqlDB) GetName() string {
 	return sel.name
+}
+
+func (sel *MysqlDB) ClearAllData() {
+	sel.db.ClearAllData()
 }
 
 var dbPool *Erc20DbPool

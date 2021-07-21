@@ -1,5 +1,7 @@
 package conf
 
+import "fmt"
+
 type MysqlConf struct {
 	DBEnv       string
 	Username    string
@@ -71,12 +73,6 @@ func (sel *MysqlConf) discoverFromEnv() {
 	readEnv(&sel.Port, "MYSQL_PORT")
 	sel.MaxIdleConn = 10
 	sel.MaxOpenConn = 1000
-	//if sel.Host == "" {
-	//	sel.Host = "127.0.0.1"
-	//}
-	//if sel.Port == "" {
-	//	sel.Port = "3306"
-	//}
 }
 
 func (sel *MysqlConf) discoverFromFlag() {
@@ -85,4 +81,38 @@ func (sel *MysqlConf) discoverFromFlag() {
 	readFlag(&sel.Password, "db_passwd")
 	readFlag(&sel.Host, "db_host")
 	readFlag(&sel.Port, "db_port")
+}
+
+func (sel *MysqlConf) ReSetDbName(name string) {
+	sel.DbName = fmt.Sprintf("eth_%s_%s", name, sel.DBEnv)
+}
+
+func GetEthBusinessDbConfig() *MysqlConf {
+	mysqlConfig := NewMysqlConf()
+	mysqlConfig.ReSetDbName("business")
+	return mysqlConfig
+}
+
+func GetEthereumDbConfig() *MysqlConf {
+	mysqlConfig := NewMysqlConf()
+	mysqlConfig.ReSetDbName("ethereum")
+	return mysqlConfig
+}
+
+func GetEthContractDbConfig() *MysqlConf {
+	mysqlConfig := NewMysqlConf()
+	mysqlConfig.ReSetDbName("contract")
+	return mysqlConfig
+}
+
+func GetEthContractTransactionDbConfig() *MysqlConf {
+	mysqlConfig := NewMysqlConf()
+	mysqlConfig.ReSetDbName("contract_transaction")
+	return mysqlConfig
+}
+
+func GetEthTransactionDbConfig() *MysqlConf {
+	mysqlConfig := NewMysqlConf()
+	mysqlConfig.ReSetDbName("transaction")
+	return mysqlConfig
 }

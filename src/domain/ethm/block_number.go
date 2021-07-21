@@ -11,15 +11,32 @@ import (
 type SyncBlockNumberCounter struct {
 	haveDoneLock     sync.Mutex
 	syncLock         sync.Mutex
-	isLatest         bool
 	cntSyncingNumber int64
-	ethRpcCli        ethrpc.EthRPC
 	haveDoneCap      int
 	haveDoneIndex    int
 	haveDoneList     []int64
-	syncingList      []int64
 	latestNumber     int64
+	ethRpcCli        ethrpc.EthRPC
 	bkRepo           repo.BlockNumberRepo
+	beforeSyncNumber int64
+}
+
+func NewSyncBlockNumberCounter(ethRpcCli ethrpc.EthRPC, bkRepo repo.BlockNumberRepo) (*SyncBlockNumberCounter, error) {
+	cntNumber, err := bkRepo.GetCntSyncBlockNumber()
+	if err != nil {
+		return nil, err
+	}
+	s := &SyncBlockNumberCounter{
+		haveDoneLock:     sync.Mutex{},
+		syncLock:         sync.Mutex{},
+		cntSyncingNumber: cntNumber,
+		haveDoneCap:      100,
+		haveDoneList:     make([]int64, 100),
+		ethRpcCli:        ethRpcCli,
+		bkRepo:           bkRepo,
+	}
+	s.loopSyncBlockNumber()
+	return s, nil
 }
 
 func (sel *SyncBlockNumberCounter) loopSyncBlockNumber() {
@@ -79,7 +96,16 @@ func (sel *SyncBlockNumberCounter) GetSyncBlockNumber() (blockNumber int64, err 
 	sel.haveDoneLock.Unlock()
 	return blockNumber, nil
 }
-func (sel *SyncBlockNumberCounter) FinishThisSync(blockNumber int64) {
-	// 同步完成后设置到数据库中持久化存储
-	return
+
+func (sel *SyncBlockNumberCounter) FinishThisSync(blockNumber int64) error {
+	sel.syncLock.Lock()
+	can := blockNumber > sel.beforeSyncNumber
+	if can {
+		sel.beforeSyncNumber = blockNumber
+	}
+	sel.syncLock.Unlock()
+	if can {
+		return sel.bkRepo.UpdateSyncBlockNUmber(sel.beforeSyncNumber)
+	}
+	return nil
 }

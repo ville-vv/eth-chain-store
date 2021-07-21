@@ -14,9 +14,11 @@ func readEnv(val *string, key string) {
 
 func readFlag(val *string, key string) {
 	f := flag.Lookup(key)
-	v := f.Value.String()
-	if v != "" {
-
+	if f == nil {
+		return
+	}
+	if v := f.Value.String(); v != "" {
+		*val = v
 	}
 }
 

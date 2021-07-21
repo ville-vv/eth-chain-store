@@ -162,9 +162,13 @@ func (sel *EthereumManager) TxWrite(txData *model.TransactionData) error {
 
 type EthereumWriter struct {
 	filter            TxWriterFilter
-	accountWriter     AccountManager
-	contractWriter    ContractManager
-	transactionWriter TransactionWriter
+	accountWriter     TxWriter
+	contractWriter    TxWriter
+	transactionWriter TxWriter
+}
+
+func NewEthereumWriter(filter TxWriterFilter, accountWriter TxWriter, contractWriter TxWriter, transactionWriter TxWriter) *EthereumWriter {
+	return &EthereumWriter{filter: filter, accountWriter: accountWriter, contractWriter: contractWriter, transactionWriter: transactionWriter}
 }
 
 func (sel *EthereumWriter) TxWrite(txData *model.TransactionData) (err error) {

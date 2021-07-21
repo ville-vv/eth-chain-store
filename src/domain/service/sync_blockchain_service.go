@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"github.com/ville-vv/eth-chain-store/src/domain/ethm"
+	"github.com/ville-vv/eth-chain-store/src/domain/repo"
 	"github.com/ville-vv/eth-chain-store/src/infra/ethrpc"
 	"github.com/ville-vv/vilgo/vlog"
 	"time"
@@ -17,14 +18,20 @@ type SyncBlockChainService struct {
 	stopCh       chan int
 }
 
-func NewSyncBlockChainService(ethRpcCli ethrpc.EthRPC, txWrite ethm.TxWriter, syncPgs *ethm.SyncBlockNumberCounter) *SyncBlockChainService {
+func NewSyncBlockChainService(ethRpcCli ethrpc.EthRPC, txWrite ethm.TxWriter, bkRepo repo.BlockNumberRepo) *SyncBlockChainService {
+	syncCounter, err := ethm.NewSyncBlockNumberCounter(ethRpcCli, bkRepo)
+	if err != nil {
+		panic("NewSyncBlockChainService" + err.Error())
+	}
+
 	s := &SyncBlockChainService{
 		ethMng:       ethm.NewEthereumManager(ethRpcCli, txWrite),
 		syncInterval: 0,
 		maxSyncNum:   make(chan int, 100),
-		syncCounter:  syncPgs,
+		syncCounter:  syncCounter,
 		stopCh:       make(chan int),
 	}
+
 	return s
 }
 
@@ -38,7 +45,7 @@ func (s *SyncBlockChainService) Init() error {
 }
 
 func (s *SyncBlockChainService) Start() error {
-	s.syncTimerTicker()
+	s.fastSync()
 	return nil
 }
 
@@ -57,11 +64,11 @@ func (s *SyncBlockChainService) fastSync() {
 			if s.syncCounter.IsLatestBlockNumber() {
 				goto startNormal
 			}
-			s.maxSyncNum <- 1
+			s.wait()
 			go func() {
 				s.syncBlockChain()
 				// 执行完成后就释放一个
-				<-s.maxSyncNum
+				s.done()
 			}()
 		case <-s.stopCh:
 			tk.Stop()
@@ -72,6 +79,14 @@ startNormal:
 	s.syncTimerTicker()
 }
 
+func (s *SyncBlockChainService) wait() {
+	s.maxSyncNum <- 1
+}
+
+func (s *SyncBlockChainService) done() {
+	<-s.maxSyncNum
+}
+
 func (s *SyncBlockChainService) syncTimerTicker() {
 	// 区块打包是15秒中一次，所以 syncInterval 应该设置为 15 秒
 	tk := time.NewTicker(time.Second * time.Duration(s.syncInterval))
@@ -79,11 +94,11 @@ func (s *SyncBlockChainService) syncTimerTicker() {
 		select {
 		case <-tk.C:
 			// 开启协程前添加一个控制，用于达到控制协程数量的目的
-			s.maxSyncNum <- 1
+			s.wait()
 			go func() {
 				s.syncBlockChain()
 				// 执行完成后就释放一个
-				<-s.maxSyncNum
+				s.done()
 			}()
 		case <-s.stopCh:
 			tk.Stop()
@@ -97,15 +112,17 @@ func (s *SyncBlockChainService) syncBlockChain() {
 	// 获取当前同步的区块
 	blockNumber, err := s.syncCounter.GetSyncBlockNumber()
 	if err != nil {
-		vlog.ERROR("获取区块错误")
+		vlog.ERROR("获取区块错误 %s", err.Error())
 		return
 	}
 	if s.syncCounter.IsSyncing(blockNumber) {
 		return
 	}
 	if err = s.ethMng.PullBlockByNumber(blockNumber); err != nil {
-		vlog.ERROR("获取指定区块数据失败")
+		vlog.ERROR("获取指定区块数据失败 %s", err.Error())
 		return
 	}
-	s.syncCounter.FinishThisSync(blockNumber)
+	if err = s.syncCounter.FinishThisSync(blockNumber); err != nil {
+		vlog.ERROR("更新同步的区块号失败 %s", err.Error())
+	}
 }

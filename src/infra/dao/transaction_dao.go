@@ -7,6 +7,12 @@ import (
 
 // EthereumTransactionDao 以太坊交易
 type EthereumTransactionDao struct {
+	contractTxDb DB
+	txDb         DB
+}
+
+func NewEthereumTransactionDao(txDb DB, contractTxDb DB) *EthereumTransactionDao {
+	return &EthereumTransactionDao{}
 }
 
 func (sel *EthereumTransactionDao) CreateTransactionRecord(txData *model.TransactionData) error {

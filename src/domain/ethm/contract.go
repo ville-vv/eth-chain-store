@@ -23,7 +23,10 @@ type Erc20Contract struct {
 type ContractManager struct {
 	rpcCli       ethrpc.EthRPC
 	contractRepo repo.ContractRepo
-	erc20Mng     Erc20Manager
+}
+
+func NewContractManager(rpcCli ethrpc.EthRPC) *ContractManager {
+	return &ContractManager{rpcCli: rpcCli}
 }
 
 // GetErc20ContractInfo ERC20 协议的合约有固定的合约接口来获取合约的基本信息

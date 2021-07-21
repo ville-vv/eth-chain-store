@@ -1,24 +1,32 @@
 package log
 
 import (
-	"fmt"
-	"github.com/ville-vv/eth-chain-store/src/common/utils"
+	"flag"
 	"github.com/ville-vv/vilgo/vlog"
-	"os"
 )
 
 func Init() {
 	logLevel := vlog.LogLevelInfo
-	logFile := fmt.Sprintf("eth_chain_store_%s.log", utils.RandStringBytesMask(8))
-	if os.Getenv("ETH_CHAIN_STORE_ENV") == "local" {
-		logLevel = vlog.LogLevelDebug
-		logFile = "stdout"
-		return
+	var logFile = "stdout"
+	//logFile := fmt.Sprintf("logs/eth_chain_store_%s.log", utils.RandStringBytesMask(8))
+	//if os.Getenv("ETH_CHAIN_STORE_ENV") == "local" {
+	//	logLevel = vlog.LogLevelDebug
+	//	logFile = "stdout"
+	//	return
+	//}
+
+	if logVal := flag.Lookup("logFile"); logVal != nil {
+		logFile = logVal.Value.String()
 	}
+
+	if logVal := flag.Lookup("debug"); logVal != nil {
+		logLevel = vlog.LogLevelDebug
+	}
+
 	cnf := &vlog.LogCnf{
-		OutPutErrFile: []string{logFile},
-		ProgramName:   "eth-chain-store",
-		Level:         logLevel,
+		OutPutFile:  []string{logFile},
+		ProgramName: "eth-chain-store",
+		Level:       logLevel,
 	}
 	vlog.SetLogger(vlog.NewGoLogger(cnf))
 	return

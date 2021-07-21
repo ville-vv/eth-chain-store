@@ -56,6 +56,7 @@ require (
 	github.com/syndtr/goleveldb v1.0.0
 	github.com/tklauser/go-sysconf v0.3.6 // indirect
 	github.com/tyler-smith/go-bip39 v1.1.0
+	github.com/urfave/cli v1.22.1
 	github.com/ville-vv/vilgo v0.0.4
 	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9

@@ -11,6 +11,14 @@ type TransactionWriter struct {
 	txRepo *repo.TransactionRepo
 }
 
+func NewTransactionWriter(ethCli ethrpc.EthRPC, txRepo *repo.TransactionRepo) *TransactionWriter {
+	txw := &TransactionWriter{
+		ethCli: ethCli,
+		txRepo: txRepo,
+	}
+	return txw
+}
+
 func (sel *TransactionWriter) TxWrite(txData *model.TransactionData) error {
 	// 写入交易信息
 	return sel.txRepo.CreateTransactionRecord(txData)

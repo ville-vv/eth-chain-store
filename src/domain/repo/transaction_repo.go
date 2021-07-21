@@ -10,6 +10,10 @@ type TransactionRepo struct {
 	normalTranDao *dao.EthereumTransactionDao
 }
 
+func NewTransactionRepo(normalTranDao *dao.EthereumTransactionDao) *TransactionRepo {
+	return &TransactionRepo{normalTranDao: normalTranDao}
+}
+
 func (sel *TransactionRepo) CreateTransactionRecord(txData *model.TransactionData) error {
 	return sel.normalTranDao.CreateTransactionRecord(txData)
 }

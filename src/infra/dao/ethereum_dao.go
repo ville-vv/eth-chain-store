@@ -3,6 +3,11 @@ package dao
 import "github.com/ville-vv/eth-chain-store/src/infra/model"
 
 type EthereumDao struct {
+	db DB
+}
+
+func NewEthereumDao(db DB) *EthereumDao {
+	return &EthereumDao{}
 }
 
 // QueryContractInfo 查询合约信息
@@ -30,6 +35,7 @@ func (sel *EthereumDao) UpdateNormalAccountBalance(addr string, balance string) 
 	return nil
 }
 
+// CreateNormalAccount 创建以太坊账户
 func (sel *EthereumDao) CreateNormalAccount(normalAccount *model.EthereumAccount) error {
 	return nil
 }

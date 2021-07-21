@@ -14,11 +14,26 @@ type Account struct {
 
 // 以太坊账户
 type AccountManager struct {
-	ethCli         ethrpc.EthRPC
-	accountRepo    repo.NormalAccountRepo
-	contractMng    ContractManager
+	ethCli ethrpc.EthRPC
+	//contractMng    *ContractManager
 	contractActMng *contractAccountManager
 	normalActMng   *normalAccountManager
+}
+
+func NewAccountManager(ethCli ethrpc.EthRPC, contractAccountRepo *repo.ContractAccountRepo, normalAccountRepo *repo.NormalAccountRepo) *AccountManager {
+	ac := &AccountManager{
+		ethCli: ethCli,
+		//contractMng: contractMng,
+		contractActMng: &contractAccountManager{
+			ethCli:      ethCli,
+			accountRepo: contractAccountRepo,
+		},
+		normalActMng: &normalAccountManager{
+			ethCli:      nil,
+			accountRepo: normalAccountRepo,
+		},
+	}
+	return ac
 }
 
 func (sel *AccountManager) TxWrite(txData *model.TransactionData) error {
@@ -53,7 +68,7 @@ func (sel *AccountManager) contractAccountUpdater(txData *model.TransactionData)
 // contractAccountManager 以太坊合约账户管理
 type contractAccountManager struct {
 	ethCli      ethrpc.EthRPC
-	accountRepo repo.ContractAccountRepo
+	accountRepo *repo.ContractAccountRepo
 }
 
 // UpdateAccount 更新合约账户信息，如果该用户存在就更新余额信息，如果该用户不存在就创建一条记录
@@ -88,7 +103,7 @@ func (sel *contractAccountManager) UpdateAccount(txData *model.TransactionData) 
 // normalAccountManager 以太坊账户管理
 type normalAccountManager struct {
 	ethCli      ethrpc.EthRPC
-	accountRepo repo.NormalAccountRepo
+	accountRepo *repo.NormalAccountRepo
 }
 
 func (sel *normalAccountManager) UpdateAccount(txData *model.TransactionData) error {

@@ -10,6 +10,10 @@ type NormalAccountRepo struct {
 	accountDao *dao.EthereumDao
 }
 
+func NewNormalAccountRepo(accountDao *dao.EthereumDao) *NormalAccountRepo {
+	return &NormalAccountRepo{accountDao: accountDao}
+}
+
 func (sel *NormalAccountRepo) IsAccountExist(addr string) (bool, error) {
 	var info model.EthereumAccount
 	err := sel.accountDao.QueryNormalAccount(addr, &info)
@@ -40,6 +44,10 @@ func (sel *NormalAccountRepo) CreateEthAccount(normalAccount *model.EthereumAcco
 
 type ContractAccountRepo struct {
 	accountDao *dao.EthereumDao
+}
+
+func NewContractAccountRepo(accountDao *dao.EthereumDao) *ContractAccountRepo {
+	return &ContractAccountRepo{accountDao: accountDao}
 }
 
 func (sel *ContractAccountRepo) IsAccountExist(addr string, contractAddr string) (bool, error) {

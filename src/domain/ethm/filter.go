@@ -10,6 +10,10 @@ type EthereumWriteFilter struct {
 	addrCache AddrConfigCache
 }
 
+func NewEthereumWriteFilter(addrCache AddrConfigCache) *EthereumWriteFilter {
+	return &EthereumWriteFilter{addrCache: addrCache}
+}
+
 func (sel *EthereumWriteFilter) Filter(addr string) (err error) {
 	symbol, err := sel.addrCache.Get(addr)
 	if err != nil {
