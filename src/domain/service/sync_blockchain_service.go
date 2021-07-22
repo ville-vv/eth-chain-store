@@ -64,12 +64,7 @@ func (s *SyncBlockChainService) fastSync() {
 			if s.syncCounter.IsLatestBlockNumber() {
 				goto startNormal
 			}
-			s.wait()
-			go func() {
-				s.syncBlockChain()
-				// 执行完成后就释放一个
-				s.done()
-			}()
+			s.syncBlockChain()
 		case <-s.stopCh:
 			tk.Stop()
 			return
@@ -93,13 +88,7 @@ func (s *SyncBlockChainService) syncTimerTicker() {
 	for {
 		select {
 		case <-tk.C:
-			// 开启协程前添加一个控制，用于达到控制协程数量的目的
-			s.wait()
-			go func() {
-				s.syncBlockChain()
-				// 执行完成后就释放一个
-				s.done()
-			}()
+			s.syncBlockChain()
 		case <-s.stopCh:
 			tk.Stop()
 			return
@@ -115,14 +104,21 @@ func (s *SyncBlockChainService) syncBlockChain() {
 		vlog.ERROR("获取区块错误 %s", err.Error())
 		return
 	}
-	if s.syncCounter.IsSyncing(blockNumber) {
-		return
-	}
-	if err = s.ethMng.PullBlockByNumber(blockNumber); err != nil {
-		vlog.ERROR("获取指定区块数据失败 %s", err.Error())
-		return
-	}
-	if err = s.syncCounter.FinishThisSync(blockNumber); err != nil {
-		vlog.ERROR("更新同步的区块号失败 %s", err.Error())
-	}
+	//if s.syncCounter.IsSyncing(blockNumber) {
+	//	return
+	//}
+	vlog.INFO("starting sync block [%d]", blockNumber)
+	s.wait()
+	go func() {
+		// 执行完成后就释放一个
+		if err = s.ethMng.PullBlockByNumber(blockNumber); err != nil {
+			vlog.ERROR("获取指定区块数据失败 %d %s", blockNumber, err.Error())
+			return
+		}
+		if err = s.syncCounter.FinishThisSync(blockNumber); err != nil {
+			vlog.ERROR("更新同步的区块号失败 %s", err.Error())
+		}
+		vlog.INFO("finished sync block [%d]", blockNumber)
+		s.done()
+	}()
 }

@@ -2,6 +2,7 @@ package service
 
 import (
 	"github.com/ville-vv/eth-chain-store/src/common/conf"
+	"github.com/ville-vv/eth-chain-store/src/common/log"
 	"github.com/ville-vv/eth-chain-store/src/domain/ethm"
 	"github.com/ville-vv/eth-chain-store/src/domain/repo"
 	"github.com/ville-vv/eth-chain-store/src/infra/dao"
@@ -10,7 +11,7 @@ import (
 )
 
 func TestNewSyncBlockChainService(t *testing.T) {
-
+	log.Init()
 	var (
 		businessDb = dao.NewMysqlDB(vstore.MakeDb(conf.GetEthBusinessDbConfig()), "business")
 		ethereumDb = dao.NewMysqlDB(vstore.MakeDb(conf.GetEthereumDbConfig()), "ethereum")
@@ -34,8 +35,7 @@ func TestNewSyncBlockChainService(t *testing.T) {
 		txWriter          = ethm.NewEthereumWriter(filter, accountMng, contractMng, transactionWriter)
 	)
 	syncSvc := NewSyncBlockChainService(ehtrpcCli, txWriter, repo.NewBlockNumberRepo(ethBlockNumberDao))
-	err := syncSvc.Start()
-	if err != nil {
+	if err := syncSvc.Start(); err != nil {
 		t.Error(err)
 		return
 	}

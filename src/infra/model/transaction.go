@@ -1,7 +1,13 @@
 package model
 
 const (
-	TxTypeTransfer = "transfer"
+	TxEventTypeTransfer = "transfer"
+)
+
+const (
+	TxTypeNormal    = "normal transactions"
+	TxTypeInternal  = "internal transactions"
+	TxTokenTransfer = "token transfers"
 )
 
 type TransactionData struct {
@@ -22,8 +28,8 @@ type TransactionData struct {
 	// V     string `json:"v" name:""`
 	Value           string `json:"value" name:""`
 	ContractAddress string `json:"contract_address" name:""`
-	IsContract      bool   `json:"is_contract" name:""`
-	Balance         string `json:"balance" name:""`
-	TxType          string `json:"tx_type" name:""`   // 交易类型
-	IsErc20         bool   `json:"is_erc_20" name:""` // 是否为erc20合约
+	IsContract      bool   `json:"is_contract" name:""` // 是否为合约交易
+	Balance         string `json:"balance" name:""`     // 当前交易时用户余额
+	TxType          string `json:"tx_type" name:""`     // 交易类型 外部交易，内部交易，代币交易
+	EventType       string `json:"event_type" name:""`  // 交易事件类型
 }

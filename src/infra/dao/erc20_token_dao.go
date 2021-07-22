@@ -6,7 +6,7 @@ import (
 )
 
 type Erc20TokenConfigDao struct {
-	st *sync.Map
+	st sync.Map
 	db DB
 }
 
@@ -24,7 +24,7 @@ func (sel *Erc20TokenConfigDao) Get(key string) (string, error) {
 	if !ok {
 		return "", nil
 	}
-	ctx, _ := data.(*model.Erc20TokenConfigContent)
+	ctx, _ := data.(*model.Erc20ContractConfigContent)
 	return ctx.Symbol, nil
 }
 
@@ -32,7 +32,7 @@ func (sel *Erc20TokenConfigDao) TokenIsValid(addr string) bool {
 	_, ok := sel.st.Load(addr)
 	if !ok {
 		// 如果没有就去数据库中查询
-		var e2tc model.Erc20TokenConfigContent
+		var e2tc model.Erc20ContractConfigContent
 		db := sel.db.GetDB().Table("eth_contract_erc20_config").Select("symbol")
 		err := db.Where("address=?", addr).First(&e2tc).Error
 		if err != nil {
@@ -46,8 +46,8 @@ func (sel *Erc20TokenConfigDao) TokenIsValid(addr string) bool {
 
 func (sel *Erc20TokenConfigDao) Loading() error {
 	// 如果没有就去数据库中查询
-	var e2tcList []*model.Erc20TokenConfigContent
-	db := sel.db.GetDB().Table("eth_contract_erc20_config").Select("address,symbol")
+	var e2tcList []*model.Erc20ContractConfigContent
+	db := sel.db.GetDB().Table("erc20_contract_configs").Select("address,symbol")
 	err := db.Find(&e2tcList).Error
 	if err != nil {
 		return err
@@ -61,7 +61,7 @@ func (sel *Erc20TokenConfigDao) Loading() error {
 func (sel *Erc20TokenConfigDao) RegisterDb() []string {
 	var dbs []string
 	sel.st.Range(func(key, value interface{}) bool {
-		erc20Cfg, Ok := value.(*model.Erc20TokenConfigContent)
+		erc20Cfg, Ok := value.(*model.Erc20ContractConfigContent)
 		if Ok {
 			dbs = append(dbs, GenDbName(erc20Cfg.Symbol))
 		}
@@ -70,9 +70,9 @@ func (sel *Erc20TokenConfigDao) RegisterDb() []string {
 	return dbs
 }
 
-func (sel *Erc20TokenConfigDao) Range(rf func(model.Erc20TokenConfigContent)) {
+func (sel *Erc20TokenConfigDao) Range(rf func(model.Erc20ContractConfigContent)) {
 	sel.st.Range(func(key, value interface{}) bool {
-		erc20Cfg, Ok := value.(*model.Erc20TokenConfigContent)
+		erc20Cfg, Ok := value.(*model.Erc20ContractConfigContent)
 		if Ok {
 			rf(*erc20Cfg)
 		}

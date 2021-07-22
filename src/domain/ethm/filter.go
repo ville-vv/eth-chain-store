@@ -1,7 +1,5 @@
 package ethm
 
-import "errors"
-
 type AddrConfigCache interface {
 	Get(key string) (string, error)
 }
@@ -20,7 +18,8 @@ func (sel *EthereumWriteFilter) Filter(addr string) (err error) {
 		return err
 	}
 	if symbol == "" {
-		return errors.New("not allow to write it")
+		//return errors.New("not allow to write it")
+		return nil
 	}
 	return nil
 }

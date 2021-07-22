@@ -1,6 +1,8 @@
 package ethrpc
 
-import "github.com/ville-vv/eth-chain-store/src/common/go-ethereum/common"
+import (
+	"github.com/ville-vv/eth-chain-store/src/common/go-ethereum/common"
+)
 
 type EthBlockHeader struct {
 	Hash            string `json:"hash" name:""`
@@ -42,7 +44,7 @@ func (t *EthTransaction) IsContract() bool {
 
 // IsTransfer 判断是否为Erc20协议的合约交易转账
 func (t *EthTransaction) IsTransfer() bool {
-	return t.Input.IsTransfer()
+	return t.Input.IsErc20Transfer()
 }
 
 type EthTransactionReceiptLog struct {

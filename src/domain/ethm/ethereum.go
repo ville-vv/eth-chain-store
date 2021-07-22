@@ -36,7 +36,7 @@ func (sel *EthereumManager) PullBlockByNumber(bkNumber int64) error {
 	// 获取块信息
 	block, err := sel.ethRpcCli.GetBlockByNumber(bkNumber)
 	if err != nil {
-		vlog.ERROR("get block by number %s error %s", bkNumber, err.Error())
+		vlog.ERROR("get block by number %d error %s", bkNumber, err.Error())
 		return err
 	}
 	return sel.dealBlock(block)
@@ -55,7 +55,7 @@ func (sel *EthereumManager) dealBlock(block *ethrpc.EthBlock) error {
 			}
 		}
 		// 无论合约交易还是非合约交易都需要记录以太坊交易的信息
-		if err = sel.TxWrite(&model.TransactionData{
+		if err = sel.txWrites(&model.TransactionData{
 			TimeStamp:   block.TimeStamp,
 			BlockHash:   trfData.BlockHash,
 			BlockNumber: trfData.BlockNumber,
@@ -79,7 +79,7 @@ func (sel *EthereumManager) dealTransaction(header *ethrpc.EthBlockHeader, trfDa
 		return sel.contractTransaction(header, trfData)
 	}
 	// 非合约交易
-	if err = sel.TxWrite(&model.TransactionData{
+	if err = sel.txWrites(&model.TransactionData{
 		TimeStamp:   header.TimeStamp,
 		BlockHash:   trfData.BlockHash,
 		BlockNumber: trfData.BlockNumber,
@@ -87,6 +87,8 @@ func (sel *EthereumManager) dealTransaction(header *ethrpc.EthBlockHeader, trfDa
 		Hash:        trfData.Hash,
 		To:          trfData.To,
 		Value:       common.HexToHash(trfData.Value).Big().String(),
+		TxType:      model.TxTypeNormal,
+		EventType:   model.TxEventTypeTransfer,
 	}); err != nil {
 		vlog.ERROR("处理以太坊原生交易错误：hash=%s %s", trfData.Hash, err.Error())
 	}
@@ -95,54 +97,62 @@ func (sel *EthereumManager) dealTransaction(header *ethrpc.EthBlockHeader, trfDa
 
 // contractTransaction 合约交易
 func (sel *EthereumManager) contractTransaction(header *ethrpc.EthBlockHeader, tfData *ethrpc.EthTransaction) error {
-	if !tfData.IsTransfer() {
-		// 如果不是直接的转账交易，就获取合约的交易收据信息
-		tfReceipt, err := sel.ethRpcCli.GetTransactionReceipt(tfData.Hash)
-		if err != nil {
-			return err
-		}
-		if tfReceipt == nil {
-			vlog.WARN("合约交易凭证查询为空：hash=%s", tfData.Hash)
-			return nil
-		}
+	if tfData.IsTransfer() {
+		// 这个是 ERC20单笔的 token 转账
+		to, val := ethrpc.TransferParser(tfData.Input).TransferParse()
+		return sel.txWrites(&model.TransactionData{
+			ContractAddress: tfData.To, // 单笔合约交易一般都是 To 为合约地址
+			TimeStamp:       header.TimeStamp,
+			BlockHash:       tfData.BlockHash,
+			BlockNumber:     tfData.BlockNumber,
+			From:            tfData.From,
+			Hash:            tfData.Hash,
+			To:              to,
+			Value:           val,
+			IsContract:      true,
+			TxType:          model.TxTokenTransfer,
+			EventType:       model.TxEventTypeTransfer,
+		})
+	}
+	return sel.txReceipt(header.TimeStamp, tfData.Hash)
+}
+
+func (sel *EthereumManager) txReceipt(timeStamp string, hash string) error {
+	// 如果不是直接的转账交易，就获取合约的交易收据信息
+	tfReceipt, err := sel.ethRpcCli.GetTransactionReceipt(hash)
+	if err != nil {
+		return err
+	}
+	if tfReceipt == nil {
+		vlog.WARN("合约交易凭证查询为空：hash=%s", hash)
+		return nil
+	}
+	if len(tfReceipt.Logs) > 0 {
 		for _, lg := range tfReceipt.Logs {
-			if !lg.IsTransfer() {
-				// 非转账凭证不处理
-				continue
-			}
-			if err = sel.TxWrite(&model.TransactionData{
-				ContractAddress: lg.Address,
-				TimeStamp:       header.TimeStamp,
-				BlockHash:       lg.BlockHash,
-				BlockNumber:     lg.BlockNumber,
-				From:            lg.From(),
-				Hash:            lg.TransactionHash,
-				To:              lg.To(),
-				Value:           lg.Value(),
-				IsContract:      true,
-				TxType:          model.TxTypeTransfer,
-				IsErc20:         true,
-			}); err != nil {
-				return err
+			if lg.IsTransfer() {
+				// 转账凭证处理
+				if err = sel.txWrites(&model.TransactionData{
+					ContractAddress: lg.Address, // 代币交易是存在合约地址的
+					TimeStamp:       timeStamp,
+					BlockHash:       lg.BlockHash,
+					BlockNumber:     lg.BlockNumber,
+					From:            lg.From(),
+					Hash:            lg.TransactionHash,
+					To:              lg.To(),
+					Value:           lg.Value(),
+					IsContract:      true,
+					TxType:          model.TxTokenTransfer,
+					EventType:       model.TxEventTypeTransfer,
+				}); err != nil {
+					return err
+				}
 			}
 		}
 	}
-	to, val := ethrpc.TransferParser(tfData.Input).TransferParse()
-	return sel.TxWrite(&model.TransactionData{
-		ContractAddress: tfData.To,
-		TimeStamp:       common.HexToHash(header.TimeStamp).Big().String(),
-		BlockHash:       tfData.BlockHash,
-		BlockNumber:     tfData.BlockNumber,
-		From:            tfData.From,
-		Hash:            tfData.Hash,
-		To:              to,
-		Value:           val,
-		IsContract:      true,
-		IsErc20:         true,
-	})
+	return nil
 }
 
-func (sel *EthereumManager) TxWrite(txData *model.TransactionData) error {
+func (sel *EthereumManager) txWrites(txData *model.TransactionData) error {
 	//var err error
 	//blockNumber := common.HexToHash(txData.BlockNumber).Big().Int64()
 	//// 获取当前交易的余额

@@ -16,6 +16,6 @@ func NewEthereumTransactionDao(txDb DB, contractTxDb DB) *EthereumTransactionDao
 }
 
 func (sel *EthereumTransactionDao) CreateTransactionRecord(txData *model.TransactionData) error {
-	fmt.Println("写入交易数据")
+	fmt.Println("写入交易数据", txData)
 	return nil
 }

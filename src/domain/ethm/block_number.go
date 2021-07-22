@@ -23,6 +23,7 @@ type SyncBlockNumberCounter struct {
 
 func NewSyncBlockNumberCounter(ethRpcCli ethrpc.EthRPC, bkRepo repo.BlockNumberRepo) (*SyncBlockNumberCounter, error) {
 	cntNumber, err := bkRepo.GetCntSyncBlockNumber()
+	cntNumber = 112234
 	if err != nil {
 		return nil, err
 	}
@@ -35,11 +36,15 @@ func NewSyncBlockNumberCounter(ethRpcCli ethrpc.EthRPC, bkRepo repo.BlockNumberR
 		ethRpcCli:        ethRpcCli,
 		bkRepo:           bkRepo,
 	}
-	s.loopSyncBlockNumber()
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go s.loopSyncBlockNumber(&wg)
+	wg.Wait()
 	return s, nil
 }
 
-func (sel *SyncBlockNumberCounter) loopSyncBlockNumber() {
+func (sel *SyncBlockNumberCounter) loopSyncBlockNumber(wg *sync.WaitGroup) {
+	first := true
 	for {
 		latestNumber, err := sel.ethRpcCli.GetBlockNumber()
 		if err != nil {
@@ -50,6 +55,11 @@ func (sel *SyncBlockNumberCounter) loopSyncBlockNumber() {
 		sel.syncLock.Lock()
 		sel.latestNumber = int64(latestNumber)
 		sel.syncLock.Unlock()
+		if first {
+			first = false
+			wg.Done()
+		}
+
 		// 更新数据库
 		if err = sel.bkRepo.UpdateBlockNumber(sel.latestNumber); err != nil {
 			vlog.ERROR("get block number is error %s", err.Error())
@@ -64,6 +74,18 @@ func (sel *SyncBlockNumberCounter) IsLatestBlockNumber() bool {
 	latestNumber := sel.latestNumber
 	sel.syncLock.Unlock()
 	return sel.cntSyncingNumber >= latestNumber
+}
+
+func (sel *SyncBlockNumberCounter) SetSyncing(blockNumber int64) bool {
+	// 设置正在同步的区块
+	sel.haveDoneLock.Lock()
+	sel.haveDoneList[sel.haveDoneIndex] = blockNumber
+	sel.haveDoneIndex++
+	if sel.haveDoneIndex >= sel.haveDoneCap {
+		sel.haveDoneIndex++
+	}
+	sel.haveDoneLock.Unlock()
+	return false
 }
 
 func (sel *SyncBlockNumberCounter) IsSyncing(blockNumber int64) bool {
@@ -86,14 +108,6 @@ func (sel *SyncBlockNumberCounter) GetSyncBlockNumber() (blockNumber int64, err 
 	}
 	sel.syncLock.Unlock()
 
-	// 设置正在同步的区块
-	sel.haveDoneLock.Lock()
-	sel.haveDoneList[sel.haveDoneIndex] = blockNumber
-	sel.haveDoneIndex++
-	if sel.haveDoneIndex >= sel.haveDoneCap {
-		sel.haveDoneIndex++
-	}
-	sel.haveDoneLock.Unlock()
 	return blockNumber, nil
 }
 

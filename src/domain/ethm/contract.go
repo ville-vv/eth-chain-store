@@ -1,6 +1,7 @@
 package ethm
 
 import (
+	"github.com/pkg/errors"
 	"github.com/ville-vv/eth-chain-store/src/domain/repo"
 	"github.com/ville-vv/eth-chain-store/src/infra/ethrpc"
 	"github.com/ville-vv/eth-chain-store/src/infra/model"
@@ -59,7 +60,7 @@ func (sel *ContractManager) GetErc20ContractInfo(contractAddr string) (*Erc20Con
 
 	decimalInt, err := strconv.ParseInt(decimal, 0, 64)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "parse int contract decimal value "+decimal)
 	}
 
 	return &Erc20Contract{
@@ -73,24 +74,39 @@ func (sel *ContractManager) GetErc20ContractInfo(contractAddr string) (*Erc20Con
 }
 
 func (sel *ContractManager) TxWrite(txData *model.TransactionData) (err error) {
+	if txData.ContractAddress == "" {
+		return nil
+	}
+	codeData, err := sel.rpcCli.GetCode(txData.ContractAddress)
+	if err != nil {
+		return err
+	}
+	if codeData == "0x" || codeData == "" {
+		return nil
+	}
+
 	// 查询是否已经存在记录
 	if sel.contractRepo.IsContractExist(txData.ContractAddress) {
 		return nil
 	}
 	var erc20ContractInfo = &Erc20Contract{}
-	// 如果不存在就创建
-	if txData.IsErc20 {
+	var isErc20 bool
+	if txData.TxType == model.TxTokenTransfer {
 		// erc20 合约
 		erc20ContractInfo, err = sel.GetErc20ContractInfo(txData.ContractAddress)
 		if err != nil {
 			return err
 		}
+		if erc20ContractInfo.Symbol != "" && erc20ContractInfo.Name != "" {
+			isErc20 = true
+		}
 	}
+	// 如果不存在就创建
 	return sel.contractRepo.CreateContract(&model.ContractContent{
 		Symbol:      erc20ContractInfo.Symbol,
 		Address:     txData.ContractAddress,
 		PublishTime: txData.TimeStamp,
-		IsErc20:     txData.IsErc20,
+		IsErc20:     isErc20,
 		TotalSupply: erc20ContractInfo.TotalSupply,
 	})
 }

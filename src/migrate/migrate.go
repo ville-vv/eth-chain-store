@@ -61,15 +61,12 @@ func businessDbMigrate() {
 	mysqlDb := vstore.MakeDb(cfg)
 	vlog.INFO("migrate db name %s", cfg.DbName)
 	db := mysqlDb.GetDB()
-	err := db.AutoMigrate(&model.SyncBlockConfig{})
+	err := db.AutoMigrate(
+		&model.Erc20ContractConfig{},
+	)
 	if err != nil {
 		panic(err)
 	}
-
-	db.Create(&model.SyncBlockConfig{
-		KName: "SyncBlockNumber",
-		Value: "0",
-	})
 
 }
 
@@ -78,11 +75,16 @@ func ethereumDbMigrate() {
 	mysqlDb := vstore.MakeDb(cfg)
 	vlog.INFO("migrate db name %s", cfg.DbName)
 	db := mysqlDb.GetDB()
-
-	err := db.AutoMigrate()
+	err := db.AutoMigrate(
+		&model.SyncBlockConfig{},
+	)
 	if err != nil {
 		panic(err)
 	}
+	db.Create(&model.SyncBlockConfig{
+		KName: "SyncBlockNumber",
+		Value: "0",
+	})
 }
 
 func contractTxDbDbMigrate() {

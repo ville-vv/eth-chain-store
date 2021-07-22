@@ -8,13 +8,13 @@ type Input string
 // return 如果是合约交易就返回 true
 func (t Input) IsContract() bool {
 	dataLen := len(t)
-	if dataLen < 10 && t == "0x" {
+	if dataLen < 64 {
 		return false
 	}
 	return true
 }
 
-func (t Input) IsTransfer() bool {
+func (t Input) IsErc20Transfer() bool {
 	dataLen := len(t)
 	if dataLen < 10 {
 		return false

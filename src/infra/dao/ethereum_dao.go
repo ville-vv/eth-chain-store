@@ -1,6 +1,9 @@
 package dao
 
-import "github.com/ville-vv/eth-chain-store/src/infra/model"
+import (
+	"fmt"
+	"github.com/ville-vv/eth-chain-store/src/infra/model"
+)
 
 type EthereumDao struct {
 	db DB
@@ -17,6 +20,7 @@ func (sel *EthereumDao) QueryContractInfo(addr string, contractInfo *model.TbCon
 
 // CreateContractRecord 创建合约记录
 func (sel *EthereumDao) CreateContractRecord(contractCtx *model.ContractContent) error {
+	fmt.Println("创建合约记录", contractCtx)
 	return nil
 }
 
@@ -37,5 +41,6 @@ func (sel *EthereumDao) UpdateNormalAccountBalance(addr string, balance string) 
 
 // CreateNormalAccount 创建以太坊账户
 func (sel *EthereumDao) CreateNormalAccount(normalAccount *model.EthereumAccount) error {
+	fmt.Println("创建账户记录", normalAccount)
 	return nil
 }

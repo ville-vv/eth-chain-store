@@ -20,8 +20,8 @@ func (sel *blockNumberRepo) UpdateBlockNumber(bkNum int64) error {
 	return nil
 }
 func (sel *blockNumberRepo) GetCntSyncBlockNumber() (int64, error) {
-	return 0, nil
+	return sel.ebnDao.GetSyncBlockNumber()
 }
 func (sel *blockNumberRepo) UpdateSyncBlockNUmber(n int64) error {
-	return nil
+	return sel.ebnDao.UpdateSyncBlockNumber(n)
 }

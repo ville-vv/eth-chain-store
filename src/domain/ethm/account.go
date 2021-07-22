@@ -29,7 +29,7 @@ func NewAccountManager(ethCli ethrpc.EthRPC, contractAccountRepo *repo.ContractA
 			accountRepo: contractAccountRepo,
 		},
 		normalActMng: &normalAccountManager{
-			ethCli:      nil,
+			ethCli:      ethCli,
 			accountRepo: normalAccountRepo,
 		},
 	}
