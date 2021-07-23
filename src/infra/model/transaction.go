@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 const (
 	TxEventTypeTransfer = "transfer"
 )
@@ -15,6 +17,7 @@ type TransactionData struct {
 	BlockHash   string `json:"blockHash" name:""` // 块hash
 	BlockNumber string `json:"blockNumber" name:""`
 	From        string `json:"from" name:""`
+	//FromIsContract bool   `json:"from_is_contract" name:""`
 	// Gas              string `json:"gas" name:""`
 	GasPrice string `json:"gasPrice" name:""`
 	Hash     string `json:"hash" name:""` // 交易 hash
@@ -23,13 +26,31 @@ type TransactionData struct {
 	// R                string `json:"r" name:""`
 	// S                string `json:"s" name:""`
 	To string `json:"to" name:""`
+	//ToIsContract bool   `json:"to_is_contract" name:""`
 	// TransactionIndex string `json:"transactionIndex" name:""`
 	// Type             string `json:"type" name:""`
 	// V     string `json:"v" name:""`
 	Value           string `json:"value" name:""`
-	ContractAddress string `json:"contract_address" name:""`
-	IsContract      bool   `json:"is_contract" name:""` // 是否为合约交易
-	Balance         string `json:"balance" name:""`     // 当前交易时用户余额
-	TxType          string `json:"tx_type" name:""`     // 交易类型 外部交易，内部交易，代币交易
-	EventType       string `json:"event_type" name:""`  // 交易事件类型
+	ContractAddress string `json:"contract_address" name:""` // 如果是 token transfer 就存在 ContractAddress
+	IsContractToken bool   `json:"is_contract" name:""`      // 是否为合约交易
+	Balance         string `json:"balance" name:""`          // 当前交易时用户余额
+	TxType          string `json:"tx_type" name:""`          // 交易类型 外部交易，内部交易，代币交易
+	EventType       string `json:"event_type" name:""`       // 交易事件类型
+}
+
+type TransactionTableTemplate struct {
+	ID        int64     `gorm:"primary_key"`
+	CreatedAt time.Time `json:"created_at" gorm:"column:created_at;COMMENT:" name:""` // 记录创建时间
+	TxHash    string    `json:"tx_hash" gorm:"column:tx_hash;index;COMMENT:" name:""`
+	//Address   string    `json:"address" gorm:"column:address;COMMENT:" name:""`
+	FromAddr string `json:"from_addr" gorm:"column:from_addr;COMMENT:" name:""`
+	ToAddr   string `json:"to_addr" gorm:"column:to_addr;COMMENT:" name:""`
+	Gas      string `json:"gas" gorm:"column:gas;COMMENT:" name:""`
+	Value    string `json:"value" gorm:"column:value;COMMENT:" name:""`
+	Balance  string `json:"balance" gorm:"column:balance;COMMENT:" name:""`
+}
+
+type TransactionAllTable struct {
+	ID        int64  `gorm:"primary_key"`
+	TableName string `json:"table_name" gorm:"column:table_name;COMMENT:" name:""`
 }

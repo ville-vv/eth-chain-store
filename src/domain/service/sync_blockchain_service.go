@@ -56,7 +56,7 @@ func (s *SyncBlockChainService) Exit(ctx context.Context) error {
 
 // fastSync 快速的同步数据，间隔时间缩短
 func (s *SyncBlockChainService) fastSync() {
-	tk := time.NewTicker(time.Second)
+	tk := time.NewTicker(time.Millisecond * 10)
 	for {
 		select {
 		case <-tk.C:

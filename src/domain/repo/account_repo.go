@@ -6,6 +6,8 @@ import (
 	"github.com/ville-vv/vilgo/vlog"
 )
 
+//===============================================================================================
+// 普通账户处理
 type NormalAccountRepo struct {
 	accountDao *dao.EthereumDao
 }
@@ -27,11 +29,6 @@ func (sel *NormalAccountRepo) IsAccountExist(addr string) (bool, error) {
 	return false, nil
 }
 
-// UpdateContract
-func (sel *NormalAccountRepo) UpdateContract(*model.AccountContent) error {
-	return nil
-}
-
 // UpdateBalance 更新余额
 func (sel *NormalAccountRepo) UpdateBalance(addr string, balance string) error {
 	return sel.accountDao.UpdateNormalAccountBalance(addr, balance)
@@ -42,6 +39,8 @@ func (sel *NormalAccountRepo) CreateEthAccount(normalAccount *model.EthereumAcco
 	return sel.accountDao.CreateNormalAccount(normalAccount)
 }
 
+//===============================================================================================
+// 合约账户处理
 type ContractAccountRepo struct {
 	accountDao *dao.EthereumDao
 }
@@ -65,8 +64,8 @@ func (sel *ContractAccountRepo) IsAccountExist(addr string, contractAddr string)
 
 // UpdateNative
 func (sel *ContractAccountRepo) UpdateBalance(addr, contractAddr, balance string) error {
-	return nil
+	return sel.accountDao.UpdateContractAccountBalance(addr, contractAddr, balance)
 }
 func (sel *ContractAccountRepo) CreateEthAccount(bind *model.ContractAccountBind) error {
-	return nil
+	return sel.accountDao.CreateContractAccount(bind)
 }

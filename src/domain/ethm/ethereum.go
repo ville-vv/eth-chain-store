@@ -47,8 +47,8 @@ func (sel *EthereumManager) dealBlock(block *ethrpc.EthBlock) error {
 	var err error
 	for _, trfData := range block.Transactions {
 		block.TimeStamp = common.HexToHash(block.TimeStamp).Big().String()
-		if trfData.IsContract() {
-			// 合约交易,需要获取合约里面的交易内容
+		if trfData.IsContractToken() {
+			// 合约代币交易,需要获取合约里面的交易内容
 			if err = sel.contractTransaction(&block.EthBlockHeader, trfData); err != nil {
 				vlog.ERROR("处理以太坊合约交易错误：hash=%s %s", trfData.Hash, err.Error())
 				return err
@@ -74,7 +74,7 @@ func (sel *EthereumManager) dealBlock(block *ethrpc.EthBlock) error {
 
 func (sel *EthereumManager) dealTransaction(header *ethrpc.EthBlockHeader, trfData *ethrpc.EthTransaction) (err error) {
 	header.TimeStamp = common.HexToHash(header.TimeStamp).Big().String()
-	if trfData.IsContract() {
+	if trfData.IsContractToken() {
 		// 合约交易
 		return sel.contractTransaction(header, trfData)
 	}
@@ -95,7 +95,7 @@ func (sel *EthereumManager) dealTransaction(header *ethrpc.EthBlockHeader, trfDa
 	return nil
 }
 
-// contractTransaction 合约交易
+// contractTransaction 合约代币交易
 func (sel *EthereumManager) contractTransaction(header *ethrpc.EthBlockHeader, tfData *ethrpc.EthTransaction) error {
 	if tfData.IsTransfer() {
 		// 这个是 ERC20单笔的 token 转账
@@ -109,7 +109,7 @@ func (sel *EthereumManager) contractTransaction(header *ethrpc.EthBlockHeader, t
 			Hash:            tfData.Hash,
 			To:              to,
 			Value:           val,
-			IsContract:      true,
+			IsContractToken: true,
 			TxType:          model.TxTokenTransfer,
 			EventType:       model.TxEventTypeTransfer,
 		})
@@ -140,7 +140,7 @@ func (sel *EthereumManager) txReceipt(timeStamp string, hash string) error {
 					Hash:            lg.TransactionHash,
 					To:              lg.To(),
 					Value:           lg.Value(),
-					IsContract:      true,
+					IsContractToken: true,
 					TxType:          model.TxTokenTransfer,
 					EventType:       model.TxEventTypeTransfer,
 				}); err != nil {
@@ -153,10 +153,22 @@ func (sel *EthereumManager) txReceipt(timeStamp string, hash string) error {
 }
 
 func (sel *EthereumManager) txWrites(txData *model.TransactionData) error {
+	//codeData, err := sel.ethRpcCli.GetCode(txData.From)
+	//if err != nil {
+	//	return err
+	//}
+	//txData.FromIsContract = codeData != "0x" && codeData != ""
+	//
+	//codeData, err = sel.ethRpcCli.GetCode(txData.To)
+	//if err != nil {
+	//	return err
+	//}
+	//txData.ToIsContract = codeData != "0x" && codeData != ""
+
 	//var err error
 	//blockNumber := common.HexToHash(txData.BlockNumber).Big().Int64()
 	//// 获取当前交易的余额
-	//if txData.IsContract {
+	//if txData.IsContractToken {
 	//	txData.Balance, err = sel.ethRpcCli.GetContractBalanceByBlockNumber(txData.ContractAddress, txData.From, blockNumber)
 	//	if err != nil {
 	//		return err

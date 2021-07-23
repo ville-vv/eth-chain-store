@@ -4,9 +4,9 @@ import "github.com/ville-vv/eth-chain-store/src/common/go-ethereum/common"
 
 type Input string
 
-// IsContract 判断是否合约交易
+// IsContractToken 判断是否合约交易
 // return 如果是合约交易就返回 true
-func (t Input) IsContract() bool {
+func (t Input) IsContractToken() bool {
 	dataLen := len(t)
 	if dataLen < 64 {
 		return false

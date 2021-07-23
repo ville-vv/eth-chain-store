@@ -23,7 +23,7 @@ type SyncBlockNumberCounter struct {
 
 func NewSyncBlockNumberCounter(ethRpcCli ethrpc.EthRPC, bkRepo repo.BlockNumberRepo) (*SyncBlockNumberCounter, error) {
 	cntNumber, err := bkRepo.GetCntSyncBlockNumber()
-	cntNumber = 112234
+	cntNumber = 12696216 // 12696216
 	if err != nil {
 		return nil, err
 	}

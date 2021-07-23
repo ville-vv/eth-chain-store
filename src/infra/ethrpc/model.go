@@ -38,8 +38,8 @@ type EthTransaction struct {
 	Value string `json:"value" name:""`
 }
 
-func (t *EthTransaction) IsContract() bool {
-	return t.Input.IsContract()
+func (t *EthTransaction) IsContractToken() bool {
+	return t.Input.IsContractToken()
 }
 
 // IsTransfer 判断是否为Erc20协议的合约交易转账
