@@ -14,7 +14,7 @@ type EthereumAccount struct {
 }
 
 // 合约地址表
-type TbContractAddress struct {
+type ContractAddressRecord struct {
 	ID        int64     `gorm:"primary_key"`
 	CreatedAt time.Time `json:"created_at" gorm:"column:created_at;COMMENT:" name:""`
 	UpdatedAt time.Time `json:"updated_at" gorm:"column:updated_at;COMMENT:" name:""`

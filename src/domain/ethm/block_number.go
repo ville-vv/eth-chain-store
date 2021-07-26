@@ -71,9 +71,9 @@ func (sel *SyncBlockNumberCounter) loopSyncBlockNumber(wg *sync.WaitGroup) {
 // IsLatestBlockNumber 是不是最新区块
 func (sel *SyncBlockNumberCounter) IsLatestBlockNumber() bool {
 	sel.syncLock.Lock()
-	latestNumber := sel.latestNumber
+	//latestNumber := sel.latestNumber
 	sel.syncLock.Unlock()
-	return sel.cntSyncingNumber >= latestNumber
+	return sel.cntSyncingNumber >= 12696316
 }
 
 func (sel *SyncBlockNumberCounter) SetSyncing(blockNumber int64) bool {

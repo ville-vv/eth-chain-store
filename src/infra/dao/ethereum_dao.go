@@ -6,22 +6,31 @@ import (
 )
 
 type EthereumDao struct {
-	db DB
+	db    DB
+	ctrTb *dhcpTable
 }
 
 func NewEthereumDao(db DB) *EthereumDao {
-	return &EthereumDao{}
+	return &EthereumDao{
+		db:    db,
+		ctrTb: newDhcpTable(db.GetDB(), "contract_address_record"),
+	}
 }
 
 // QueryContractInfo 查询合约信息
-func (sel *EthereumDao) QueryContractInfo(addr string, contractInfo *model.TbContractAddress) error {
+func (sel *EthereumDao) QueryContractInfo(addr string, contractInfo *model.ContractAddressRecord) error {
 	return nil
 }
 
 // CreateContractRecord 创建合约记录
 func (sel *EthereumDao) CreateContractRecord(contractCtx *model.ContractContent) error {
-	fmt.Println("创建合约记录", contractCtx)
-	return nil
+	tbName, err := sel.ctrTb.TbName()
+	if err != nil {
+		return err
+	}
+	return sel.db.GetDB().Table(tbName).Create(&model.ContractAddressRecord{
+		ContractContent: *contractCtx,
+	}).Error
 }
 
 // QueryBindContractAccount 查询合约绑定账户信息

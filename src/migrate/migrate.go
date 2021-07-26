@@ -93,10 +93,10 @@ func contractTxDbDbMigrate() {
 	vlog.INFO("migrate db name %s", cfg.DbName)
 	db := mysqlDb.GetDB()
 	err := db.AutoMigrate(
-		&model.TransactionTableTemplate{},
+		&model.SplitTableInfo{},
 	)
 
-	db.Set("gorm:table_options", "ENGINE=MyISAM").AutoMigrate(&model.TransactionAllTable{})
+	db.Set("gorm:table_options", "ENGINE=MyISAM").AutoMigrate(&model.TransactionRecord{})
 	if err != nil {
 		panic(err)
 	}
@@ -108,10 +108,11 @@ func transactionDbMigrate() {
 	vlog.INFO("migrate db name %s", cfg.DbName)
 	db := mysqlDb.GetDB()
 	err := db.AutoMigrate(
-		&model.TransactionTableTemplate{},
+		&model.SplitTableInfo{},
 	)
 
-	db.Set("gorm:table_options", "ENGINE=MyISAM").AutoMigrate(&model.TransactionAllTable{})
+	db.Set("gorm:table_options", "ENGINE=MyISAM").AutoMigrate(&model.TransactionRecord{})
+	//db.Set("gorm:table_options", "ENGINE=MyISAM").AutoMigrate(&model.TransactionRecord{})
 
 	if err != nil {
 		panic(err)

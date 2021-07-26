@@ -26,7 +26,7 @@ func NewSyncBlockChainService(ethRpcCli ethrpc.EthRPC, txWrite ethm.TxWriter, bk
 
 	s := &SyncBlockChainService{
 		ethMng:       ethm.NewEthereumManager(ethRpcCli, txWrite),
-		syncInterval: 0,
+		syncInterval: 15,
 		maxSyncNum:   make(chan int, 100),
 		syncCounter:  syncCounter,
 		stopCh:       make(chan int),
@@ -56,6 +56,7 @@ func (s *SyncBlockChainService) Exit(ctx context.Context) error {
 
 // fastSync 快速的同步数据，间隔时间缩短
 func (s *SyncBlockChainService) fastSync() {
+	time.Sleep(time.Second)
 	tk := time.NewTicker(time.Millisecond * 10)
 	for {
 		select {
@@ -104,12 +105,10 @@ func (s *SyncBlockChainService) syncBlockChain() {
 		vlog.ERROR("获取区块错误 %s", err.Error())
 		return
 	}
-	//if s.syncCounter.IsSyncing(blockNumber) {
-	//	return
-	//}
 	vlog.INFO("starting sync block [%d]", blockNumber)
 	s.wait()
-	go func() {
+	go func(done func()) {
+		defer done()
 		// 执行完成后就释放一个
 		if err = s.ethMng.PullBlockByNumber(blockNumber); err != nil {
 			vlog.ERROR("获取指定区块数据失败 %d %s", blockNumber, err.Error())
@@ -119,6 +118,5 @@ func (s *SyncBlockChainService) syncBlockChain() {
 			vlog.ERROR("更新同步的区块号失败 %s", err.Error())
 		}
 		vlog.INFO("finished sync block [%d]", blockNumber)
-		s.done()
-	}()
+	}(s.done)
 }

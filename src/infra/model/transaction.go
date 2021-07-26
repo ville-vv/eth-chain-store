@@ -38,7 +38,7 @@ type TransactionData struct {
 	EventType       string `json:"event_type" name:""`       // 交易事件类型
 }
 
-type TransactionTableTemplate struct {
+type TransactionRecord struct {
 	ID        int64     `gorm:"primary_key"`
 	CreatedAt time.Time `json:"created_at" gorm:"column:created_at;COMMENT:" name:""` // 记录创建时间
 	TxHash    string    `json:"tx_hash" gorm:"column:tx_hash;index;COMMENT:" name:""`
@@ -50,7 +50,8 @@ type TransactionTableTemplate struct {
 	Balance  string `json:"balance" gorm:"column:balance;COMMENT:" name:""`
 }
 
-type TransactionAllTable struct {
-	ID        int64  `gorm:"primary_key"`
-	TableName string `json:"table_name" gorm:"column:table_name;COMMENT:" name:""`
+type SplitTableInfo struct {
+	ID           int64  `gorm:"primary_key"`
+	TemplateName string `json:"template_name" gorm:"column:template_name;index;type:varchar(50);COMMENT:" name:""`
+	TableName    string `json:"table_name" gorm:"column:table_name;COMMENT:" name:""`
 }

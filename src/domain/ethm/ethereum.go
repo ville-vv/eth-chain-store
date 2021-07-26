@@ -26,7 +26,7 @@ func (sel *EthereumManager) PullBlock() error {
 	// 获取块信息
 	block, err := sel.ethRpcCli.GetBlock()
 	if err != nil {
-		vlog.ERROR("")
+		vlog.ERROR("get latest block information")
 		return err
 	}
 	return sel.dealBlock(block)
@@ -169,7 +169,7 @@ func (sel *EthereumManager) txWrites(txData *model.TransactionData) error {
 	//blockNumber := common.HexToHash(txData.BlockNumber).Big().Int64()
 	//// 获取当前交易的余额
 	//if txData.IsContractToken {
-	//	txData.Balance, err = sel.ethRpcCli.GetContractBalanceByBlockNumber(txData.ContractAddress, txData.From, blockNumber)
+	//	txData.Balance, err = sel.ethRpcCli.GetContractBalanceByBlockNumber(txData.ContractAddressRecord, txData.From, blockNumber)
 	//	if err != nil {
 	//		return err
 	//	}

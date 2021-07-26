@@ -27,11 +27,11 @@ func (sel *Erc20Contract) IsErc20() bool {
 
 type ContractManager struct {
 	rpcCli       ethrpc.EthRPC
-	contractRepo repo.ContractRepo
+	contractRepo *repo.ContractRepo
 }
 
-func NewContractManager(rpcCli ethrpc.EthRPC) *ContractManager {
-	return &ContractManager{rpcCli: rpcCli}
+func NewContractManager(rpcCli ethrpc.EthRPC, contractRepo *repo.ContractRepo) *ContractManager {
+	return &ContractManager{rpcCli: rpcCli, contractRepo: contractRepo}
 }
 
 // GetErc20ContractInfo ERC20 协议的合约有固定的合约接口来获取合约的基本信息

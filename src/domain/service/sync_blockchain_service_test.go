@@ -27,9 +27,11 @@ func TestNewSyncBlockChainService(t *testing.T) {
 		ethBlockNumberDao = dao.NewEthereumBlockNumberDao(ethereumDb)
 	)
 	var (
-		ehtrpcCli         = ethm.NewEthRpcExecutor("https://mainnet.infura.io/v3/21628f8f9b9b423a9ea05a708016b119", "")
+		// https://mainnet.infura.io/v3/ecc309a045134205b5c2b58481d7923d
+		// https://mainnet.infura.io/v3/21628f8f9b9b423a9ea05a708016b119
+		ehtrpcCli         = ethm.NewEthRpcExecutor("https://mainnet.infura.io/v3/ecc309a045134205b5c2b58481d7923d", "")
 		filter            = ethm.NewEthereumWriteFilter(erc20TokenCfgDao)
-		contractMng       = ethm.NewContractManager(ehtrpcCli)
+		contractMng       = ethm.NewContractManager(ehtrpcCli, repo.NewContractRepo(ethereumDao))
 		accountMng        = ethm.NewAccountManager(ehtrpcCli, repo.NewContractAccountRepo(ethereumDao), repo.NewNormalAccountRepo(ethereumDao))
 		transactionWriter = ethm.NewTransactionWriter(ehtrpcCli, repo.NewTransactionRepo(normalTranDao))
 		txWriter          = ethm.NewEthereumWriter(filter, accountMng, contractMng, transactionWriter)

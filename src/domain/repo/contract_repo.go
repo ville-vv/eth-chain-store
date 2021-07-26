@@ -11,8 +11,12 @@ type ContractRepo struct {
 	contractDao *dao.EthereumDao
 }
 
+func NewContractRepo(contractDao *dao.EthereumDao) *ContractRepo {
+	return &ContractRepo{contractDao: contractDao}
+}
+
 func (sel *ContractRepo) IsContractExist(addr string) bool {
-	var contractInfo model.TbContractAddress
+	var contractInfo model.ContractAddressRecord
 	if err := sel.contractDao.QueryContractInfo(addr, &contractInfo); err != nil {
 		vlog.ERROR("")
 		return true
