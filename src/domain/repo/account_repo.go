@@ -16,21 +16,21 @@ func NewNormalAccountRepo(accountDao *dao.EthereumDao) *NormalAccountRepo {
 	return &NormalAccountRepo{accountDao: accountDao}
 }
 
-func (sel *NormalAccountRepo) IsAccountExist(addr string) (bool, error) {
-	var info model.EthereumAccount
-	err := sel.accountDao.QueryNormalAccount(addr, &info)
-	if err != nil {
-		vlog.ERROR("")
-		return false, err
-	}
-	if info.ID > 0 {
-		return true, nil
-	}
-	return false, nil
-}
+//func (sel *NormalAccountRepo) IsAccountExist(addr string) (bool, error) {
+//	var info model.EthereumAccount
+//	err := sel.accountDao.QueryNormalAccount(addr, &info)
+//	if err != nil {
+//		vlog.ERROR("")
+//		return false, err
+//	}
+//	if info.ID > 0 {
+//		return true, nil
+//	}
+//	return false, nil
+//}
 
-// UpdateBalance 更新余额
-func (sel *NormalAccountRepo) UpdateBalance(addr string, balance string) error {
+// UpdateBalance 更新余额 数据存在就返回 true, nil
+func (sel *NormalAccountRepo) UpdateBalance(addr string, balance string) (bool, error) {
 	return sel.accountDao.UpdateNormalAccountBalance(addr, balance)
 }
 
@@ -63,7 +63,7 @@ func (sel *ContractAccountRepo) IsAccountExist(addr string, contractAddr string)
 }
 
 // UpdateNative
-func (sel *ContractAccountRepo) UpdateBalance(addr, contractAddr, balance string) error {
+func (sel *ContractAccountRepo) UpdateBalance(addr, contractAddr, balance string) (bool, error) {
 	return sel.accountDao.UpdateContractAccountBalance(addr, contractAddr, balance)
 }
 func (sel *ContractAccountRepo) CreateEthAccount(bind *model.ContractAccountBind) error {

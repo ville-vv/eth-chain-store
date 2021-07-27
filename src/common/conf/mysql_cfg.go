@@ -66,21 +66,21 @@ func (sel *MysqlConf) Dcv() {
 }
 
 func (sel *MysqlConf) discoverFromEnv() {
-	readEnv(&sel.DBEnv, "DB_ENV")
-	readEnv(&sel.Username, "MYSQL_USER_NAME")
-	readEnv(&sel.Password, "MYSQL_PASSWORD")
-	readEnv(&sel.Host, "MYSQL_HOST")
-	readEnv(&sel.Port, "MYSQL_PORT")
+	ReadEnv(&sel.DBEnv, "DB_ENV")
+	ReadEnv(&sel.Username, "MYSQL_USER_NAME")
+	ReadEnv(&sel.Password, "MYSQL_PASSWORD")
+	ReadEnv(&sel.Host, "MYSQL_HOST")
+	ReadEnv(&sel.Port, "MYSQL_PORT")
 	sel.MaxIdleConn = 10
 	sel.MaxOpenConn = 1000
 }
 
 func (sel *MysqlConf) discoverFromFlag() {
-	readFlag(&sel.DBEnv, "db_env")
-	readFlag(&sel.Username, "db_user")
-	readFlag(&sel.Password, "db_passwd")
-	readFlag(&sel.Host, "db_host")
-	readFlag(&sel.Port, "db_port")
+	ReadFlag(&sel.DBEnv, "db_env")
+	ReadFlag(&sel.Username, "db_user")
+	ReadFlag(&sel.Password, "db_passwd")
+	ReadFlag(&sel.Host, "db_host")
+	ReadFlag(&sel.Port, "db_port")
 }
 
 func (sel *MysqlConf) ReSetDbName(name string) {

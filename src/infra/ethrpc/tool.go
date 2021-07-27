@@ -2,7 +2,7 @@ package ethrpc
 
 import (
 	"encoding/hex"
-	"github.com/ville-vv/eth-chain-store/src/common/go-ethereum/common/hexutil"
+	"github.com/ville-vv/eth-chain-store/src/common/go-eth/common/hexutil"
 	"golang.org/x/crypto/sha3"
 	"math/big"
 )

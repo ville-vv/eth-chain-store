@@ -2,6 +2,8 @@ package log
 
 import (
 	"flag"
+	"fmt"
+	"github.com/ville-vv/eth-chain-store/src/common/utils"
 	"github.com/ville-vv/vilgo/vlog"
 )
 
@@ -16,7 +18,11 @@ func Init() {
 	//}
 
 	if logVal := flag.Lookup("logFile"); logVal != nil {
-		logFile = logVal.Value.String()
+		valStr := logVal.Value.String()
+		if valStr != "" {
+			logFile = logVal.Value.String()
+			logFile = fmt.Sprintf("%s%s.log", logFile, utils.RandStringBytesMask(8))
+		}
 	}
 
 	if logVal := flag.Lookup("debug"); logVal != nil {

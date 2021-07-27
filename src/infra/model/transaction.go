@@ -41,7 +41,7 @@ type TransactionData struct {
 type TransactionRecord struct {
 	ID        int64     `gorm:"primary_key"`
 	CreatedAt time.Time `json:"created_at" gorm:"column:created_at;COMMENT:" name:""` // 记录创建时间
-	TxHash    string    `json:"tx_hash" gorm:"column:tx_hash;index;COMMENT:" name:""`
+	TxHash    string    `json:"tx_hash" gorm:"column:tx_hash;index;varchar(255);COMMENT:" name:""`
 	//Address   string    `json:"address" gorm:"column:address;COMMENT:" name:""`
 	FromAddr string `json:"from_addr" gorm:"column:from_addr;COMMENT:" name:""`
 	ToAddr   string `json:"to_addr" gorm:"column:to_addr;COMMENT:" name:""`

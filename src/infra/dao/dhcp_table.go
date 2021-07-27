@@ -22,7 +22,7 @@ func newDhcpTable(db *gorm.DB, templateTable string) *dhcpTable {
 	tb := &dhcpTable{
 		db:            db,
 		lock:          sync.Mutex{},
-		maxNum:        30,
+		maxNum:        2000000000,
 		counter:       0,
 		templateTable: templateTable,
 	}
@@ -43,9 +43,8 @@ func (sel *dhcpTable) intCntTxTable() error {
 	err := db.Model(tb).Select("id, table_name").Where("template_name=?", sel.templateTable).Last(tb).Error
 	if err != nil {
 		if err.Error() != gorm.ErrRecordNotFound.Error() {
-			return nil
+			return err
 		}
-
 		err = sel.createTxTable(sel.id)
 		if err != nil {
 			return nil
@@ -62,7 +61,7 @@ func (sel *dhcpTable) createTxTable(id int64) error {
 	db := sel.db.Begin()
 	defer db.Rollback()
 	tbName := fmt.Sprintf("%s_%0.4d", sel.templateTable, id)
-	err := db.Debug().Exec(fmt.Sprintf("create table if not exists %s like %s", tbName, sel.templateTable)).Error
+	err := db.Exec(fmt.Sprintf("create table if not exists %s like %s", tbName, sel.templateTable)).Error
 	if err != nil {
 		return err
 	}
@@ -95,4 +94,19 @@ func (sel *dhcpTable) Inc() {
 	sel.lock.Lock()
 	sel.counter++
 	sel.lock.Unlock()
+}
+
+func (sel *dhcpTable) AllTable() ([]string, error) {
+	db := sel.db.Model(&model.SplitTableInfo{})
+	var tableList []model.SplitTableInfo
+	err := db.Select("table_name").Where("template_name=?", sel.templateTable).Find(&tableList).Error
+	if err != nil {
+		return nil, err
+	}
+
+	tableNames := make([]string, 0, len(tableList))
+	for _, val := range tableList {
+		tableNames = append(tableNames, val.TableName)
+	}
+	return tableNames, nil
 }

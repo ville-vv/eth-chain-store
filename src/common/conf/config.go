@@ -6,13 +6,13 @@ import (
 	"strings"
 )
 
-func readEnv(val *string, key string) {
+func ReadEnv(val *string, key string) {
 	if envVal := os.Getenv(key); strings.TrimSpace(envVal) != "" {
 		*val = envVal
 	}
 }
 
-func readFlag(val *string, key string) {
+func ReadFlag(val *string, key string) {
 	f := flag.Lookup(key)
 	if f == nil {
 		return
@@ -25,5 +25,9 @@ func readFlag(val *string, key string) {
 var globalConfig *GlobalConfig
 
 type GlobalConfig struct {
-	MysqlCfg *MysqlConf `json:"mysql_cfg" name:"" toml:"Mysql"`
+	MysqlCfg   *MysqlConf      `json:"mysql_cfg" name:"" toml:"Mysql"`
+	BlkSyncCfg BlockSyncConfig `json:"blk_sync_cfg" name:""`
+}
+
+type BlockSyncConfig struct {
 }

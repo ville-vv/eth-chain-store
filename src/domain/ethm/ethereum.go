@@ -1,7 +1,7 @@
 package ethm
 
 import (
-	"github.com/ville-vv/eth-chain-store/src/common/go-ethereum/common"
+	"github.com/ville-vv/eth-chain-store/src/common/go-eth/common"
 	"github.com/ville-vv/eth-chain-store/src/infra/ethrpc"
 	"github.com/ville-vv/eth-chain-store/src/infra/model"
 	"github.com/ville-vv/vilgo/vlog"
@@ -39,6 +39,7 @@ func (sel *EthereumManager) PullBlockByNumber(bkNumber int64) error {
 		vlog.ERROR("get block by number %d error %s", bkNumber, err.Error())
 		return err
 	}
+	//vlog.DEBUG("have get %d", bkNumber)
 	return sel.dealBlock(block)
 }
 

@@ -1,10 +1,10 @@
 package ethrpc
 
 import (
-	"github.com/ville-vv/eth-chain-store/src/common/go-ethereum"
-	"github.com/ville-vv/eth-chain-store/src/common/go-ethereum/common"
-	"github.com/ville-vv/eth-chain-store/src/common/go-ethereum/common/hexutil"
-	"github.com/ville-vv/eth-chain-store/src/common/go-ethereum/rpc"
+	"github.com/ville-vv/eth-chain-store/src/common/go-eth"
+	"github.com/ville-vv/eth-chain-store/src/common/go-eth/common"
+	"github.com/ville-vv/eth-chain-store/src/common/go-eth/common/hexutil"
+	"github.com/ville-vv/eth-chain-store/src/common/go-eth/rpc"
 	"math/big"
 	"strings"
 )
@@ -91,7 +91,7 @@ func (sel *Client) GetBalance(addr string) (string, error) {
 	if err != nil {
 		return "0", err
 	}
-	return result.String(), nil
+	return result.ToInt().String(), nil
 }
 
 // GetBalanceByBlockNumber 获取ETH指定区块余额

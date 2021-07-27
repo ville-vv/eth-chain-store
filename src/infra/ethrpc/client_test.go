@@ -3,8 +3,8 @@ package ethrpc
 import (
 	"bytes"
 	"fmt"
-	"github.com/ville-vv/eth-chain-store/src/common/go-ethereum/common"
-	"github.com/ville-vv/eth-chain-store/src/common/go-ethereum/common/hexutil"
+	"github.com/ville-vv/eth-chain-store/src/common/go-eth/common"
+	"github.com/ville-vv/eth-chain-store/src/common/go-eth/common/hexutil"
 	"golang.org/x/crypto/sha3"
 	"strconv"
 	"testing"
@@ -75,8 +75,15 @@ func TestClient_GetTransactionReceipt(t *testing.T) {
 	}
 }
 
+//
 func TestClient_GetSymbol(t *testing.T) {
 	cli := NewClient("https://mainnet.infura.io/v3/21628f8f9b9b423a9ea05a708016b119")
 	symbol, err := cli.GetContractSymbol("0xdAC17F958D2ee523a2206206994597C13D831ec7")
+	fmt.Println(symbol, err)
+}
+
+func TestClient_GetContractDecimals(t *testing.T) {
+	cli := NewClient("https://mainnet.infura.io/v3/21628f8f9b9b423a9ea05a708016b119")
+	symbol, err := cli.GetContractDecimals("0x9582C4ADACB3BCE56Fea3e590F05c3ca2fb9C477")
 	fmt.Println(symbol, err)
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/ville-vv/eth-chain-store/src/infra/model"
 	"github.com/ville-vv/vilgo/vlog"
 	"github.com/ville-vv/vilgo/vstore"
+	"gorm.io/gorm"
 	"strings"
 )
 
@@ -77,14 +78,15 @@ func ethereumDbMigrate() {
 	db := mysqlDb.GetDB()
 	err := db.AutoMigrate(
 		&model.SyncBlockConfig{},
+		&model.SplitTableInfo{},
+		&model.ContractAccountBind{},
+		&model.EthereumAccount{},
 	)
 	if err != nil {
 		panic(err)
 	}
-	db.Create(&model.SyncBlockConfig{
-		KName: "SyncBlockNumber",
-		Value: "0",
-	})
+	//model.ContractAccountBind
+	createMyISAMTable(db, &model.ContractAddressRecord{})
 }
 
 func contractTxDbDbMigrate() {
@@ -95,11 +97,11 @@ func contractTxDbDbMigrate() {
 	err := db.AutoMigrate(
 		&model.SplitTableInfo{},
 	)
-
-	db.Set("gorm:table_options", "ENGINE=MyISAM").AutoMigrate(&model.TransactionRecord{})
 	if err != nil {
 		panic(err)
 	}
+	createMyISAMTable(db, &model.TransactionRecord{})
+
 }
 
 func transactionDbMigrate() {
@@ -114,6 +116,13 @@ func transactionDbMigrate() {
 	db.Set("gorm:table_options", "ENGINE=MyISAM").AutoMigrate(&model.TransactionRecord{})
 	//db.Set("gorm:table_options", "ENGINE=MyISAM").AutoMigrate(&model.TransactionRecord{})
 
+	if err != nil {
+		panic(err)
+	}
+}
+
+func createMyISAMTable(db *gorm.DB, tb ...interface{}) {
+	err := db.Set("gorm:table_options", "ENGINE=MyISAM;").AutoMigrate(tb...)
 	if err != nil {
 		panic(err)
 	}

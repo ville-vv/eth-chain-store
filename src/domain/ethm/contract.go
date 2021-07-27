@@ -2,6 +2,7 @@ package ethm
 
 import (
 	"github.com/pkg/errors"
+	"github.com/ville-vv/eth-chain-store/src/common/go-eth/common"
 	"github.com/ville-vv/eth-chain-store/src/domain/repo"
 	"github.com/ville-vv/eth-chain-store/src/infra/ethrpc"
 	"github.com/ville-vv/eth-chain-store/src/infra/model"
@@ -41,6 +42,7 @@ func (sel *ContractManager) GetErc20ContractInfo(contractAddr string) (*Erc20Con
 	if err != nil {
 		return nil, err
 	}
+	supply = common.HexToHash(supply).Big().String()
 
 	name, err := sel.rpcCli.GetContractName(contractAddr)
 	if err != nil {
@@ -61,14 +63,18 @@ func (sel *ContractManager) GetErc20ContractInfo(contractAddr string) (*Erc20Con
 	if err != nil {
 		return nil, err
 	}
-
+	decimal = common.HexToHash(decimal).Big().String()
 	var decimalInt int64
-	if decimal != "0x" {
-		decimalInt, err = strconv.ParseInt(decimal, 0, 64)
-		if err != nil {
-			return nil, errors.Wrap(err, "parse int contract decimal value "+decimal)
-		}
+	decimalInt, err = strconv.ParseInt(decimal, 10, 64)
+	if err != nil {
+		return nil, errors.Wrap(err, "parse int contract decimal value "+decimal)
 	}
+	//if decimal != "0x" {
+	//	decimalInt, err = strconv.ParseInt(decimal, 10, 64)
+	//	if err != nil {
+	//		return nil, errors.Wrap(err, "parse int contract decimal value "+decimal)
+	//	}
+	//}
 
 	return &Erc20Contract{
 		Address:     contractAddr,
@@ -149,7 +155,7 @@ func (sel *ContractManager) writeOtherContractInfo(addr string, timeStamp string
 	// erc20 合约
 	erc20ContractInfo, err := sel.GetErc20ContractInfo(addr)
 	if err != nil {
-		return errors.Wrap(err, "get erc20 contract info")
+		return errors.Wrap(err, "other get erc20 contract info")
 	}
 
 	return sel.contractRepo.CreateContract(&model.ContractContent{

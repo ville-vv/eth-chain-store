@@ -1,6 +1,6 @@
 package ethrpc
 
-import "github.com/ville-vv/eth-chain-store/src/common/go-ethereum/common"
+import "github.com/ville-vv/eth-chain-store/src/common/go-eth/common"
 
 type Input string
 

@@ -5,6 +5,7 @@ import (
 	"github.com/ville-vv/eth-chain-store/src/domain/repo"
 	"github.com/ville-vv/eth-chain-store/src/infra/ethrpc"
 	"github.com/ville-vv/eth-chain-store/src/infra/model"
+	"github.com/ville-vv/vilgo/vlog"
 )
 
 type Account struct {
@@ -15,8 +16,7 @@ type Account struct {
 
 // 以太坊账户
 type AccountManager struct {
-	ethCli ethrpc.EthRPC
-	//contractMng    *ContractManager
+	ethCli         ethrpc.EthRPC
 	contractActMng *contractAccountManager
 	normalActMng   *normalAccountManager
 }
@@ -91,16 +91,27 @@ func (sel *contractAccountManager) writeAccount(accountAddr string, contractAddr
 	if err != nil {
 		return err
 	}
-	ok, err := sel.accountRepo.IsAccountExist(accountAddr, contractAddress)
+	//ok, err := sel.accountRepo.IsAccountExist(accountAddr, contractAddress)
+	//if err != nil {
+	//	return err
+	//}
+	//if ok {
+	//	// 该账户已经存在
+	//	return sel.accountRepo.UpdateBalance(accountAddr, contractAddress, balance)
+	//}
+
+	updated, err := sel.accountRepo.UpdateBalance(accountAddr, contractAddress, balance)
 	if err != nil {
+		vlog.ERROR("writeAccount update account balance failed addr:%s contract:%s error:%s", accountAddr, contractAddress, err.Error())
 		return err
 	}
-	if ok {
-		// 该账户已经存在
-		return sel.accountRepo.UpdateBalance(accountAddr, contractAddress, balance)
+	if updated {
+		return nil
 	}
+
 	symbol, err := sel.ethCli.GetContractSymbol(contractAddress)
 	if err != nil {
+		vlog.ERROR("writeAccount get contract symbol failed addr:%s contract:%s", accountAddr, contractAddress)
 		return err
 	}
 	// 如果该账户不存在
@@ -129,17 +140,19 @@ func (sel *normalAccountManager) UpdateAccount(txData *model.TransactionData) er
 	return nil
 }
 func (sel *normalAccountManager) writeAccount(accountAddr string, timeStamp string, hash string) error {
-	ok, err := sel.accountRepo.IsAccountExist(accountAddr)
-	if err != nil {
-		return err
-	}
 	// 获取的余额
 	balance, err := sel.ethCli.GetBalance(accountAddr)
 	if err != nil {
 		return err
 	}
-	if ok {
-		return sel.accountRepo.UpdateBalance(accountAddr, balance)
+
+	updated, err := sel.accountRepo.UpdateBalance(accountAddr, balance)
+	if err != nil {
+		return err
+	}
+	if updated {
+		// 账户存在，已经更新
+		return nil
 	}
 	// 创建一个以太坊账户
 	return sel.accountRepo.CreateEthAccount(&model.EthereumAccount{

@@ -1,7 +1,7 @@
 package ethrpc
 
 import (
-	"github.com/ville-vv/eth-chain-store/src/common/go-ethereum/common"
+	"github.com/ville-vv/eth-chain-store/src/common/go-eth/common"
 )
 
 type EthBlockHeader struct {

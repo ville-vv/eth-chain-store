@@ -18,7 +18,7 @@ func NewContractRepo(contractDao *dao.EthereumDao) *ContractRepo {
 func (sel *ContractRepo) IsContractExist(addr string) bool {
 	var contractInfo model.ContractAddressRecord
 	if err := sel.contractDao.QueryContractInfo(addr, &contractInfo); err != nil {
-		vlog.ERROR("")
+		vlog.ERROR("ContractRepo.IsContractExist query contract information failed %s %s", addr, err.Error())
 		return true
 	}
 	if contractInfo.ID > 0 {

@@ -1,13 +1,24 @@
 package ethm
 
 import (
-	"github.com/ville-vv/eth-chain-store/src/domain/repo"
 	"github.com/ville-vv/eth-chain-store/src/infra/ethrpc"
 	"github.com/ville-vv/vilgo/vlog"
 	"sync"
 	"time"
 )
 
+type SyncBlockNumberPersist interface {
+	//
+	InitLatestBlockNumber(bkNum int64) error
+
+	UpdateLatestBlockNumber(bkNum int64) error
+	// 获取当前同步了最区块号
+	GetCntSyncBlockNumber() (int64, error)
+	// 更新当前同步了的区块号
+	UpdateSyncBlockNUmber(n int64) error
+}
+
+// 区块同步计数器
 type SyncBlockNumberCounter struct {
 	haveDoneLock     sync.Mutex
 	syncLock         sync.Mutex
@@ -17,13 +28,13 @@ type SyncBlockNumberCounter struct {
 	haveDoneList     []int64
 	latestNumber     int64
 	ethRpcCli        ethrpc.EthRPC
-	bkRepo           repo.BlockNumberRepo
+	persist          SyncBlockNumberPersist
 	beforeSyncNumber int64
 }
 
-func NewSyncBlockNumberCounter(ethRpcCli ethrpc.EthRPC, bkRepo repo.BlockNumberRepo) (*SyncBlockNumberCounter, error) {
-	cntNumber, err := bkRepo.GetCntSyncBlockNumber()
-	cntNumber = 12696216 // 12696216
+func NewSyncBlockNumberCounter(ethRpcCli ethrpc.EthRPC, persist SyncBlockNumberPersist) (*SyncBlockNumberCounter, error) {
+	cntNumber, err := persist.GetCntSyncBlockNumber()
+	//cntNumber = 12696310 // 12696310
 	if err != nil {
 		return nil, err
 	}
@@ -31,10 +42,10 @@ func NewSyncBlockNumberCounter(ethRpcCli ethrpc.EthRPC, bkRepo repo.BlockNumberR
 		haveDoneLock:     sync.Mutex{},
 		syncLock:         sync.Mutex{},
 		cntSyncingNumber: cntNumber,
-		haveDoneCap:      100,
-		haveDoneList:     make([]int64, 100),
+		haveDoneCap:      1000,
+		haveDoneList:     make([]int64, 1000),
 		ethRpcCli:        ethRpcCli,
-		bkRepo:           bkRepo,
+		persist:          persist,
 	}
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -58,10 +69,13 @@ func (sel *SyncBlockNumberCounter) loopSyncBlockNumber(wg *sync.WaitGroup) {
 		if first {
 			first = false
 			wg.Done()
+			err = sel.persist.InitLatestBlockNumber(sel.latestNumber)
+			if err != nil {
+				panic(err)
+			}
 		}
-
 		// 更新数据库
-		if err = sel.bkRepo.UpdateBlockNumber(sel.latestNumber); err != nil {
+		if err = sel.persist.UpdateLatestBlockNumber(sel.latestNumber); err != nil {
 			vlog.ERROR("get block number is error %s", err.Error())
 		}
 		time.Sleep(time.Second * 15)
@@ -71,9 +85,9 @@ func (sel *SyncBlockNumberCounter) loopSyncBlockNumber(wg *sync.WaitGroup) {
 // IsLatestBlockNumber 是不是最新区块
 func (sel *SyncBlockNumberCounter) IsLatestBlockNumber() bool {
 	sel.syncLock.Lock()
-	//latestNumber := sel.latestNumber
+	latestNumber := sel.latestNumber
 	sel.syncLock.Unlock()
-	return sel.cntSyncingNumber >= 12696316
+	return sel.cntSyncingNumber >= latestNumber
 }
 
 func (sel *SyncBlockNumberCounter) SetSyncing(blockNumber int64) bool {
@@ -119,7 +133,7 @@ func (sel *SyncBlockNumberCounter) FinishThisSync(blockNumber int64) error {
 	}
 	sel.syncLock.Unlock()
 	if can {
-		return sel.bkRepo.UpdateSyncBlockNUmber(sel.beforeSyncNumber)
+		return sel.persist.UpdateSyncBlockNUmber(sel.beforeSyncNumber)
 	}
 	return nil
 }
