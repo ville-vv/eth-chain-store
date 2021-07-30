@@ -36,7 +36,7 @@ func TestNewSyncBlockChainService(t *testing.T) {
 		transactionWriter = ethm.NewTransactionWriter(ehtrpcCli, repo.NewTransactionRepo(normalTranDao))
 		txWriter          = ethm.NewEthereumWriter(filter, accountMng, contractMng, transactionWriter)
 	)
-	syncSvc := NewSyncBlockChainService(ehtrpcCli, txWriter, repo.NewBlockNumberRepo(ethBlockNumberDao))
+	syncSvc := NewSyncBlockChainService(1, ehtrpcCli, txWriter, repo.NewBlockNumberRepo(ethBlockNumberDao))
 	if err := syncSvc.Start(); err != nil {
 		t.Error(err)
 		return

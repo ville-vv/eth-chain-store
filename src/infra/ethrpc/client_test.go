@@ -83,7 +83,7 @@ func TestClient_GetSymbol(t *testing.T) {
 }
 
 func TestClient_GetContractDecimals(t *testing.T) {
-	cli := NewClient("https://mainnet.infura.io/v3/21628f8f9b9b423a9ea05a708016b119")
+	cli := NewClient("http://172.16.16.111:8545")
 	symbol, err := cli.GetContractDecimals("0x9582C4ADACB3BCE56Fea3e590F05c3ca2fb9C477")
 	fmt.Println(symbol, err)
 }

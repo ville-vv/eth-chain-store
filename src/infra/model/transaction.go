@@ -39,15 +39,18 @@ type TransactionData struct {
 }
 
 type TransactionRecord struct {
-	ID        int64     `gorm:"primary_key"`
-	CreatedAt time.Time `json:"created_at" gorm:"column:created_at;COMMENT:" name:""` // 记录创建时间
-	TxHash    string    `json:"tx_hash" gorm:"column:tx_hash;index;varchar(255);COMMENT:" name:""`
-	//Address   string    `json:"address" gorm:"column:address;COMMENT:" name:""`
-	FromAddr string `json:"from_addr" gorm:"column:from_addr;COMMENT:" name:""`
-	ToAddr   string `json:"to_addr" gorm:"column:to_addr;COMMENT:" name:""`
-	Gas      string `json:"gas" gorm:"column:gas;COMMENT:" name:""`
-	Value    string `json:"value" gorm:"column:value;COMMENT:" name:""`
-	Balance  string `json:"balance" gorm:"column:balance;COMMENT:" name:""`
+	ID              int64     `gorm:"primary_key"`
+	CreatedAt       time.Time `json:"created_at" gorm:"column:created_at;COMMENT:" name:""`     // 记录创建时间
+	BlockNumber     string    `json:"block_number" gorm:"column:block_number;COMMENT:" name:""` // 区块号
+	BlockHash       string    `json:"block_hash" gorm:"column:block_hash;COMMENT:" name:""`
+	TxHash          string    `json:"tx_hash" gorm:"column:tx_hash;index;varchar(255);COMMENT:" name:""`
+	Timestamp       string    `json:"timestamp" gorm:"column:timestamp;COMMENT:" name:""`
+	FromAddr        string    `json:"from_addr" gorm:"column:from_addr;COMMENT:" name:""`
+	ToAddr          string    `json:"to_addr" gorm:"column:to_addr;COMMENT:" name:""`
+	GasPrice        string    `json:"gas" gorm:"column:gas_price;COMMENT:" name:""`
+	Value           string    `json:"value" gorm:"column:value;COMMENT:" name:""`
+	FromAddrBalance string    `json:"balance" gorm:"column:balance;COMMENT:" name:""`
+	ToAddrBalance   string    `json:"balance" gorm:"column:balance;COMMENT:" name:""`
 }
 
 type SplitTableInfo struct {

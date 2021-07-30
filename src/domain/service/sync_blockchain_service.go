@@ -21,14 +21,14 @@ type SyncBlockChainService struct {
 	stopCh            chan int
 }
 
-func NewSyncBlockChainService(ethRpcCli ethrpc.EthRPC, txWrite ethm.TxWriter, bkRepo ethm.SyncBlockNumberPersist) *SyncBlockChainService {
+func NewSyncBlockChainService(maxNum int, ethRpcCli ethrpc.EthRPC, txWrite ethm.TxWriter, bkRepo ethm.SyncBlockNumberPersist) *SyncBlockChainService {
 	syncCounter, err := ethm.NewSyncBlockNumberCounter(ethRpcCli, bkRepo)
 	if err != nil {
 		panic("NewSyncBlockChainService" + err.Error())
 	}
 
-	var firstSyncIntervalStr string = "1"
-	var syncIntervalStr string = "15"
+	var firstSyncIntervalStr = "1"
+	var syncIntervalStr = "15"
 	conf.ReadFlag(&firstSyncIntervalStr, "fsi")
 	conf.ReadFlag(&syncIntervalStr, "fsi")
 
@@ -45,7 +45,7 @@ func NewSyncBlockChainService(ethRpcCli ethrpc.EthRPC, txWrite ethm.TxWriter, bk
 	s := &SyncBlockChainService{
 		ethMng:            ethm.NewEthereumManager(ethRpcCli, txWrite),
 		syncInterval:      time.Second * time.Duration(syncInterval),
-		maxSyncNum:        make(chan int, 100),
+		maxSyncNum:        make(chan int, maxNum),
 		syncCounter:       syncCounter,
 		firstSyncInterval: time.Millisecond * time.Duration(firstSyncInterval),
 		stopCh:            make(chan int),

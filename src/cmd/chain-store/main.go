@@ -24,6 +24,8 @@ var (
 	dbPort           string
 	logFile          string
 	debug            bool
+	maxSyncNum       int
+	isHelp           bool
 )
 
 func cmdFlagParse() {
@@ -35,13 +37,20 @@ func cmdFlagParse() {
 	flag.StringVar(&dbHost, "db_host", "", "the database host")
 	flag.StringVar(&dbPort, "db_port", "", "the database port")
 	flag.StringVar(&logFile, "logFile", "", "the log file path and file name")
+	flag.IntVar(&maxSyncNum, "max_sync_num", 10, "the max thread number for sync block information")
 	flag.BoolVar(&debug, "debug", false, "open debug logs")
+	flag.BoolVar(&isHelp, "help", false, "help")
+	flag.Parse()
+	fmt.Println(isHelp, debug)
+	if isHelp {
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
 	if rpcEndpoint == "" {
 		fmt.Println("rpc_endpoint is empty")
 		flag.PrintDefaults()
 		os.Exit(-1)
 	}
-	flag.Parse()
 }
 
 func buildService() runner.Runner {
@@ -69,11 +78,11 @@ func buildService() runner.Runner {
 		transactionWriter = ethm.NewTransactionWriter(ehtrpcCli, repo.NewTransactionRepo(normalTranDao))
 		txWriter          = ethm.NewEthereumWriter(filter, accountMng, contractMng, transactionWriter)
 	)
-	return service.NewSyncBlockChainService(ehtrpcCli, txWriter, repo.NewBlockNumberRepo(ethBlockNumberDao))
+	return service.NewSyncBlockChainService(maxSyncNum, ehtrpcCli, txWriter, repo.NewBlockNumberRepo(ethBlockNumberDao))
 }
 
 func main() {
 	cmdFlagParse()
-	log.Init()
+	log.Init() //12900839
 	runner.Run(buildService())
 }

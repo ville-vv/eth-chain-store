@@ -22,6 +22,7 @@ type SyncBlockNumberPersist interface {
 type SyncBlockNumberCounter struct {
 	haveDoneLock     sync.Mutex
 	syncLock         sync.Mutex
+	finishLock       sync.Mutex
 	cntSyncingNumber int64
 	haveDoneCap      int
 	haveDoneIndex    int
@@ -39,8 +40,6 @@ func NewSyncBlockNumberCounter(ethRpcCli ethrpc.EthRPC, persist SyncBlockNumberP
 		return nil, err
 	}
 	s := &SyncBlockNumberCounter{
-		haveDoneLock:     sync.Mutex{},
-		syncLock:         sync.Mutex{},
 		cntSyncingNumber: cntNumber,
 		haveDoneCap:      1000,
 		haveDoneList:     make([]int64, 1000),
@@ -126,12 +125,12 @@ func (sel *SyncBlockNumberCounter) GetSyncBlockNumber() (blockNumber int64, err 
 }
 
 func (sel *SyncBlockNumberCounter) FinishThisSync(blockNumber int64) error {
-	sel.syncLock.Lock()
+	sel.finishLock.Lock()
+	defer sel.finishLock.Unlock()
 	can := blockNumber > sel.beforeSyncNumber
 	if can {
 		sel.beforeSyncNumber = blockNumber
 	}
-	sel.syncLock.Unlock()
 	if can {
 		return sel.persist.UpdateSyncBlockNUmber(sel.beforeSyncNumber)
 	}

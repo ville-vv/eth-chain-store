@@ -8,7 +8,7 @@ type EthereumAccount struct {
 	CreatedAt   time.Time `json:"created_at" gorm:"column:created_at;COMMENT:" name:""`
 	UpdatedAt   time.Time `json:"updated_at" gorm:"column:updated_at;COMMENT:" name:""`
 	Address     string    `json:"address" gorm:"column:address;index;type:varchar(255);COMMENT:" name:""`
-	FirstTxTime string    `json:"first_transfer_time" gorm:"column:first_transfer_time;COMMENT:" name:""`
+	FirstTxTime string    `json:"first_tx_time" gorm:"column:first_tx_time;COMMENT:" name:""`
 	FirstTxHash string    `json:"first_tx_hash" gorm:"column:first_tx_hash;COMMENT:" name:""`
 	Balance     string    `json:"balance" gorm:"column:balance;type:varchar(255);COMMENT:" name:""`
 }

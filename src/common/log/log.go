@@ -26,9 +26,10 @@ func Init() {
 	}
 
 	if logVal := flag.Lookup("debug"); logVal != nil {
-		logLevel = vlog.LogLevelDebug
+		if logVal.Value.String() == "true" {
+			logLevel = vlog.LogLevelDebug
+		}
 	}
-
 	cnf := &vlog.LogCnf{
 		OutPutFile:  []string{logFile},
 		ProgramName: "eth-chain-store",

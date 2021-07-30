@@ -6,6 +6,7 @@ import (
 	"github.com/ville-vv/eth-chain-store/src/domain/repo"
 	"github.com/ville-vv/eth-chain-store/src/infra/ethrpc"
 	"github.com/ville-vv/eth-chain-store/src/infra/model"
+	"github.com/ville-vv/vilgo/vlog"
 	"strconv"
 )
 
@@ -64,6 +65,9 @@ func (sel *ContractManager) GetErc20ContractInfo(contractAddr string) (*Erc20Con
 		return nil, err
 	}
 	decimal = common.HexToHash(decimal).Big().String()
+
+	vlog.DEBUG("get erc20 information decimal %s", decimal)
+
 	var decimalInt int64
 	decimalInt, err = strconv.ParseInt(decimal, 10, 64)
 	if err != nil {
@@ -126,16 +130,22 @@ func (sel *ContractManager) writeTokenContractInfo(addr string, timeStamp string
 	// erc20 合约
 	erc20ContractInfo, err := sel.GetErc20ContractInfo(addr)
 	if err != nil {
+		vlog.ERROR("ContractManager.writeTokenContractInfo get erc20 contract info address:%s error:%s", addr, err.Error())
 		return errors.Wrap(err, "get erc20 contract info")
 	}
 	// 如果不存在就创建
-	return sel.contractRepo.CreateContract(&model.ContractContent{
+	err = sel.contractRepo.CreateContract(&model.ContractContent{
 		Symbol:      erc20ContractInfo.Symbol,
 		Address:     addr,
 		PublishTime: timeStamp,
 		IsErc20:     true,
 		TotalSupply: erc20ContractInfo.TotalSupply,
 	})
+	if err != nil {
+		vlog.ERROR("ContractManager.writeTokenContractInfo create contract info failed address:%s error:%s", addr, err.Error())
+		return errors.Wrap(err, "create contract info")
+	}
+	return
 }
 
 func (sel *ContractManager) writeOtherContractInfo(addr string, timeStamp string) (err error) {

@@ -81,12 +81,13 @@ func ethereumDbMigrate() {
 		&model.SplitTableInfo{},
 		&model.ContractAccountBind{},
 		&model.EthereumAccount{},
+		&model.ContractAddressRecord{},
 	)
 	if err != nil {
 		panic(err)
 	}
 	//model.ContractAccountBind
-	createMyISAMTable(db, &model.ContractAddressRecord{})
+	//createMyISAMTable(db, &model.ContractAddressRecord{})
 }
 
 func contractTxDbDbMigrate() {
@@ -96,11 +97,12 @@ func contractTxDbDbMigrate() {
 	db := mysqlDb.GetDB()
 	err := db.AutoMigrate(
 		&model.SplitTableInfo{},
+		&model.TransactionRecord{},
 	)
 	if err != nil {
 		panic(err)
 	}
-	createMyISAMTable(db, &model.TransactionRecord{})
+	//createMyISAMTable(db, &model.TransactionRecord{})
 
 }
 
