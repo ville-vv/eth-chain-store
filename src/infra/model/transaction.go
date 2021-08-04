@@ -45,12 +45,13 @@ type TransactionRecord struct {
 	BlockHash       string    `json:"block_hash" gorm:"column:block_hash;COMMENT:" name:""`
 	TxHash          string    `json:"tx_hash" gorm:"column:tx_hash;index;varchar(255);COMMENT:" name:""`
 	Timestamp       string    `json:"timestamp" gorm:"column:timestamp;COMMENT:" name:""`
+	ContractAddress string    `json:"contract_address" gorm:"column:contract_address;COMMENT:" name:""`
 	FromAddr        string    `json:"from_addr" gorm:"column:from_addr;COMMENT:" name:""`
 	ToAddr          string    `json:"to_addr" gorm:"column:to_addr;COMMENT:" name:""`
 	GasPrice        string    `json:"gas" gorm:"column:gas_price;COMMENT:" name:""`
 	Value           string    `json:"value" gorm:"column:value;COMMENT:" name:""`
-	FromAddrBalance string    `json:"balance" gorm:"column:balance;COMMENT:" name:""`
-	ToAddrBalance   string    `json:"balance" gorm:"column:balance;COMMENT:" name:""`
+	FromAddrBalance string    `json:"balance" gorm:"column:balance;varchar(255);COMMENT:" name:""`
+	ToAddrBalance   string    `json:"balance" gorm:"column:balance;varchar(255);COMMENT:" name:""`
 }
 
 type SplitTableInfo struct {

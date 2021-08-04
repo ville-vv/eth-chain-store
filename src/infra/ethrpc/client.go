@@ -97,7 +97,8 @@ func (sel *Client) GetBalance(addr string) (string, error) {
 // GetBalanceByBlockNumber 获取ETH指定区块余额
 func (sel *Client) GetBalanceByBlockNumber(addr string, blockNumber int64) (string, error) {
 	var result hexutil.Big
-	err := sel.ethCli.Call(&result, "eth_getBalance", common.HexToAddress(addr), big.NewInt(blockNumber))
+	bigInt := hexutil.Big(*big.NewInt(blockNumber))
+	err := sel.ethCli.Call(&result, "eth_getBalance", common.HexToAddress(addr), bigInt.String())
 	if err != nil {
 		return "0", err
 	}
@@ -126,9 +127,9 @@ func (sel *Client) GetContractBalance(contract, addr string) (string, error) {
 	var hex hexutil.Bytes
 	err := sel.ethCli.Call(&hex, "eth_call", arg, "latest")
 	if err != nil {
-		return "0x0", err
+		return "0", err
 	}
-	return hex.String(), nil
+	return common.HexToHash(hex.String()).Big().String(), nil
 }
 
 // GetContractBalanceByBlockNumber 获取ERC20合约代币指定区块时余额
@@ -151,10 +152,13 @@ func (sel *Client) GetContractBalanceByBlockNumber(contract, addr string, blockN
 		}).String(),
 	}
 
-	var hex hexutil.Bytes
-	err := sel.ethCli.Call(&hex, "eth_call", arg, big.NewInt(blockNumber))
+	var hex hexutil.Big
+
+	bigInt := hexutil.Big(*big.NewInt(blockNumber))
+
+	err := sel.ethCli.Call(&hex, "eth_call", arg, bigInt.String())
 	if err != nil {
-		return "0x0", err
+		return "0", err
 	}
 	return hex.String(), nil
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"github.com/ville-vv/eth-chain-store/src/common/conf"
@@ -71,14 +72,58 @@ func buildService() runner.Runner {
 	var (
 		// https://mainnet.infura.io/v3/ecc309a045134205b5c2b58481d7923d
 		// https://mainnet.infura.io/v3/21628f8f9b9b423a9ea05a708016b119
-		ehtrpcCli         = ethm.NewEthRpcExecutor(rpcEndpoint, "")
-		filter            = ethm.NewEthereumWriteFilter(erc20TokenCfgDao)
-		contractMng       = ethm.NewContractManager(ehtrpcCli, repo.NewContractRepo(ethereumDao))
-		accountMng        = ethm.NewAccountManager(ehtrpcCli, repo.NewContractAccountRepo(ethereumDao), repo.NewNormalAccountRepo(ethereumDao))
-		transactionWriter = ethm.NewTransactionWriter(ehtrpcCli, repo.NewTransactionRepo(normalTranDao))
-		txWriter          = ethm.NewEthereumWriter(filter, accountMng, contractMng, transactionWriter)
+		ehtrpcCli           = ethm.NewEthRpcExecutor(rpcEndpoint, "")
+		filter              = ethm.NewEthereumWriteFilter(erc20TokenCfgDao)
+		contractMng         = ethm.NewContractManager(ehtrpcCli, repo.NewContractRepo(ethereumDao))
+		accountMng          = ethm.NewAccountManager(ehtrpcCli, repo.NewContractAccountRepo(ethereumDao), repo.NewNormalAccountRepo(ethereumDao))
+		transactionWriter   = ethm.NewTransactionWriter(ehtrpcCli, repo.NewTransactionRepo(normalTranDao))
+		accountMngWriter    = ethm.NewEthRetryWriter(accountMng)
+		contractMngWriter   = ethm.NewEthRetryWriter(contractMng)
+		transactionReWriter = ethm.NewEthRetryWriter(transactionWriter)
+		txWriter            = ethm.NewEthereumWriter(filter, accountMngWriter, contractMngWriter, transactionReWriter)
+		serviceRun          = service.NewSyncBlockChainService(maxSyncNum, ehtrpcCli, txWriter, repo.NewBlockNumberRepo(ethBlockNumberDao))
 	)
-	return service.NewSyncBlockChainService(maxSyncNum, ehtrpcCli, txWriter, repo.NewBlockNumberRepo(ethBlockNumberDao))
+
+	svr := &Server{}
+	svr.Add(accountMngWriter)
+	svr.Add(contractMngWriter)
+	svr.Add(transactionReWriter)
+	svr.Add(serviceRun)
+
+	return svr
+}
+
+type Server struct {
+	runner []runner.Runner
+}
+
+func (s *Server) Scheme() string {
+	return "Server"
+}
+
+func (s *Server) Init() error {
+	for _, r := range s.runner {
+		return r.Init()
+	}
+	return nil
+}
+
+func (s *Server) Start() error {
+	for _, r := range s.runner {
+		return r.Start()
+	}
+	return nil
+}
+
+func (s *Server) Exit(ctx context.Context) error {
+	for _, r := range s.runner {
+		_ = r.Exit(ctx)
+	}
+	return nil
+}
+
+func (s *Server) Add(r runner.Runner) {
+	s.runner = append(s.runner, r)
 }
 
 func main() {
