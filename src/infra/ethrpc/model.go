@@ -5,14 +5,15 @@ import (
 )
 
 type EthBlockHeader struct {
-	Hash            string `json:"hash" name:""`
-	Nonce           string `json:"nonce" name:""`
-	Number          string `json:"number" name:""`
-	ParentHash      string `json:"parentHash" name:""`
-	ReceiptsRoot    string `json:"receiptsRoot" name:""`
-	Size            string `json:"size" name:""`
-	TimeStamp       string `json:"timestamp" name:""`
-	TotalDifficulty string `json:"totalDifficulty" name:""`
+	LatestBlockNumber string `json:"latest_block_number" name:""`
+	Hash              string `json:"hash" name:""`
+	Nonce             string `json:"nonce" name:""`
+	Number            string `json:"number" name:""`
+	ParentHash        string `json:"parentHash" name:""`
+	ReceiptsRoot      string `json:"receiptsRoot" name:""`
+	Size              string `json:"size" name:""`
+	TimeStamp         string `json:"timestamp" name:""`
+	TotalDifficulty   string `json:"totalDifficulty" name:""`
 }
 
 type EthBlock struct {

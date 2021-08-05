@@ -93,6 +93,7 @@ func (sel *ContractManager) GetErc20ContractInfo(contractAddr string) (*Erc20Con
 // TxWrite 合约信息写入，一笔交易存在两个地址，一个是from 地址，一个是 to 地址，两个地址都有可能是合约地址，
 // 如果是  token transfer 交易，那么 to 地址一定是合约地址
 func (sel *ContractManager) TxWrite(txData *model.TransactionData) (err error) {
+	vlog.DEBUG("tx writer to contract information %s", txData.Hash)
 	if txData.IsContractToken {
 		return sel.writeTokenContractInfo(txData.ContractAddress, txData.TimeStamp)
 	}

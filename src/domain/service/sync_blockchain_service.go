@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"github.com/ville-vv/eth-chain-store/src/common/conf"
 	"github.com/ville-vv/eth-chain-store/src/domain/ethm"
 	"github.com/ville-vv/eth-chain-store/src/infra/ethrpc"
@@ -44,10 +45,10 @@ func NewSyncBlockChainService(maxNum int, ethRpcCli ethrpc.EthRPC, txWrite ethm.
 
 	s := &SyncBlockChainService{
 		ethMng:            ethm.NewEthereumManager(ethRpcCli, txWrite),
-		syncInterval:      time.Second * time.Duration(syncInterval),
+		syncInterval:      time.Duration(syncInterval),
 		maxSyncNum:        make(chan int, maxNum),
 		syncCounter:       syncCounter,
-		firstSyncInterval: time.Millisecond * time.Duration(firstSyncInterval),
+		firstSyncInterval: time.Duration(firstSyncInterval),
 		stopCh:            make(chan int),
 	}
 
@@ -76,7 +77,7 @@ func (s *SyncBlockChainService) Exit(ctx context.Context) error {
 // fastSync 快速的同步数据，间隔时间缩短
 func (s *SyncBlockChainService) fastSync() {
 	time.Sleep(time.Second)
-	tk := time.NewTicker(s.firstSyncInterval)
+	tk := time.NewTicker(time.Millisecond * s.firstSyncInterval)
 	vlog.INFO("启动区块快速同步服务 internal is %d", s.firstSyncInterval)
 	for {
 		select {
@@ -105,7 +106,7 @@ func (s *SyncBlockChainService) release() {
 
 func (s *SyncBlockChainService) syncTimerTicker() {
 	// 区块打包是15秒中一次，所以 syncInterval 应该设置为 15 秒
-	tk := time.NewTicker(s.syncInterval)
+	tk := time.NewTicker(time.Second * s.syncInterval)
 	vlog.INFO("启动区块正常化同步服务 internal is %d", s.syncInterval)
 	for {
 		select {
@@ -126,6 +127,7 @@ func (s *SyncBlockChainService) syncBlockChain() {
 		vlog.ERROR("获取区块错误 %s", err.Error())
 		return
 	}
+	latestBlockNumber := s.syncCounter.GetLatestBlockNumber()
 	gw := sync.WaitGroup{}
 	gw.Add(1)
 	s.apply()
@@ -134,7 +136,7 @@ func (s *SyncBlockChainService) syncBlockChain() {
 		defer done()
 		// 执行完成后就释放一个
 		vlog.INFO("starting sync block [%d]", blockNumber)
-		if err = s.ethMng.PullBlockByNumber(blockNumber); err != nil {
+		if err = s.ethMng.PullBlockByNumber(blockNumber, fmt.Sprintf("%d", latestBlockNumber)); err != nil {
 			vlog.ERROR("获取指定区块数据失败 %d %s", blockNumber, err.Error())
 			return
 		}

@@ -41,7 +41,7 @@ const (
 	// * Replace `lastTotal` with `meta` in positive balance: version 0=>1
 	//
 	// Version 1 => 2
-	// * Positive Balance and negative balance is changed:
+	// * Positive FromBalance and negative balance is changed:
 	// * Cumulative time is replaced with expiration
 	nodeDBVersion = 2
 

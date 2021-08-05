@@ -37,6 +37,7 @@ require (
 	github.com/influxdata/influxdb v1.9.2
 	github.com/jackpal/go-nat-pmp v1.0.2
 	github.com/jedisct1/go-minisign v0.0.0-20210703085342-c1f07ee84431
+	github.com/json-iterator/go v1.1.10
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/karalabe/usb v0.0.0-20210518091819-4ea20957c210
 	github.com/mattn/go-colorable v0.1.8

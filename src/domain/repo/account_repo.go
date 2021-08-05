@@ -30,8 +30,8 @@ func NewNormalAccountRepo(accountDao *dao.EthereumDao) *NormalAccountRepo {
 //}
 
 // UpdateBalance 更新余额 数据存在就返回 true, nil
-func (sel *NormalAccountRepo) UpdateBalance(addr string, balance string) (bool, error) {
-	return sel.accountDao.UpdateNormalAccountBalance(addr, balance)
+func (sel *NormalAccountRepo) UpdateBalance(addr string, balance string, isLatest bool) (bool, error) {
+	return sel.accountDao.UpdateNormalAccountBalance(addr, balance, isLatest)
 }
 
 // CreateEthAccount 创建地址账户
@@ -63,9 +63,9 @@ func (sel *ContractAccountRepo) IsAccountExist(addr string, contractAddr string)
 }
 
 // UpdateNative
-func (sel *ContractAccountRepo) UpdateBalance(addr, contractAddr, balance string) (bool, error) {
+func (sel *ContractAccountRepo) UpdateBalance(addr, contractAddr, balance string, isLatest bool) (bool, error) {
 	vlog.DEBUG("updating account balance of address:%s contract:%s ", addr, contractAddr)
-	return sel.accountDao.UpdateContractAccountBalance(addr, contractAddr, balance)
+	return sel.accountDao.UpdateContractAccountBalance(addr, contractAddr, balance, isLatest)
 }
 func (sel *ContractAccountRepo) CreateEthAccount(bind *model.ContractAccountBind) error {
 	vlog.DEBUG("create account bind information of address:%s contract:%s", bind.Address, bind.ContractAddress)

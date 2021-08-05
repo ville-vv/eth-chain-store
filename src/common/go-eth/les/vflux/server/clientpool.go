@@ -43,7 +43,7 @@ var (
 // requests (unless the price factors are zero). If the positive balance is zero
 // then negative balance is accumulated.
 //
-// Balance tracking and priority calculation for connected clients is done by
+// FromBalance tracking and priority calculation for connected clients is done by
 // balanceTracker. PriorityQueue ensures that clients with the lowest positive or
 // highest negative balance get evicted when the total capacity allowance is full
 // and new clients with a better balance want to connect.

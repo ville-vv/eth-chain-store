@@ -209,7 +209,7 @@ func compareStateObjects(so0, so1 *stateObject, t *testing.T) {
 		t.Fatalf("Address mismatch: have %v, want %v", so0.address, so1.address)
 	}
 	if so0.Balance().Cmp(so1.Balance()) != 0 {
-		t.Fatalf("Balance mismatch: have %v, want %v", so0.Balance(), so1.Balance())
+		t.Fatalf("FromBalance mismatch: have %v, want %v", so0.Balance(), so1.Balance())
 	}
 	if so0.Nonce() != so1.Nonce() {
 		t.Fatalf("Nonce mismatch: have %v, want %v", so0.Nonce(), so1.Nonce())

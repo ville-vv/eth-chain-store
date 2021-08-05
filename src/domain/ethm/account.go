@@ -5,6 +5,7 @@ import (
 	"github.com/ville-vv/eth-chain-store/src/domain/repo"
 	"github.com/ville-vv/eth-chain-store/src/infra/ethrpc"
 	"github.com/ville-vv/eth-chain-store/src/infra/model"
+	"github.com/ville-vv/eth-chain-store/src/infra/mqp"
 	"github.com/ville-vv/vilgo/vlog"
 )
 
@@ -41,16 +42,30 @@ func NewAccountManager(ethCli ethrpc.EthRPC, contractAccountRepo *repo.ContractA
 // 如果交易类型是合约代币交易，那么合约地址为 contractAddress
 // 内部交易无法确定,就当做是普通账户写入
 func (sel *AccountManager) TxWrite(txData *model.TransactionData) error {
+	vlog.DEBUG("tx writer to account manager %v %s ", txData.IsLatest(), txData.Hash)
 	if txData.IsContractToken {
 		return sel.contractActMng.UpdateAccount(txData)
 	}
 	return sel.normalActMng.UpdateAccount(txData)
 }
 
+func (sel *AccountManager) ID() string {
+	return "AccountManager"
+}
+func (sel *AccountManager) Process(msg *mqp.Message) error {
+	txData := &model.TransactionData{}
+	err := msg.UnMarshalFromBody(txData)
+	if err != nil {
+		return err
+	}
+
+	return sel.TxWrite(txData)
+}
+
 // contractAccountUpdater 处理合约账户
 func (sel *AccountManager) contractAccountUpdater(txData *model.TransactionData) error {
 
-	//accountRepo.Balance = balance
+	//accountRepo.FromBalance = balance
 	//// 在数据库中是否存在该合约账户
 	//if sel.accountRepo.IsContractAccountExist() {
 	//	// 如果存在就直接更新余额
@@ -77,30 +92,22 @@ type contractAccountManager struct {
 
 // UpdateAccount 合约代币交易账户信息写入, contractAddress 是合约地址
 func (sel *contractAccountManager) UpdateAccount(txData *model.TransactionData) error {
-	if err := sel.writeAccount(txData.From, txData.ContractAddress); err != nil {
+	if err := sel.writeAccount(txData.From, txData.ContractAddress, txData.IsLatest()); err != nil {
 		return errors.Wrap(err, "write contract account from address")
 	}
-	if err := sel.writeAccount(txData.To, txData.ContractAddress); err != nil {
+	if err := sel.writeAccount(txData.To, txData.ContractAddress, txData.IsLatest()); err != nil {
 		return errors.Wrap(err, "write contract account to address")
 	}
 	return nil
 }
 
-func (sel *contractAccountManager) writeAccount(accountAddr string, contractAddress string) error {
+func (sel *contractAccountManager) writeAccount(accountAddr string, contractAddress string, isLatest bool) error {
 	balance, err := sel.ethCli.GetContractBalance(contractAddress, accountAddr)
 	if err != nil {
 		return err
 	}
-	//ok, err := sel.accountRepo.IsAccountExist(accountAddr, contractAddress)
-	//if err != nil {
-	//	return err
-	//}
-	//if ok {
-	//	// 该账户已经存在
-	//	return sel.accountRepo.UpdateBalance(accountAddr, contractAddress, balance)
-	//}
 
-	updated, err := sel.accountRepo.UpdateBalance(accountAddr, contractAddress, balance)
+	updated, err := sel.accountRepo.UpdateBalance(accountAddr, contractAddress, balance, isLatest)
 	if err != nil {
 		vlog.ERROR("writeAccount update account balance failed addr:%s contract:%s error:%s", accountAddr, contractAddress, err.Error())
 		return err
@@ -131,22 +138,22 @@ type normalAccountManager struct {
 
 // 以太坊正常的交易账户写入，这里就不判断该账户是不是合约账户了直接写入 from 和 to
 func (sel *normalAccountManager) UpdateAccount(txData *model.TransactionData) error {
-	if err := sel.writeAccount(txData.From, txData.TimeStamp, txData.Hash); err != nil {
+	if err := sel.writeAccount(txData.From, txData.TimeStamp, txData.Hash, txData.IsLatest()); err != nil {
 		return errors.Wrap(err, "write normal account from address")
 	}
-	if err := sel.writeAccount(txData.To, txData.TimeStamp, txData.Hash); err != nil {
+	if err := sel.writeAccount(txData.To, txData.TimeStamp, txData.Hash, txData.IsLatest()); err != nil {
 		return errors.Wrap(err, "write normal account to address")
 	}
 	return nil
 }
-func (sel *normalAccountManager) writeAccount(accountAddr string, timeStamp string, hash string) error {
+func (sel *normalAccountManager) writeAccount(accountAddr string, timeStamp string, hash string, isLatest bool) error {
 	// 获取的余额
 	balance, err := sel.ethCli.GetBalance(accountAddr)
 	if err != nil {
 		return err
 	}
 
-	updated, err := sel.accountRepo.UpdateBalance(accountAddr, balance)
+	updated, err := sel.accountRepo.UpdateBalance(accountAddr, balance, isLatest)
 	if err != nil {
 		return err
 	}

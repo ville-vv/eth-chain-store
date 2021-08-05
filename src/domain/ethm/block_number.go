@@ -21,7 +21,7 @@ type SyncBlockNumberPersist interface {
 // 区块同步计数器
 type SyncBlockNumberCounter struct {
 	haveDoneLock     sync.Mutex
-	syncLock         sync.Mutex
+	syncLock         sync.RWMutex
 	finishLock       sync.Mutex
 	cntSyncingNumber int64
 	haveDoneCap      int
@@ -40,7 +40,7 @@ func NewSyncBlockNumberCounter(ethRpcCli ethrpc.EthRPC, persist SyncBlockNumberP
 		return nil, err
 	}
 	s := &SyncBlockNumberCounter{
-		cntSyncingNumber: cntNumber,
+		cntSyncingNumber: cntNumber + 1,
 		haveDoneCap:      1000,
 		haveDoneList:     make([]int64, 1000),
 		ethRpcCli:        ethRpcCli,
@@ -87,6 +87,13 @@ func (sel *SyncBlockNumberCounter) IsLatestBlockNumber() bool {
 	latestNumber := sel.latestNumber
 	sel.syncLock.Unlock()
 	return sel.cntSyncingNumber >= latestNumber
+}
+
+func (sel *SyncBlockNumberCounter) GetLatestBlockNumber() int64 {
+	sel.syncLock.RLock()
+	latestNumber := sel.latestNumber
+	sel.syncLock.RUnlock()
+	return latestNumber
 }
 
 func (sel *SyncBlockNumberCounter) SetSyncing(blockNumber int64) bool {

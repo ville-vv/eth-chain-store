@@ -77,7 +77,7 @@ func (sel *EthereumDao) CreateContractAccount(contractAccount *model.ContractAcc
 	return nil
 }
 
-func (sel *EthereumDao) UpdateContractAccountBalance(addr string, contractAddr string, balance string) (bool, error) {
+func (sel *EthereumDao) UpdateContractAccountBalance(addr string, contractAddr string, balance string, isLatest bool) (bool, error) {
 	tables, err := sel.contractBindTb.AllTable()
 	if err != nil {
 		return false, err
@@ -91,6 +91,9 @@ func (sel *EthereumDao) UpdateContractAccountBalance(addr string, contractAddr s
 			}
 		}
 		if contractAccount.ID > 0 && contractAccount.Balance != balance {
+			if !isLatest {
+				return true, nil
+			}
 			return true, db.Table(tbName).Update("balance", balance).Error
 		}
 	}
@@ -104,7 +107,7 @@ func (sel *EthereumDao) QueryNormalAccount(addr string, info *model.EthereumAcco
 }
 
 // UpdateNativeBalance 更新以太坊
-func (sel *EthereumDao) UpdateNormalAccountBalance(addr string, balance string) (bool, error) {
+func (sel *EthereumDao) UpdateNormalAccountBalance(addr string, balance string, isLatest bool) (bool, error) {
 	tables, err := sel.normalAccountTb.AllTable()
 	if err != nil {
 		return false, err
@@ -118,6 +121,9 @@ func (sel *EthereumDao) UpdateNormalAccountBalance(addr string, balance string) 
 			}
 		}
 		if ethereumAccount.ID > 0 && ethereumAccount.Balance != balance {
+			if isLatest {
+				return true, nil
+			}
 			return true, sel.db.GetDB().Table(tbName).Where("address=?", addr).Update("balance", balance).Error
 		}
 	}

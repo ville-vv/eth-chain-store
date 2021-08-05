@@ -40,7 +40,7 @@ const schema string = `
     type Account {
         # Address is the address owning the account.
         address: Address!
-        # Balance is the balance of the account, in wei.
+        # FromBalance is the balance of the account, in wei.
         balance: BigInt!
         # TransactionCount is the number of transactions sent from this account,
         # or in the case of a contract, the number of contracts created. Otherwise

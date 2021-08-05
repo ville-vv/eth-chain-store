@@ -87,12 +87,12 @@ func TestEventId(t *testing.T) {
 	}{
 		{
 			definition: `[
-			{ "type" : "event", "name" : "Balance", "inputs": [{ "name" : "in", "type": "uint256" }] },
+			{ "type" : "event", "name" : "FromBalance", "inputs": [{ "name" : "in", "type": "uint256" }] },
 			{ "type" : "event", "name" : "Check", "inputs": [{ "name" : "t", "type": "address" }, { "name": "b", "type": "uint256" }] }
 			]`,
 			expectations: map[string]common.Hash{
-				"Balance": crypto.Keccak256Hash([]byte("Balance(uint256)")),
-				"Check":   crypto.Keccak256Hash([]byte("Check(address,uint256)")),
+				"FromBalance": crypto.Keccak256Hash([]byte("FromBalance(uint256)")),
+				"Check":       crypto.Keccak256Hash([]byte("Check(address,uint256)")),
 			},
 		},
 	}
@@ -118,14 +118,14 @@ func TestEventString(t *testing.T) {
 	}{
 		{
 			definition: `[
-			{ "type" : "event", "name" : "Balance", "inputs": [{ "name" : "in", "type": "uint256" }] },
+			{ "type" : "event", "name" : "FromBalance", "inputs": [{ "name" : "in", "type": "uint256" }] },
 			{ "type" : "event", "name" : "Check", "inputs": [{ "name" : "t", "type": "address" }, { "name": "b", "type": "uint256" }] },
 			{ "type" : "event", "name" : "Transfer", "inputs": [{ "name": "from", "type": "address", "indexed": true }, { "name": "to", "type": "address", "indexed": true }, { "name": "value", "type": "uint256" }] }
 			]`,
 			expectations: map[string]string{
-				"Balance":  "event Balance(uint256 in)",
-				"Check":    "event Check(address t, uint256 b)",
-				"Transfer": "event Transfer(address indexed from, address indexed to, uint256 value)",
+				"FromBalance": "event FromBalance(uint256 in)",
+				"Check":       "event Check(address t, uint256 b)",
+				"Transfer":    "event Transfer(address indexed from, address indexed to, uint256 value)",
 			},
 		},
 	}
