@@ -20,6 +20,7 @@ type SyncBlockChainService struct {
 	firstSyncInterval time.Duration
 	maxSyncNum        chan int
 	stopCh            chan int
+	isStop            bool
 }
 
 func NewSyncBlockChainService(maxNum int, ethRpcCli ethrpc.EthRPC, txWrite ethm.TxWriter, bkRepo ethm.SyncBlockNumberPersist) *SyncBlockChainService {
@@ -71,6 +72,8 @@ func (s *SyncBlockChainService) Start() error {
 
 func (s *SyncBlockChainService) Exit(ctx context.Context) error {
 	close(s.stopCh)
+	s.isStop = true
+	vlog.INFO("同步工具退出exit")
 	return nil
 }
 
@@ -86,8 +89,18 @@ func (s *SyncBlockChainService) fastSync() {
 			if s.syncCounter.IsLatestBlockNumber() {
 				goto startNormal
 			}
-			s.syncBlockChain()
+			for {
+				if s.isStop {
+					vlog.INFO("同步工具退出")
+					return
+				}
+				if s.syncBlockChainV2() {
+					break
+				}
+				time.Sleep(time.Millisecond * 100)
+			}
 		case <-s.stopCh:
+			vlog.INFO("同步工具退出stop")
 			tk.Stop()
 			return
 		}
@@ -111,7 +124,15 @@ func (s *SyncBlockChainService) syncTimerTicker() {
 	for {
 		select {
 		case <-tk.C:
-			s.syncBlockChain()
+			for {
+				if s.isStop {
+					return
+				}
+				if s.syncBlockChainV2() {
+					break
+				}
+				time.Sleep(time.Millisecond * 100)
+			}
 		case <-s.stopCh:
 			tk.Stop()
 			return
@@ -146,4 +167,29 @@ func (s *SyncBlockChainService) syncBlockChain() {
 		vlog.INFO("finished sync block [%d]", blockNumber)
 	}(&gw, s.release)
 	gw.Wait()
+}
+
+// syncBlockChainV2 同步数据
+func (s *SyncBlockChainService) syncBlockChainV2() bool {
+	// 获取当前同步的区块
+	blockNumber, err := s.syncCounter.GetSyncBlockNumber()
+	if err != nil {
+		vlog.ERROR("获取区块错误 %s", err.Error())
+		return false
+	}
+	latestBlockNumber := s.syncCounter.GetLatestBlockNumber()
+	if s.isStop {
+		return false
+	}
+	// 执行完成后就释放一个
+	vlog.INFO("starting sync block [%d]", blockNumber)
+	if err = s.ethMng.PullBlockByNumber(blockNumber, fmt.Sprintf("%d", latestBlockNumber)); err != nil {
+		vlog.ERROR("获取指定区块数据失败 %d %s", blockNumber, err.Error())
+		return false
+	}
+	if err = s.syncCounter.FinishThisSync(blockNumber); err != nil {
+		vlog.ERROR("更新同步的区块号失败 %s", err.Error())
+	}
+	vlog.INFO("finished sync block [%d]", blockNumber)
+	return true
 }

@@ -46,18 +46,18 @@ func (sel *TransactionData) IsLatest() bool {
 
 type TransactionRecord struct {
 	ID              int64     `gorm:"primary_key"`
-	CreatedAt       time.Time `json:"created_at" gorm:"column:created_at;COMMENT:" name:""`     // 记录创建时间
-	BlockNumber     string    `json:"block_number" gorm:"column:block_number;COMMENT:" name:""` // 区块号
-	BlockHash       string    `json:"block_hash" gorm:"column:block_hash;COMMENT:" name:""`
-	TxHash          string    `json:"tx_hash" gorm:"column:tx_hash;index;varchar(255);COMMENT:" name:""`
-	Timestamp       string    `json:"timestamp" gorm:"column:timestamp;COMMENT:" name:""`
-	ContractAddress string    `json:"contract_address" gorm:"column:contract_address;COMMENT:" name:""`
-	FromAddr        string    `json:"from_addr" gorm:"column:from_addr;COMMENT:" name:""`
-	ToAddr          string    `json:"to_addr" gorm:"column:to_addr;COMMENT:" name:""`
-	GasPrice        string    `json:"gas_price" gorm:"column:gas_price;COMMENT:" name:""`
-	Value           string    `json:"value" gorm:"column:value;COMMENT:" name:""`
-	FromAddrBalance string    `json:"balance" gorm:"column:balance;varchar(255);COMMENT:" name:""`
-	ToAddrBalance   string    `json:"balance" gorm:"column:balance;varchar(255);COMMENT:" name:""`
+	CreatedAt       time.Time `json:"created_at" gorm:"column:created_at;COMMENT:" name:""`                       // 记录创建时间
+	BlockNumber     string    `json:"block_number" gorm:"column:block_number;type:varchar(255);COMMENT:" name:""` // 区块号
+	BlockHash       string    `json:"block_hash" gorm:"column:block_hash;type:varchar(255);COMMENT:" name:""`
+	TxHash          string    `json:"tx_hash" gorm:"column:tx_hash;index:idx_tx_records_tx_hash;type:varchar(200);COMMENT:" name:""`
+	Timestamp       string    `json:"timestamp" gorm:"column:timestamp;type:varchar(255);COMMENT:" name:""`
+	ContractAddress string    `json:"contract_address" gorm:"column:contract_address;varchar(255);COMMENT:" name:""`
+	FromAddr        string    `json:"from_addr" gorm:"column:from_addr;type:varchar(255);COMMENT:" name:""`
+	ToAddr          string    `json:"to_addr" gorm:"column:to_addr;type:varchar(255);COMMENT:" name:""`
+	GasPrice        string    `json:"gas_price" gorm:"column:gas_price;type:varchar(255);COMMENT:" name:""`
+	Value           string    `json:"value" gorm:"column:value;type:varchar(255);COMMENT:" name:""`
+	FromAddrBalance string    `json:"from_addr_balance" gorm:"column:from_addr_balance;type:varchar(255);COMMENT:" name:""`
+	ToAddrBalance   string    `json:"to_addr_balance" gorm:"column:to_addr_balance;type:varchar(255);COMMENT:" name:""`
 }
 
 type SplitTableInfo struct {

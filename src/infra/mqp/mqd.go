@@ -2,8 +2,10 @@ package mqp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/ville-vv/vilgo/runner"
+	"github.com/ville-vv/vilgo/vtask"
 	"sync"
 )
 
@@ -16,6 +18,7 @@ type MQD struct {
 	exitChan  chan int
 	csmMap    map[string]Consumer
 	logf      LogFunc
+	isStop    vtask.AtomicInt64
 }
 
 func NewMDP(logf LogFunc) *MQD {
@@ -47,15 +50,10 @@ func (sel *MQD) Start() error {
 
 func (sel *MQD) Exit(ctx context.Context) error {
 	close(sel.exitChan)
-	fmt.Println("MQD Exit")
-	//sel.RLock()
-	//for _, c := range sel.csmMap {
-	//	retrySvc, ok := c.(*retryConsumer)
-	//	if ok {
-	//		_ = retrySvc.Exit(context.Background())
-	//	}
-	//}
-	//sel.RUnlock()
+	close(sel.updateCSM)
+	close(sel.msgChan)
+	sel.ClearMsgChan()
+	sel.logf("MQD Exited")
 	return nil
 }
 
@@ -109,14 +107,31 @@ func (sel *MQD) msgPump() {
 		}
 	}
 exit:
+	sel.isStop.Dec()
+	sel.logf("MQD Exiting")
 	return
 }
 
 func (sel *MQD) Publish(msg *Message) error {
+	if sel.isStop.Load() < 0 {
+		return errors.New("mqd have closed")
+	}
 	select {
 	case sel.msgChan <- msg:
 	}
 	return nil
+}
+
+func (sel *MQD) ClearMsgChan() {
+	sel.logf("clear msg ")
+	for v := range sel.msgChan {
+		for _, csm := range sel.csmMap {
+			err := csm.Process(v)
+			if err != nil {
+				sel.logf("[MQD] consumer:%s error:%s", csm.ID(), err.Error())
+			}
+		}
+	}
 }
 
 func (sel *MQD) SubScribe(cum Consumer) {

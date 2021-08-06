@@ -46,13 +46,17 @@ func (sel *contractTransactionDao) createTransactionRecord(txData *model.Transac
 	db := sel.db.GetDB().Table(tbName)
 
 	if err = db.Create(&model.TransactionRecord{
-		TxHash: txData.Hash,
-		//Address:  txData.ContractAddressRecord,
+		BlockNumber:     txData.BlockNumber,
+		BlockHash:       txData.BlockHash,
+		TxHash:          txData.Hash,
+		Timestamp:       txData.TimeStamp,
+		ContractAddress: txData.ContractAddress,
 		FromAddr:        txData.From,
 		ToAddr:          txData.To,
 		GasPrice:        txData.GasPrice,
 		Value:           txData.Value,
 		FromAddrBalance: txData.FromBalance,
+		ToAddrBalance:   txData.ToBalance,
 	}).Error; err != nil {
 		return err
 	}
@@ -75,13 +79,17 @@ func (sel *normalTransactionDao) createTransactionRecord(txData *model.Transacti
 	}
 	db := sel.db.GetDB().Table(tbName)
 	if err = db.Create(&model.TransactionRecord{
-		TxHash: txData.Hash,
-		//Address:  txData.ContractAddressRecord,
+		BlockNumber:     txData.BlockNumber,
+		BlockHash:       txData.BlockHash,
+		TxHash:          txData.Hash,
+		Timestamp:       txData.TimeStamp,
+		ContractAddress: txData.ContractAddress,
 		FromAddr:        txData.From,
 		ToAddr:          txData.To,
 		GasPrice:        txData.GasPrice,
 		Value:           txData.Value,
 		FromAddrBalance: txData.FromBalance,
+		ToAddrBalance:   "",
 	}).Error; err != nil {
 		return errors.Wrap(err, "create normal transaction")
 	}

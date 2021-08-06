@@ -39,6 +39,14 @@ type EthTransaction struct {
 	Value string `json:"value" name:""`
 }
 
+func (t *EthTransaction) BlockNumberToBig() string {
+	return common.HexToHash(t.BlockNumber).Big().String()
+}
+
+func (t *EthTransaction) GasPriceToBig() string {
+	return common.HexToHash(t.GasPrice).Big().String()
+}
+
 func (t *EthTransaction) IsContractToken() bool {
 	return t.Input.IsContractToken()
 }
@@ -58,6 +66,10 @@ type EthTransactionReceiptLog struct {
 	Topics           []string `json:"topics" name:""`
 	TransactionHash  string   `json:"transactionHash" name:""`
 	TransactionIndex string   `json:"transactionIndex" name:""`
+}
+
+func (sel *EthTransactionReceiptLog) BlockNumberToBig() string {
+	return common.HexToHash(sel.BlockNumber).Big().String()
 }
 
 func (sel *EthTransactionReceiptLog) IsTransfer() bool {

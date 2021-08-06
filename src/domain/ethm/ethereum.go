@@ -24,16 +24,6 @@ func NewEthereumManager(ethRpcCli ethrpc.EthRPC, txWrite TxWriter) *EthereumMana
 	return &EthereumManager{ethRpcCli: ethRpcCli, txWrite: txWrite}
 }
 
-//func (sel *EthereumManager) PullBlock() error {
-//	// 获取块信息
-//	block, err := sel.ethRpcCli.GetBlock()
-//	if err != nil {
-//		vlog.ERROR("get latest block information")
-//		return err
-//	}
-//	return sel.dealBlock(block)
-//}
-
 func (sel *EthereumManager) PullBlockByNumber(bkNumber int64, latestBkNum string) error {
 	// 获取块信息
 	block, err := sel.ethRpcCli.GetBlockByNumber(bkNumber)
@@ -42,7 +32,6 @@ func (sel *EthereumManager) PullBlockByNumber(bkNumber int64, latestBkNum string
 		return err
 	}
 	block.LatestBlockNumber = latestBkNum
-	//vlog.DEBUG("have get %d", bkNumber)
 	return sel.dealBlock(block)
 }
 
@@ -52,8 +41,10 @@ func (sel *EthereumManager) dealBlock(block *ethrpc.EthBlock) error {
 		return nil
 	}
 	var err error
+
+	//block.Number = common.HexToHash(block.Number).Big().String()
+	block.TimeStamp = common.HexToHash(block.TimeStamp).Big().String()
 	for _, trfData := range block.Transactions {
-		block.TimeStamp = common.HexToHash(block.TimeStamp).Big().String()
 		if trfData.IsContractToken() {
 			// 合约代币交易,需要获取合约里面的交易内容
 			if err = sel.contractTransaction(&block.EthBlockHeader, trfData); err != nil {
@@ -66,9 +57,9 @@ func (sel *EthereumManager) dealBlock(block *ethrpc.EthBlock) error {
 			LatestNumber: block.LatestBlockNumber,
 			TimeStamp:    block.TimeStamp,
 			BlockHash:    trfData.BlockHash,
-			BlockNumber:  trfData.BlockNumber,
+			BlockNumber:  trfData.BlockNumberToBig(),
 			From:         trfData.From,
-			GasPrice:     trfData.GasPrice,
+			GasPrice:     trfData.GasPriceToBig(),
 			Hash:         trfData.Hash,
 			To:           trfData.To,
 			Value:        common.HexToHash(trfData.Value).Big().String(),
@@ -113,7 +104,7 @@ func (sel *EthereumManager) contractTransaction(header *ethrpc.EthBlockHeader, t
 			ContractAddress: tfData.To, // 单笔合约交易一般都是 To 为合约地址
 			TimeStamp:       header.TimeStamp,
 			BlockHash:       tfData.BlockHash,
-			BlockNumber:     tfData.BlockNumber,
+			BlockNumber:     tfData.BlockNumberToBig(),
 			From:            tfData.From,
 			Hash:            tfData.Hash,
 			To:              to,
@@ -145,7 +136,7 @@ func (sel *EthereumManager) txReceipt(latestNum, timeStamp string, hash string) 
 					ContractAddress: lg.Address, // 代币交易是存在合约地址的
 					TimeStamp:       timeStamp,
 					BlockHash:       lg.BlockHash,
-					BlockNumber:     lg.BlockNumber,
+					BlockNumber:     lg.BlockNumberToBig(),
 					From:            lg.From(),
 					Hash:            lg.TransactionHash,
 					To:              lg.To(),

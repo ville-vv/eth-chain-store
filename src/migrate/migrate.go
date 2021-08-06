@@ -61,7 +61,7 @@ func businessDbMigrate() {
 	cfg := conf.GetEthBusinessDbConfig()
 	mysqlDb := vstore.MakeDb(cfg)
 	vlog.INFO("migrate db name %s", cfg.DbName)
-	db := mysqlDb.GetDB()
+	db := mysqlDb.GetDB().Debug()
 	err := db.AutoMigrate(
 		&model.Erc20ContractConfig{},
 	)
@@ -75,34 +75,35 @@ func ethereumDbMigrate() {
 	cfg := conf.GetEthereumDbConfig()
 	mysqlDb := vstore.MakeDb(cfg)
 	vlog.INFO("migrate db name %s", cfg.DbName)
-	db := mysqlDb.GetDB()
+	db := mysqlDb.GetDB().Debug()
 	err := db.AutoMigrate(
 		&model.SyncBlockConfig{},
 		&model.SplitTableInfo{},
 		&model.ContractAccountBind{},
 		&model.EthereumAccount{},
-		&model.ContractAddressRecord{},
+		//&model.ContractAddressRecord{},
+		&model.SyncErrorRecord{},
 	)
 	if err != nil {
 		panic(err)
 	}
 	//model.ContractAccountBind
-	//createMyISAMTable(db, &model.ContractAddressRecord{})
+	createMyISAMTable(db, &model.ContractAddressRecord{})
 }
 
 func contractTxDbDbMigrate() {
 	cfg := conf.GetEthContractTransactionDbConfig()
 	mysqlDb := vstore.MakeDb(cfg)
 	vlog.INFO("migrate db name %s", cfg.DbName)
-	db := mysqlDb.GetDB()
+	db := mysqlDb.GetDB().Debug()
 	err := db.AutoMigrate(
 		&model.SplitTableInfo{},
-		&model.TransactionRecord{},
+		//&model.TransactionRecord{},
 	)
 	if err != nil {
 		panic(err)
 	}
-	//createMyISAMTable(db, &model.TransactionRecord{})
+	createMyISAMTable(db, &model.TransactionRecord{})
 
 }
 
@@ -110,7 +111,7 @@ func transactionDbMigrate() {
 	cfg := conf.GetEthTransactionDbConfig()
 	mysqlDb := vstore.MakeDb(cfg)
 	vlog.INFO("migrate db name %s", cfg.DbName)
-	db := mysqlDb.GetDB()
+	db := mysqlDb.GetDB().Debug()
 	err := db.AutoMigrate(
 		&model.SplitTableInfo{},
 	)

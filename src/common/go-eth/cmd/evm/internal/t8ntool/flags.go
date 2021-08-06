@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"github.com/ville-vv/eth-chain-store/src/common/go-eth/core/vm"
-	"github.com/ville-vv/eth-chain-store/src/common/go-eth/tests"
+	//"github.com/ville-vv/eth-chain-store/src/common/go-eth/tests"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -101,7 +101,7 @@ var (
 			"\n\tAvailable extra eips:"+
 			"\n\t    %v"+
 			"\n\tSyntax <forkname>(+ExtraEip)",
-			strings.Join(tests.AvailableForks(), "\n\t    "),
+			strings.Join( /*tests.AvailableForks()*/ []string{}, "\n\t    "),
 			strings.Join(vm.ActivateableEips(), ", ")),
 		Value: "Istanbul",
 	}

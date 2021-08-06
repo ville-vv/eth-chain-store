@@ -15,6 +15,7 @@ import (
 	"github.com/ville-vv/vilgo/vlog"
 	"github.com/ville-vv/vilgo/vstore"
 	"os"
+	"runtime"
 	"time"
 )
 
@@ -28,22 +29,26 @@ var (
 	dbPort           string
 	logFile          string
 	debug            bool
-	maxSyncNum       int
+	maxPullNum       int
+	maxWriteNum      int
+	isMaxProcs       bool
 	isHelp           bool
 )
 
 func cmdFlagParse() {
 	flag.StringVar(&syncInterval, "si", "15", "the interval to sync latest block number")
 	flag.StringVar(&fastSyncInterval, "fsi", "1000", "the interval fast to sync the block number  before  the latest ms")
-	flag.StringVar(&rpcEndpoint, "rpc_endpoint", "https://mainnet.infura.io/v3/ecc309a045134205b5c2b58481d7923d", "eth rpc endpoint")
+	flag.StringVar(&rpcEndpoint, "rpc_endpoint", "http://localhost:8545", "eth rpc endpoint")
 	flag.StringVar(&dbUser, "db_user", "", "the database user")
 	flag.StringVar(&dbPassword, "db_passwd", "", "the database password")
 	flag.StringVar(&dbHost, "db_host", "", "the database host")
 	flag.StringVar(&dbPort, "db_port", "", "the database port")
 	flag.StringVar(&logFile, "logFile", "", "the log file path and file name")
-	flag.IntVar(&maxSyncNum, "max_sync_num", 1, "the max thread number for sync block information")
+	flag.IntVar(&maxPullNum, "max_pull_num", 1, "the max thread number for sync block information from chain")
+	flag.IntVar(&maxWriteNum, "max_write_num", 5, "the max thread number for write block information to db")
 	flag.BoolVar(&debug, "debug", false, "open debug logs")
 	flag.BoolVar(&isHelp, "help", false, "help")
+	flag.BoolVar(&isMaxProcs, "max_procs", false, "the max process core")
 	flag.Parse()
 	fmt.Println(isHelp, debug)
 	if isHelp {
@@ -71,6 +76,7 @@ func buildService() runner.Runner {
 		//erc20TokenCfgDao  = dao.NewErc20TokenConfigDao(businessDb)
 		ethereumDao       = dao.NewEthereumDao(ethereumDb)
 		ethBlockNumberDao = dao.NewEthereumBlockNumberDao(ethereumDb)
+		errorDao          = dao.NewSyncErrorDao(ethereumDb)
 	)
 	var (
 		// https://mainnet.infura.io/v3/ecc309a045134205b5c2b58481d7923d
@@ -80,15 +86,15 @@ func buildService() runner.Runner {
 		contractMng         = ethm.NewContractManager(ethm.NewEthRpcExecutor(rpcEndpoint, ""), repo.NewContractRepo(ethereumDao))
 		accountMng          = ethm.NewAccountManager(ethm.NewEthRpcExecutor(rpcEndpoint, ""), repo.NewContractAccountRepo(ethereumDao), repo.NewNormalAccountRepo(ethereumDao))
 		transactionWriter   = ethm.NewTransactionWriter(ethm.NewEthRpcExecutor(rpcEndpoint, ""), repo.NewTransactionRepo(normalTranDao))
-		accountMngWriter    = ethm.NewEthRetryWriter(accountMng)
-		contractMngWriter   = ethm.NewEthRetryWriter(contractMng)
-		transactionReWriter = ethm.NewEthRetryWriter(transactionWriter)
+		accountMngWriter    = ethm.NewEthRetryWriter("account", maxWriteNum, accountMng, repo.NewSyncErrorRepository(errorDao))
+		contractMngWriter   = ethm.NewEthRetryWriter("contract", maxWriteNum, contractMng, repo.NewSyncErrorRepository(errorDao))
+		transactionReWriter = ethm.NewEthRetryWriter("transaction", maxWriteNum, transactionWriter, repo.NewSyncErrorRepository(errorDao))
 		//txWriter            = ethm.NewEthereumWriter(filter, accountMngWriter, contractMngWriter, transactionReWriter)
 
 		mqPublish       = mqp.NewMDP(vlog.ERROR)
 		txWriterPublish = ethm.NewEthereumPublisher(mqPublish)
 		serviceRun      = service.NewSyncBlockChainService(
-			maxSyncNum,
+			maxPullNum,
 			ethm.NewEthRpcExecutor(rpcEndpoint, ""),
 			txWriterPublish,
 			repo.NewBlockNumberRepo(ethBlockNumberDao))
@@ -98,11 +104,11 @@ func buildService() runner.Runner {
 	mqPublish.SubScribe(transactionReWriter)
 
 	svr := &Server{}
+	svr.Add(serviceRun)
 	svr.Add(mqPublish)
 	svr.Add(accountMngWriter)
 	svr.Add(contractMngWriter)
 	svr.Add(transactionReWriter)
-	svr.Add(serviceRun)
 
 	return svr
 }
@@ -144,6 +150,9 @@ func (s *Server) Add(r runner.Runner) {
 
 func main() {
 	cmdFlagParse()
+	if isMaxProcs {
+		runtime.GOMAXPROCS(runtime.NumCPU())
+	}
 	log.Init() //12900839
 	runner.Run(buildService())
 	time.Sleep(time.Second * 5)

@@ -19,7 +19,6 @@ package t8ntool
 import (
 	"crypto/ecdsa"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/big"
@@ -31,12 +30,9 @@ import (
 	"github.com/ville-vv/eth-chain-store/src/common/go-eth/core"
 	"github.com/ville-vv/eth-chain-store/src/common/go-eth/core/state"
 	"github.com/ville-vv/eth-chain-store/src/common/go-eth/core/types"
-	"github.com/ville-vv/eth-chain-store/src/common/go-eth/core/vm"
 	"github.com/ville-vv/eth-chain-store/src/common/go-eth/crypto"
 	"github.com/ville-vv/eth-chain-store/src/common/go-eth/log"
-	"github.com/ville-vv/eth-chain-store/src/common/go-eth/params"
-	"github.com/ville-vv/eth-chain-store/src/common/go-eth/rlp"
-	"github.com/ville-vv/eth-chain-store/src/common/go-eth/tests"
+	//"github.com/ville-vv/eth-chain-store/src/common/go-eth/tests"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -75,158 +71,159 @@ type input struct {
 }
 
 func Main(ctx *cli.Context) error {
-	// Configure the go-eth logger
-	glogger := log.NewGlogHandler(log.StreamHandler(os.Stderr, log.TerminalFormat(false)))
-	glogger.Verbosity(log.Lvl(ctx.Int(VerbosityFlag.Name)))
-	log.Root().SetHandler(glogger)
-
-	var (
-		err     error
-		tracer  vm.Tracer
-		baseDir = ""
-	)
-	var getTracer func(txIndex int, txHash common.Hash) (vm.Tracer, error)
-
-	// If user specified a basedir, make sure it exists
-	if ctx.IsSet(OutputBasedir.Name) {
-		if base := ctx.String(OutputBasedir.Name); len(base) > 0 {
-			err := os.MkdirAll(base, 0755) // //rw-r--r--
-			if err != nil {
-				return NewError(ErrorIO, fmt.Errorf("failed creating output basedir: %v", err))
-			}
-			baseDir = base
-		}
-	}
-	if ctx.Bool(TraceFlag.Name) {
-		// Configure the EVM logger
-		logConfig := &vm.LogConfig{
-			DisableStack:      ctx.Bool(TraceDisableStackFlag.Name),
-			DisableMemory:     ctx.Bool(TraceDisableMemoryFlag.Name),
-			DisableReturnData: ctx.Bool(TraceDisableReturnDataFlag.Name),
-			Debug:             true,
-		}
-		var prevFile *os.File
-		// This one closes the last file
-		defer func() {
-			if prevFile != nil {
-				prevFile.Close()
-			}
-		}()
-		getTracer = func(txIndex int, txHash common.Hash) (vm.Tracer, error) {
-			if prevFile != nil {
-				prevFile.Close()
-			}
-			traceFile, err := os.Create(path.Join(baseDir, fmt.Sprintf("trace-%d-%v.jsonl", txIndex, txHash.String())))
-			if err != nil {
-				return nil, NewError(ErrorIO, fmt.Errorf("failed creating trace-file: %v", err))
-			}
-			prevFile = traceFile
-			return vm.NewJSONLogger(logConfig, traceFile), nil
-		}
-	} else {
-		getTracer = func(txIndex int, txHash common.Hash) (tracer vm.Tracer, err error) {
-			return nil, nil
-		}
-	}
-	// We need to load three things: alloc, env and transactions. May be either in
-	// stdin input or in files.
-	// Check if anything needs to be read from stdin
-	var (
-		prestate Prestate
-		txs      types.Transactions // txs to apply
-		allocStr = ctx.String(InputAllocFlag.Name)
-
-		envStr    = ctx.String(InputEnvFlag.Name)
-		txStr     = ctx.String(InputTxsFlag.Name)
-		inputData = &input{}
-	)
-	// Figure out the prestate alloc
-	if allocStr == stdinSelector || envStr == stdinSelector || txStr == stdinSelector {
-		decoder := json.NewDecoder(os.Stdin)
-		if err := decoder.Decode(inputData); err != nil {
-			return NewError(ErrorJson, fmt.Errorf("failed unmarshaling stdin: %v", err))
-		}
-	}
-	if allocStr != stdinSelector {
-		inFile, err := os.Open(allocStr)
-		if err != nil {
-			return NewError(ErrorIO, fmt.Errorf("failed reading alloc file: %v", err))
-		}
-		defer inFile.Close()
-		decoder := json.NewDecoder(inFile)
-		if err := decoder.Decode(&inputData.Alloc); err != nil {
-			return NewError(ErrorJson, fmt.Errorf("failed unmarshaling alloc-file: %v", err))
-		}
-	}
-	prestate.Pre = inputData.Alloc
-
-	// Set the block environment
-	if envStr != stdinSelector {
-		inFile, err := os.Open(envStr)
-		if err != nil {
-			return NewError(ErrorIO, fmt.Errorf("failed reading env file: %v", err))
-		}
-		defer inFile.Close()
-		decoder := json.NewDecoder(inFile)
-		var env stEnv
-		if err := decoder.Decode(&env); err != nil {
-			return NewError(ErrorJson, fmt.Errorf("failed unmarshaling env-file: %v", err))
-		}
-		inputData.Env = &env
-	}
-	prestate.Env = *inputData.Env
-
-	vmConfig := vm.Config{
-		Tracer: tracer,
-		Debug:  (tracer != nil),
-	}
-	// Construct the chainconfig
-	var chainConfig *params.ChainConfig
-	if cConf, extraEips, err := tests.GetChainConfig(ctx.String(ForknameFlag.Name)); err != nil {
-		return NewError(ErrorVMConfig, fmt.Errorf("failed constructing chain configuration: %v", err))
-	} else {
-		chainConfig = cConf
-		vmConfig.ExtraEips = extraEips
-	}
-	// Set the chain id
-	chainConfig.ChainID = big.NewInt(ctx.Int64(ChainIDFlag.Name))
-
-	var txsWithKeys []*txWithKey
-	if txStr != stdinSelector {
-		inFile, err := os.Open(txStr)
-		if err != nil {
-			return NewError(ErrorIO, fmt.Errorf("failed reading txs file: %v", err))
-		}
-		defer inFile.Close()
-		decoder := json.NewDecoder(inFile)
-		if err := decoder.Decode(&txsWithKeys); err != nil {
-			return NewError(ErrorJson, fmt.Errorf("failed unmarshaling txs-file: %v", err))
-		}
-	} else {
-		txsWithKeys = inputData.Txs
-	}
-	// We may have to sign the transactions.
-	signer := types.MakeSigner(chainConfig, big.NewInt(int64(prestate.Env.Number)))
-
-	if txs, err = signUnsignedTransactions(txsWithKeys, signer); err != nil {
-		return NewError(ErrorJson, fmt.Errorf("failed signing transactions: %v", err))
-	}
-	// Sanity check, to not `panic` in state_transition
-	if chainConfig.IsLondon(big.NewInt(int64(prestate.Env.Number))) {
-		if prestate.Env.BaseFee == nil {
-			return NewError(ErrorVMConfig, errors.New("EIP-1559 config but missing 'currentBaseFee' in env section"))
-		}
-	}
-	// Run the test and aggregate the result
-	s, result, err := prestate.Apply(vmConfig, chainConfig, txs, ctx.Int64(RewardFlag.Name), getTracer)
-	if err != nil {
-		return err
-	}
-	body, _ := rlp.EncodeToBytes(txs)
-	// Dump the excution result
-	collector := make(Alloc)
-	s.DumpToCollector(collector, nil)
-	return dispatchOutput(ctx, baseDir, result, collector, body)
+	//// Configure the go-eth logger
+	//glogger := log.NewGlogHandler(log.StreamHandler(os.Stderr, log.TerminalFormat(false)))
+	//glogger.Verbosity(log.Lvl(ctx.Int(VerbosityFlag.Name)))
+	//log.Root().SetHandler(glogger)
+	//
+	//var (
+	//	err     error
+	//	tracer  vm.Tracer
+	//	baseDir = ""
+	//)
+	//var getTracer func(txIndex int, txHash common.Hash) (vm.Tracer, error)
+	//
+	//// If user specified a basedir, make sure it exists
+	//if ctx.IsSet(OutputBasedir.Name) {
+	//	if base := ctx.String(OutputBasedir.Name); len(base) > 0 {
+	//		err := os.MkdirAll(base, 0755) // //rw-r--r--
+	//		if err != nil {
+	//			return NewError(ErrorIO, fmt.Errorf("failed creating output basedir: %v", err))
+	//		}
+	//		baseDir = base
+	//	}
+	//}
+	//if ctx.Bool(TraceFlag.Name) {
+	//	// Configure the EVM logger
+	//	logConfig := &vm.LogConfig{
+	//		DisableStack:      ctx.Bool(TraceDisableStackFlag.Name),
+	//		DisableMemory:     ctx.Bool(TraceDisableMemoryFlag.Name),
+	//		DisableReturnData: ctx.Bool(TraceDisableReturnDataFlag.Name),
+	//		Debug:             true,
+	//	}
+	//	var prevFile *os.File
+	//	// This one closes the last file
+	//	defer func() {
+	//		if prevFile != nil {
+	//			prevFile.Close()
+	//		}
+	//	}()
+	//	getTracer = func(txIndex int, txHash common.Hash) (vm.Tracer, error) {
+	//		if prevFile != nil {
+	//			prevFile.Close()
+	//		}
+	//		traceFile, err := os.Create(path.Join(baseDir, fmt.Sprintf("trace-%d-%v.jsonl", txIndex, txHash.String())))
+	//		if err != nil {
+	//			return nil, NewError(ErrorIO, fmt.Errorf("failed creating trace-file: %v", err))
+	//		}
+	//		prevFile = traceFile
+	//		return vm.NewJSONLogger(logConfig, traceFile), nil
+	//	}
+	//} else {
+	//	getTracer = func(txIndex int, txHash common.Hash) (tracer vm.Tracer, err error) {
+	//		return nil, nil
+	//	}
+	//}
+	//// We need to load three things: alloc, env and transactions. May be either in
+	//// stdin input or in files.
+	//// Check if anything needs to be read from stdin
+	//var (
+	//	prestate Prestate
+	//	txs      types.Transactions // txs to apply
+	//	allocStr = ctx.String(InputAllocFlag.Name)
+	//
+	//	envStr    = ctx.String(InputEnvFlag.Name)
+	//	txStr     = ctx.String(InputTxsFlag.Name)
+	//	inputData = &input{}
+	//)
+	//// Figure out the prestate alloc
+	//if allocStr == stdinSelector || envStr == stdinSelector || txStr == stdinSelector {
+	//	decoder := json.NewDecoder(os.Stdin)
+	//	if err := decoder.Decode(inputData); err != nil {
+	//		return NewError(ErrorJson, fmt.Errorf("failed unmarshaling stdin: %v", err))
+	//	}
+	//}
+	//if allocStr != stdinSelector {
+	//	inFile, err := os.Open(allocStr)
+	//	if err != nil {
+	//		return NewError(ErrorIO, fmt.Errorf("failed reading alloc file: %v", err))
+	//	}
+	//	defer inFile.Close()
+	//	decoder := json.NewDecoder(inFile)
+	//	if err := decoder.Decode(&inputData.Alloc); err != nil {
+	//		return NewError(ErrorJson, fmt.Errorf("failed unmarshaling alloc-file: %v", err))
+	//	}
+	//}
+	//prestate.Pre = inputData.Alloc
+	//
+	//// Set the block environment
+	//if envStr != stdinSelector {
+	//	inFile, err := os.Open(envStr)
+	//	if err != nil {
+	//		return NewError(ErrorIO, fmt.Errorf("failed reading env file: %v", err))
+	//	}
+	//	defer inFile.Close()
+	//	decoder := json.NewDecoder(inFile)
+	//	var env stEnv
+	//	if err := decoder.Decode(&env); err != nil {
+	//		return NewError(ErrorJson, fmt.Errorf("failed unmarshaling env-file: %v", err))
+	//	}
+	//	inputData.Env = &env
+	//}
+	//prestate.Env = *inputData.Env
+	//
+	//vmConfig := vm.Config{
+	//	Tracer: tracer,
+	//	Debug:  (tracer != nil),
+	//}
+	//// Construct the chainconfig
+	//var chainConfig *params.ChainConfig
+	//if cConf, extraEips, err := tests.GetChainConfig(ctx.String(ForknameFlag.Name)); err != nil {
+	//	return NewError(ErrorVMConfig, fmt.Errorf("failed constructing chain configuration: %v", err))
+	//} else {
+	//	chainConfig = cConf
+	//	vmConfig.ExtraEips = extraEips
+	//}
+	//// Set the chain id
+	//chainConfig.ChainID = big.NewInt(ctx.Int64(ChainIDFlag.Name))
+	//
+	//var txsWithKeys []*txWithKey
+	//if txStr != stdinSelector {
+	//	inFile, err := os.Open(txStr)
+	//	if err != nil {
+	//		return NewError(ErrorIO, fmt.Errorf("failed reading txs file: %v", err))
+	//	}
+	//	defer inFile.Close()
+	//	decoder := json.NewDecoder(inFile)
+	//	if err := decoder.Decode(&txsWithKeys); err != nil {
+	//		return NewError(ErrorJson, fmt.Errorf("failed unmarshaling txs-file: %v", err))
+	//	}
+	//} else {
+	//	txsWithKeys = inputData.Txs
+	//}
+	//// We may have to sign the transactions.
+	//signer := types.MakeSigner(chainConfig, big.NewInt(int64(prestate.Env.Number)))
+	//
+	//if txs, err = signUnsignedTransactions(txsWithKeys, signer); err != nil {
+	//	return NewError(ErrorJson, fmt.Errorf("failed signing transactions: %v", err))
+	//}
+	//// Sanity check, to not `panic` in state_transition
+	//if chainConfig.IsLondon(big.NewInt(int64(prestate.Env.Number))) {
+	//	if prestate.Env.BaseFee == nil {
+	//		return NewError(ErrorVMConfig, errors.New("EIP-1559 config but missing 'currentBaseFee' in env section"))
+	//	}
+	//}
+	//// Run the test and aggregate the result
+	//s, result, err := prestate.Apply(vmConfig, chainConfig, txs, ctx.Int64(RewardFlag.Name), getTracer)
+	//if err != nil {
+	//	return err
+	//}
+	//body, _ := rlp.EncodeToBytes(txs)
+	//// Dump the excution result
+	//collector := make(Alloc)
+	//s.DumpToCollector(collector, nil)
+	//return dispatchOutput(ctx, baseDir, result, collector, body)
+	return nil
 }
 
 // txWithKey is a helper-struct, to allow us to use the types.Transaction along with
