@@ -1,8 +1,12 @@
 package ethm
 
 import (
+	"context"
+	"github.com/ville-vv/eth-chain-store/src/domain/repo"
 	"github.com/ville-vv/eth-chain-store/src/infra/ethrpc"
+	"github.com/ville-vv/vilgo/runner"
 	"github.com/ville-vv/vilgo/vlog"
+	"github.com/ville-vv/vilgo/vtask"
 	"sync"
 	"time"
 )
@@ -142,4 +146,188 @@ func (sel *SyncBlockNumberCounter) FinishThisSync(blockNumber int64) error {
 		return sel.persist.UpdateSyncBlockNUmber(sel.beforeSyncNumber)
 	}
 	return nil
+}
+
+type SyncBlockNumberCounterV2 struct {
+	lbnLock   sync.RWMutex
+	ethRpcCli ethrpc.EthRPC
+	//syncFinishList      []int64
+	bknRepo             *repo.BlockNumberRepo
+	lbNum               int64 // 最新区块
+	cntSyncBlockNumber  int64 //
+	maxSyncNum          int   // 最大同时同步数
+	syncBlockNumberChan chan int64
+	stopCh              chan int
+	syncStopCh          chan int
+	isStop              bool
+	finishLock          sync.Mutex
+	beforeSyncNumber    int64
+	threadNum           vtask.AtomicInt64
+}
+
+func NewSyncBlockNumberCounterV2(maxSyncNum int, ethRpcCli ethrpc.EthRPC, bknRepo *repo.BlockNumberRepo) *SyncBlockNumberCounterV2 {
+	sbn := &SyncBlockNumberCounterV2{
+		ethRpcCli:           ethRpcCli,
+		bknRepo:             bknRepo,
+		maxSyncNum:          maxSyncNum,
+		syncBlockNumberChan: make(chan int64, maxSyncNum),
+		stopCh:              make(chan int),
+		syncStopCh:          make(chan int, maxSyncNum),
+	}
+	return sbn
+}
+
+func (sel *SyncBlockNumberCounterV2) Start() {
+	cntNumber, err := sel.bknRepo.GetCntSyncBlockNumber()
+	//cntNumber = 12696310 // 12696310
+	if err != nil {
+		panic("NewSyncBlockNumberCounterV2 " + err.Error())
+	}
+	sel.cntSyncBlockNumber = cntNumber
+
+	var waitChan = make(chan int)
+	go sel.loopSyncLatestBlockNumber(waitChan)
+	<-waitChan
+	runner.Go(func() {
+		sel.loopGenSyncNumber()
+	})
+}
+
+func (sel *SyncBlockNumberCounterV2) loopSyncLatestBlockNumber(waitStart chan int) {
+	first := true
+	oldNumber := uint64(0)
+	for {
+		time.Sleep(time.Second)
+		if sel.isStop {
+			return
+		}
+		latestNumber, err := sel.ethRpcCli.GetBlockNumber()
+		if err != nil {
+			vlog.ERROR("get latest block number from main chain %s", err.Error())
+			continue
+		}
+		if oldNumber >= latestNumber {
+			continue
+		}
+
+		sel.lbnLock.Lock()
+		sel.lbNum = int64(latestNumber)
+		sel.lbnLock.Unlock()
+		if first {
+			first = false
+			waitStart <- 1
+			err = sel.bknRepo.InitLatestBlockNumber(int64(latestNumber))
+			if err != nil {
+				panic(err)
+			}
+		}
+		// 更新数据库
+		if err = sel.bknRepo.UpdateLatestBlockNumber(int64(latestNumber)); err != nil {
+			vlog.ERROR("get block number is error %s", err.Error())
+		}
+		oldNumber = latestNumber
+	}
+}
+
+func (sel *SyncBlockNumberCounterV2) loopGenSyncNumber() {
+	tmr := time.NewTicker(time.Second)
+	for {
+		select {
+		case <-tmr.C:
+			if sel.isStop {
+				return
+			}
+			sel.genSyncBlockNumber()
+		case <-sel.stopCh:
+			return
+		}
+	}
+}
+
+func (sel *SyncBlockNumberCounterV2) genSyncBlockNumber() {
+	// 一段时间内生成maxSyncNun需要同步的区块
+	for index := 0; index < sel.maxSyncNum; index++ {
+		if sel.lbNum <= sel.cntSyncBlockNumber {
+			return
+		}
+		if sel.isStop {
+			return
+		}
+		sel.syncBlockNumberChan <- sel.cntSyncBlockNumber
+		sel.cntSyncBlockNumber++
+	}
+}
+
+//// 订阅同步区块
+//func (sel *SyncBlockNumberCounterV2) SubSyncNumberChan() <-chan int64 {
+//	return sel.syncBlockNumberChan
+//}
+
+func (sel *SyncBlockNumberCounterV2) SetSyncFunc(ctx context.Context, syncFunc func(cntBKNum, laterBKNum int64) error) {
+	var waitGp sync.WaitGroup
+	waitGp.Add(sel.maxSyncNum)
+	for i := 0; i < sel.maxSyncNum; i++ {
+		go func(seq int) {
+			var err error
+			var bkNumber int64
+			waitGp.Done()
+			sel.threadNum.Inc()
+			vlog.INFO("pull thread [%d] start", seq)
+			for {
+				select {
+				// 定时生成需要同步的区块号，在这里捕捉
+				case bkNumber = <-sel.syncBlockNumberChan:
+					err = syncFunc(bkNumber, sel.GetLatestBlockNumber())
+					if err != nil {
+						vlog.ERROR("sync block number data failed %d %s", bkNumber, err.Error())
+						continue
+					}
+					if err = sel.FinishSync(bkNumber); err != nil {
+						vlog.ERROR("update finished sync block number error %s", err.Error())
+						continue
+					}
+				case <-sel.syncStopCh:
+					goto exit
+				case <-ctx.Done():
+					goto exit
+				}
+			}
+		exit:
+			sel.threadNum.Dec()
+			vlog.INFO("pull thread [%d] exit", seq)
+		}(i)
+	}
+	waitGp.Wait()
+}
+
+func (sel *SyncBlockNumberCounterV2) GetLatestBlockNumber() int64 {
+	sel.lbnLock.RLock()
+	lbn := sel.lbNum
+	sel.lbnLock.RUnlock()
+	return lbn
+}
+
+func (sel *SyncBlockNumberCounterV2) FinishSync(bkNum int64) error {
+	sel.finishLock.Lock()
+	defer sel.finishLock.Unlock()
+	if bkNum > sel.beforeSyncNumber {
+		sel.beforeSyncNumber = bkNum
+		return sel.bknRepo.UpdateSyncBlockNUmber(sel.beforeSyncNumber)
+	}
+	return nil
+}
+
+func (sel *SyncBlockNumberCounterV2) WaitExit() {
+	for {
+		if sel.threadNum.Load() <= 0 {
+			return
+		}
+	}
+}
+
+func (sel *SyncBlockNumberCounterV2) Exit() {
+	sel.isStop = true
+	close(sel.stopCh)
+	close(sel.syncStopCh)
+	sel.WaitExit()
 }

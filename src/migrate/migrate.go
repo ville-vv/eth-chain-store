@@ -83,12 +83,13 @@ func ethereumDbMigrate() {
 		&model.EthereumAccount{},
 		//&model.ContractAddressRecord{},
 		&model.SyncErrorRecord{},
+		&model.ContractAddressRecord{},
 	)
 	if err != nil {
 		panic(err)
 	}
 	//model.ContractAccountBind
-	createMyISAMTable(db, &model.ContractAddressRecord{})
+	//createMyISAMTable(db, &model.ContractAddressRecord{})
 }
 
 func contractTxDbDbMigrate() {
@@ -98,12 +99,12 @@ func contractTxDbDbMigrate() {
 	db := mysqlDb.GetDB().Debug()
 	err := db.AutoMigrate(
 		&model.SplitTableInfo{},
-		//&model.TransactionRecord{},
+		&model.TransactionRecord{},
 	)
 	if err != nil {
 		panic(err)
 	}
-	createMyISAMTable(db, &model.TransactionRecord{})
+	//createMyISAMTable(db, &model.TransactionRecord{})
 
 }
 
@@ -114,9 +115,10 @@ func transactionDbMigrate() {
 	db := mysqlDb.GetDB().Debug()
 	err := db.AutoMigrate(
 		&model.SplitTableInfo{},
+		&model.TransactionRecord{},
 	)
 
-	db.Set("gorm:table_options", "ENGINE=MyISAM").AutoMigrate(&model.TransactionRecord{})
+	//db.Set("gorm:table_options", "ENGINE=MyISAM").AutoMigrate(&model.TransactionRecord{})
 	//db.Set("gorm:table_options", "ENGINE=MyISAM").AutoMigrate(&model.TransactionRecord{})
 
 	if err != nil {

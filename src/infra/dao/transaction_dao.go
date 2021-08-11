@@ -29,6 +29,7 @@ func (sel *EthereumTransactionDao) CreateTransactionRecord(txData *model.Transac
 		return sel.contractTxDao.createTransactionRecord(txData)
 	}
 	return sel.normalTxDao.createTransactionRecord(txData)
+	//return nil
 }
 
 //==========================================================================================

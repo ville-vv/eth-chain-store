@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/ville-vv/vilgo/runner"
 	"github.com/ville-vv/vilgo/vtask"
+	"net/http"
 	"sync"
 )
 
@@ -18,7 +19,8 @@ type MQD struct {
 	exitChan  chan int
 	csmMap    map[string]Consumer
 	logf      LogFunc
-	isStop    vtask.AtomicInt64
+	isStop    bool
+	poolSize  vtask.AtomicInt64
 }
 
 func NewMDP(logf LogFunc) *MQD {
@@ -26,7 +28,7 @@ func NewMDP(logf LogFunc) *MQD {
 		logf = logPrintf
 	}
 	m := &MQD{
-		msgChan:   make(chan *Message, 10000),
+		msgChan:   make(chan *Message, 20000),
 		updateCSM: make(chan int),
 		exitChan:  make(chan int),
 		csmMap:    make(map[string]Consumer),
@@ -45,13 +47,25 @@ func (sel *MQD) Init() error {
 
 func (sel *MQD) Start() error {
 	runner.Go(sel.msgPump)
+	//go sel.msgPump()
+	runner.Go(sel.monitor)
 	return nil
 }
 
+func (sel *MQD) monitor() {
+	http.HandleFunc("/mq_size", func(writer http.ResponseWriter, request *http.Request) {
+		bodyStr := fmt.Sprintf(`
+Pool Size: %d
+`, sel.poolSize.Load())
+		writer.Write([]byte(bodyStr))
+	})
+	http.ListenAndServe("0.0.0.0:5489", nil)
+}
+
 func (sel *MQD) Exit(ctx context.Context) error {
+	sel.isStop = true
 	close(sel.exitChan)
 	close(sel.updateCSM)
-	close(sel.msgChan)
 	sel.ClearMsgChan()
 	sel.logf("MQD Exited")
 	return nil
@@ -79,6 +93,7 @@ func (sel *MQD) msgPump() {
 	for {
 		select {
 		case msg = <-msgChan:
+			sel.poolSize.Dec()
 		case <-sel.updateCSM:
 			csms = csms[:0]
 			sel.RLock()
@@ -107,24 +122,26 @@ func (sel *MQD) msgPump() {
 		}
 	}
 exit:
-	sel.isStop.Dec()
 	sel.logf("MQD Exiting")
 	return
 }
 
 func (sel *MQD) Publish(msg *Message) error {
-	if sel.isStop.Load() < 0 {
+	if sel.isStop {
 		return errors.New("mqd have closed")
 	}
 	select {
 	case sel.msgChan <- msg:
+		sel.poolSize.Inc()
 	}
 	return nil
 }
 
 func (sel *MQD) ClearMsgChan() {
+	close(sel.msgChan)
 	sel.logf("clear msg ")
 	for v := range sel.msgChan {
+		sel.poolSize.Dec()
 		for _, csm := range sel.csmMap {
 			err := csm.Process(v)
 			if err != nil {

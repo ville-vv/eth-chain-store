@@ -81,8 +81,6 @@ func buildService() runner.Runner {
 	var (
 		// https://mainnet.infura.io/v3/ecc309a045134205b5c2b58481d7923d
 		// https://mainnet.infura.io/v3/21628f8f9b9b423a9ea05a708016b119
-		//ehtrpcCli           = ethm.NewEthRpcExecutor(rpcEndpoint, "")
-		//filter              = ethm.NewEthereumWriteFilter(erc20TokenCfgDao)
 		contractMng         = ethm.NewContractManager(ethm.NewEthRpcExecutor(rpcEndpoint, ""), repo.NewContractRepo(ethereumDao))
 		accountMng          = ethm.NewAccountManager(ethm.NewEthRpcExecutor(rpcEndpoint, ""), repo.NewContractAccountRepo(ethereumDao), repo.NewNormalAccountRepo(ethereumDao))
 		transactionWriter   = ethm.NewTransactionWriter(ethm.NewEthRpcExecutor(rpcEndpoint, ""), repo.NewTransactionRepo(normalTranDao))
@@ -93,11 +91,11 @@ func buildService() runner.Runner {
 
 		mqPublish       = mqp.NewMDP(vlog.ERROR)
 		txWriterPublish = ethm.NewEthereumPublisher(mqPublish)
-		serviceRun      = service.NewSyncBlockChainService(
-			maxPullNum,
-			ethm.NewEthRpcExecutor(rpcEndpoint, ""),
-			txWriterPublish,
-			repo.NewBlockNumberRepo(ethBlockNumberDao))
+		//serviceRun      = service.NewSyncBlockChainService(maxPullNum, ethm.NewEthRpcExecutor(rpcEndpoint, ""), txWriterPublish, repo.NewBlockNumberRepo(ethBlockNumberDao))
+
+		ethMng       = ethm.NewEthereumManager(ethm.NewEthRpcExecutor(rpcEndpoint, ""), txWriterPublish)
+		bkNumCounter = ethm.NewSyncBlockNumberCounterV2(maxPullNum, ethm.NewEthRpcExecutor(rpcEndpoint, ""), repo.NewBlockNumberRepo(ethBlockNumberDao))
+		serviceRun   = service.NewSyncBlockChainServiceV2(ethMng, bkNumCounter)
 	)
 	mqPublish.SubScribe(accountMngWriter)
 	mqPublish.SubScribe(contractMngWriter)

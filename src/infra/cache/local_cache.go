@@ -10,7 +10,8 @@ type LocalCache struct {
 }
 
 func (l *LocalCache) Put(key string, val interface{}, ept ...time.Duration) error {
-	panic("implement me")
+	l.st.Store(key, val)
+	return nil
 }
 
 func (l *LocalCache) Get(key string) (val interface{}, err error) {

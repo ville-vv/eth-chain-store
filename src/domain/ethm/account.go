@@ -3,10 +3,11 @@ package ethm
 import (
 	"github.com/pkg/errors"
 	"github.com/ville-vv/eth-chain-store/src/domain/repo"
+	"github.com/ville-vv/eth-chain-store/src/infra/cache"
 	"github.com/ville-vv/eth-chain-store/src/infra/ethrpc"
 	"github.com/ville-vv/eth-chain-store/src/infra/model"
-	"github.com/ville-vv/eth-chain-store/src/infra/mqp"
 	"github.com/ville-vv/vilgo/vlog"
+	"sync"
 )
 
 type Account struct {
@@ -27,12 +28,14 @@ func NewAccountManager(ethCli ethrpc.EthRPC, contractAccountRepo *repo.ContractA
 		ethCli: ethCli,
 		//contractMng: contractMng,
 		contractActMng: &contractAccountManager{
-			ethCli:      ethCli,
-			accountRepo: contractAccountRepo,
+			ethCli:        ethCli,
+			accountRepo:   contractAccountRepo,
+			haveWriteList: NewRingStrList(),
 		},
 		normalActMng: &normalAccountManager{
-			ethCli:      ethCli,
-			accountRepo: normalAccountRepo,
+			ethCli:        ethCli,
+			accountRepo:   normalAccountRepo,
+			haveWriteList: NewRingStrList(),
 		},
 	}
 	return ac
@@ -47,19 +50,6 @@ func (sel *AccountManager) TxWrite(txData *model.TransactionData) error {
 		return sel.contractActMng.UpdateAccount(txData)
 	}
 	return sel.normalActMng.UpdateAccount(txData)
-}
-
-func (sel *AccountManager) ID() string {
-	return "AccountManager"
-}
-func (sel *AccountManager) Process(msg *mqp.Message) error {
-	txData := &model.TransactionData{}
-	err := msg.UnMarshalFromBody(txData)
-	if err != nil {
-		return err
-	}
-
-	return sel.TxWrite(txData)
 }
 
 // contractAccountUpdater 处理合约账户
@@ -86,8 +76,11 @@ func (sel *AccountManager) contractAccountUpdater(txData *model.TransactionData)
 
 // contractAccountManager 以太坊合约账户管理
 type contractAccountManager struct {
-	ethCli      ethrpc.EthRPC
-	accountRepo *repo.ContractAccountRepo
+	ethCli        ethrpc.EthRPC
+	accountRepo   *repo.ContractAccountRepo
+	haveWriteList *RingStrList
+	contractCache *cache.RingCache
+	sync.Mutex
 }
 
 // UpdateAccount 合约代币交易账户信息写入, contractAddress 是合约地址
@@ -102,38 +95,110 @@ func (sel *contractAccountManager) UpdateAccount(txData *model.TransactionData) 
 }
 
 func (sel *contractAccountManager) writeAccount(accountAddr string, contractAddress string, isLatest bool) error {
-	balance, err := sel.ethCli.GetContractBalance(contractAddress, accountAddr)
-	if err != nil {
-		return err
-	}
-
-	updated, err := sel.accountRepo.UpdateBalance(accountAddr, contractAddress, balance, isLatest)
-	if err != nil {
-		vlog.ERROR("writeAccount update account balance failed addr:%s contract:%s error:%s", accountAddr, contractAddress, err.Error())
-		return err
-	}
-	if updated {
+	var exist bool
+	var err error
+	var tableName string
+	var bindInfo *model.ContractAccountBind
+	var unique = accountAddr + contractAddress
+	sel.Lock()
+	defer sel.Unlock()
+	if !sel.haveWriteList.Exist(unique) {
+		sel.haveWriteList.Set(unique)
+		// 如果缓存中没有，就查一下数据库
+		bindInfo, tableName, err = sel.accountRepo.QueryBindContractAccount(contractAddress, accountAddr)
+		if err != nil {
+			sel.haveWriteList.Del(unique)
+			return err
+		}
+		if bindInfo.ID > 0 {
+			exist = true
+		}
+		err = sel.createAccount(accountAddr, contractAddress)
+		if err != nil {
+			sel.haveWriteList.Del(unique)
+			return err
+		}
 		return nil
 	}
 
-	symbol, err := sel.ethCli.GetContractSymbol(contractAddress)
+	if isLatest {
+		if !exist {
+			// 如果缓存中没有，就查一下数据库
+			bindInfo, tableName, err = sel.accountRepo.QueryBindContractAccount(contractAddress, accountAddr)
+			if err != nil {
+				return err
+			}
+			if bindInfo.ID <= 0 {
+				return nil
+			}
+		}
+
+		balance, err := sel.ethCli.GetContractBalance(contractAddress, accountAddr)
+		if err != nil {
+			if err.Error() != "execution reverted" {
+				vlog.ERROR("writeAccount get contract balance update failed addr:%s contract:%s error:%s", accountAddr, contractAddress, err.Error())
+				return err
+			}
+		}
+
+		if err = sel.accountRepo.UpdateBalanceById(tableName, bindInfo.ID, balance); err != nil {
+			vlog.ERROR("writeAccount update account balance failed addr:%s contract:%s error:%s", accountAddr, contractAddress, err.Error())
+			return err
+		}
+	}
+	return nil
+}
+
+func (sel *contractAccountManager) createAccount(accountAddr string, contractAddress string) error {
+	balance, err := sel.ethCli.GetContractBalance(contractAddress, accountAddr)
 	if err != nil {
-		vlog.ERROR("writeAccount get contract symbol failed addr:%s contract:%s", accountAddr, contractAddress)
+		if err.Error() != "execution reverted" {
+			vlog.ERROR("writeAccount.createAccount get contract balance failed addr:%s contract:%s error:%s", accountAddr, contractAddress, err.Error())
+			return err
+		}
+		return nil
+	}
+	symbol, err := sel.getContractSymbol(contractAddress)
+	if err != nil {
+		vlog.ERROR("writeAccount get contract symbol failed contract:%s error:%s", contractAddress, err.Error())
 		return err
 	}
-	// 如果该账户不存在
-	return sel.accountRepo.CreateEthAccount(&model.ContractAccountBind{
+
+	err = sel.accountRepo.CreateEthAccount(&model.ContractAccountBind{
 		Address:         accountAddr,
 		ContractAddress: contractAddress,
 		Symbol:          symbol,
 		Balance:         balance,
 	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (sel *contractAccountManager) getContractSymbol(contractAddress string) (string, error) {
+	var symbol string
+	var err error
+	val, ok := sel.contractCache.Get(contractAddress)
+	if ok {
+		symbol, _ = val.(string)
+	} else {
+		symbol, err = sel.ethCli.GetContractSymbol(contractAddress)
+		if err != nil {
+			if err.Error() != "execution reverted" {
+				return "", err
+			}
+			return "", nil
+		}
+	}
+	return symbol, err
 }
 
 // normalAccountManager 以太坊账户管理
 type normalAccountManager struct {
-	ethCli      ethrpc.EthRPC
-	accountRepo *repo.NormalAccountRepo
+	ethCli        ethrpc.EthRPC
+	accountRepo   *repo.NormalAccountRepo
+	haveWriteList *RingStrList
 }
 
 // 以太坊正常的交易账户写入，这里就不判断该账户是不是合约账户了直接写入 from 和 to
@@ -146,26 +211,61 @@ func (sel *normalAccountManager) UpdateAccount(txData *model.TransactionData) er
 	}
 	return nil
 }
-func (sel *normalAccountManager) writeAccount(accountAddr string, timeStamp string, hash string, isLatest bool) error {
-	// 获取的余额
-	balance, err := sel.ethCli.GetBalance(accountAddr)
-	if err != nil {
-		return err
-	}
 
-	updated, err := sel.accountRepo.UpdateBalance(accountAddr, balance, isLatest)
-	if err != nil {
-		return err
-	}
-	if updated {
-		// 账户存在，已经更新
+func (sel *normalAccountManager) writeAccount(accountAddr string, timeStamp string, hash string, isLatest bool) error {
+	var exist bool
+	var err error
+	var tableName string
+	var bindInfo *model.EthereumAccount
+
+	if !sel.haveWriteList.Exist(accountAddr) {
+		sel.haveWriteList.Set(accountAddr)
+		bindInfo, tableName, err = sel.accountRepo.QueryNormalAccount(accountAddr)
+		if err != nil {
+			sel.haveWriteList.Del(accountAddr)
+			return err
+		}
+		if bindInfo.ID > 0 {
+			exist = true
+		}
+		// 获取的余额
+		balance, err := sel.ethCli.GetBalance(accountAddr)
+		if err != nil {
+			sel.haveWriteList.Del(accountAddr)
+			return err
+		}
+		err = sel.accountRepo.CreateEthAccount(&model.EthereumAccount{
+			Address:     accountAddr,
+			FirstTxTime: timeStamp,
+			FirstTxHash: hash,
+			Balance:     balance,
+		})
+		if err != nil {
+			sel.haveWriteList.Del(accountAddr)
+			return err
+		}
 		return nil
 	}
-	// 创建一个以太坊账户
-	return sel.accountRepo.CreateEthAccount(&model.EthereumAccount{
-		Address:     accountAddr,
-		FirstTxTime: timeStamp,
-		FirstTxHash: hash,
-		Balance:     balance,
-	})
+
+	if isLatest {
+		if !exist {
+			bindInfo, tableName, err = sel.accountRepo.QueryNormalAccount(accountAddr)
+			if err != nil {
+				return err
+			}
+			if bindInfo.ID <= 0 {
+				return nil
+			}
+		}
+		// 获取的余额
+		balance, err := sel.ethCli.GetBalance(accountAddr)
+		if err != nil {
+			return err
+		}
+		if err = sel.accountRepo.UpdateBalanceById(tableName, bindInfo.ID, balance); err != nil {
+			return err
+		}
+	}
+	return nil
+
 }

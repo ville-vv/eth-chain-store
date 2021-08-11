@@ -98,12 +98,13 @@ func (sel *EthRetryWriter) Exit(ctx context.Context) error {
 	return nil
 }
 func (sel *EthRetryWriter) waitStop() {
-	vlog.INFO("Wait Close EthRetryWriter %s ", sel.name)
 	for {
+		vlog.INFO("Wait Close EthRetryWriter %s %d", sel.name, sel.runCounter.Load())
 		if sel.runCounter.Load() <= 0 {
 			vlog.INFO("Exit EthRetryWriter %s ", sel.name)
 			return
 		}
+
 		time.Sleep(time.Second)
 	}
 }
@@ -125,21 +126,24 @@ func (sel *EthRetryWriter) TxWrite(txData *model.TransactionData) error {
 }
 
 func (sel *EthRetryWriter) ID() string {
-	return ""
+	return sel.name
 }
 
 func (sel *EthRetryWriter) Process(msg *mqp.Message) error {
+	if msg == nil {
+		return nil
+	}
 	if sel.isStop {
 		return fmt.Errorf("%s write process is stop", sel.name)
 	}
-
-	sel.maxGoRun <- 1
-	sel.runCounter.Inc()
 	txData := &model.TransactionData{}
 	err := msg.UnMarshalFromBody(txData)
 	if err != nil {
 		return err
 	}
+
+	sel.maxGoRun <- 1
+	sel.runCounter.Inc()
 	go func(dt *model.TransactionData) {
 		_ = sel.TxWrite(dt)
 		<-sel.maxGoRun

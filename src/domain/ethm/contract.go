@@ -8,10 +8,54 @@ import (
 	"github.com/ville-vv/eth-chain-store/src/infra/model"
 	"github.com/ville-vv/vilgo/vlog"
 	"strconv"
+	"sync"
 )
 
 type Erc20Manager interface {
 	IsErc20(addr string) bool
+}
+
+type RingStrList struct {
+	sync.Mutex
+	list   []string
+	index  int
+	length int
+}
+
+func NewRingStrList() *RingStrList {
+	lng := 20000000
+	return &RingStrList{
+		list:   make([]string, lng),
+		index:  0,
+		length: lng,
+	}
+}
+
+func (sel *RingStrList) Exist(str string) bool {
+	sel.Lock()
+	defer sel.Unlock()
+	for i := 0; i < sel.length; i++ {
+		if str == sel.list[i] {
+			return true
+		}
+	}
+	return false
+}
+
+func (sel *RingStrList) Set(str string) {
+	sel.Lock()
+	sel.list[sel.index] = str
+	sel.Unlock()
+}
+
+func (sel *RingStrList) Del(str string) {
+	sel.Lock()
+	for i := 0; i < sel.length; i++ {
+		if str == sel.list[i] {
+			sel.list[i] = ""
+		}
+	}
+	sel.Unlock()
 }
 
 type Erc20Contract struct {
@@ -28,12 +72,14 @@ func (sel *Erc20Contract) IsErc20() bool {
 }
 
 type ContractManager struct {
-	rpcCli       ethrpc.EthRPC
-	contractRepo *repo.ContractRepo
+	rpcCli        ethrpc.EthRPC
+	contractRepo  *repo.ContractRepo
+	haveWriteList *RingStrList
+	sync.Mutex
 }
 
 func NewContractManager(rpcCli ethrpc.EthRPC, contractRepo *repo.ContractRepo) *ContractManager {
-	return &ContractManager{rpcCli: rpcCli, contractRepo: contractRepo}
+	return &ContractManager{rpcCli: rpcCli, contractRepo: contractRepo, haveWriteList: NewRingStrList()}
 }
 
 // GetErc20ContractInfo ERC20 协议的合约有固定的合约接口来获取合约的基本信息
@@ -94,17 +140,18 @@ func (sel *ContractManager) GetErc20ContractInfo(contractAddr string) (*Erc20Con
 // 如果是  token transfer 交易，那么 to 地址一定是合约地址
 func (sel *ContractManager) TxWrite(txData *model.TransactionData) (err error) {
 	vlog.DEBUG("tx writer to contract information %s", txData.Hash)
+
 	if txData.IsContractToken {
 		return sel.writeTokenContractInfo(txData.ContractAddress, txData.TimeStamp)
 	}
 
 	// 检查 from 地址
-	if err = sel.writeOtherContractInfo(txData.From, txData.TimeStamp); err != nil {
+	if err = sel.writeTokenContractInfo(txData.From, txData.TimeStamp); err != nil {
 		return nil
 	}
 
 	// 检查 to 地址
-	if err = sel.writeOtherContractInfo(txData.To, txData.TimeStamp); err != nil {
+	if err = sel.writeTokenContractInfo(txData.To, txData.TimeStamp); err != nil {
 		return nil
 	}
 
@@ -113,9 +160,17 @@ func (sel *ContractManager) TxWrite(txData *model.TransactionData) (err error) {
 
 // writeTokenContractInfo 代币合约信息
 func (sel *ContractManager) writeTokenContractInfo(addr string, timeStamp string) (err error) {
+	sel.Lock()
+	defer sel.Unlock()
+	if sel.haveWriteList.Exist(addr) {
+		//vlog.WARN("合约已经存在")
+		return nil
+	}
+	sel.haveWriteList.Set(addr)
 	// 如果存在合约地址，也要到主链中判断该地址是不是合约地址
 	codeData, err := sel.rpcCli.GetCode(addr)
 	if err != nil {
+		sel.haveWriteList.Del(addr)
 		return err
 	}
 	if codeData == "0x" || codeData == "" {
@@ -129,51 +184,73 @@ func (sel *ContractManager) writeTokenContractInfo(addr string, timeStamp string
 	}
 
 	// erc20 合约
-	erc20ContractInfo, err := sel.GetErc20ContractInfo(addr)
-	if err != nil {
-		vlog.ERROR("ContractManager.writeTokenContractInfo get erc20 contract info address:%s error:%s", addr, err.Error())
-		return errors.Wrap(err, "get erc20 contract info")
-	}
-	// 如果不存在就创建
-	err = sel.contractRepo.CreateContract(&model.ContractContent{
-		Symbol:      erc20ContractInfo.Symbol,
+	erc20ContractInfo, _ := sel.GetErc20ContractInfo(addr)
+	//if err != nil {
+	//	//sel.haveWriteList.Del(addr)
+	//	//vlog.ERROR("ContractManager.writeTokenContractInfo get erc20 contract info address:%s error:%s", addr, err.Error())
+	//	//return errors.Wrap(err, "get erc20 contract info")
+	//	//return nil
+	//	err = nil
+	//}
+	contractInfo := &model.ContractContent{
 		Address:     addr,
 		PublishTime: timeStamp,
-		IsErc20:     true,
-		TotalSupply: erc20ContractInfo.TotalSupply,
-	})
-	if err != nil {
+	}
+	if erc20ContractInfo != nil {
+		contractInfo.TotalSupply = erc20ContractInfo.TotalSupply
+		contractInfo.Symbol = erc20ContractInfo.Symbol
+		contractInfo.IsErc20 = erc20ContractInfo.IsErc20()
+	}
+	// 如果不存在就创建
+	if err = sel.contractRepo.CreateContract(contractInfo); err != nil {
+		sel.haveWriteList.Del(addr)
 		vlog.ERROR("ContractManager.writeTokenContractInfo create contract info failed address:%s error:%s", addr, err.Error())
 		return errors.Wrap(err, "create contract info")
 	}
 	return
 }
 
-func (sel *ContractManager) writeOtherContractInfo(addr string, timeStamp string) (err error) {
-	// 如果存在合约地址，也要到主链中判断该地址是不是合约地址
-	codeData, err := sel.rpcCli.GetCode(addr)
-	if err != nil {
-		return err
-	}
-	if codeData == "0x" || codeData == "" {
-		// 不是合约地址直接返回
-		return nil
-	}
-	// 查询是否已经存在记录
-	if sel.contractRepo.IsContractExist(addr) {
-		return nil
-	}
-	// erc20 合约
-	erc20ContractInfo, err := sel.GetErc20ContractInfo(addr)
-	if err != nil {
-		return errors.Wrap(err, "other get erc20 contract info")
-	}
-
-	return sel.contractRepo.CreateContract(&model.ContractContent{
-		Symbol:      erc20ContractInfo.Symbol,
-		Address:     addr,
-		PublishTime: timeStamp,
-		IsErc20:     erc20ContractInfo.IsErc20(),
-		TotalSupply: erc20ContractInfo.TotalSupply,
-	})
-}
+//func (sel *ContractManager) writeOtherContractInfo(addr string, timeStamp string) (err error) {
+//	if sel.haveWriteList.Exist(addr) {
+//		return nil
+//	}
+//
+//	sel.haveWriteList.Set(addr)
+//
+//	// 如果存在合约地址，也要到主链中判断该地址是不是合约地址
+//	codeData, err := sel.rpcCli.GetCode(addr)
+//	if err != nil {
+//		sel.haveWriteList.Del(addr)
+//		return err
+//	}
+//	if codeData == "0x" || codeData == "" {
+//		// 不是合约地址直接返回
+//		return nil
+//	}
+//
+//	// 查询是否已经存在记录
+//	if sel.contractRepo.IsContractExist(addr) {
+//		return nil
+//	}
+//
+//	// erc20 合约
+//	erc20ContractInfo, err := sel.GetErc20ContractInfo(addr)
+//	if err != nil {
+//		sel.haveWriteList.Del(addr)
+//		return errors.Wrap(err, "other get erc20 contract info")
+//	}
+//
+//	err = sel.contractRepo.CreateContract(&model.ContractContent{
+//		Symbol:      erc20ContractInfo.Symbol,
+//		Address:     addr,
+//		PublishTime: timeStamp,
+//		IsErc20:     erc20ContractInfo.IsErc20(),
+//		TotalSupply: erc20ContractInfo.TotalSupply,
+//	})
+//	if err != nil {
+//		sel.haveWriteList.Del(addr)
+//		return err
+//	}
+//
+//	return
+//}
