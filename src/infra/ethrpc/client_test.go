@@ -12,11 +12,11 @@ import (
 func TestClient_GetBalanceByBlockNumber(t *testing.T) {
 	cli := NewClient("https://mainnet.infura.io/v3/21628f8f9b9b423a9ea05a708016b119")
 	cli = NewClient("http://172.16.16.115:8545")
-	balance, err := cli.GetContractBalance("0xdAC17F958D2ee523a2206206994597C13D831ec7",
-		"0xdAC17F958D2ee523a2206206994597C13D831ec7")
+	balance, err := cli.GetBalanceByBlockNumber("0x0536806df512d6cdde913cf95c9886f65b1d3462",
+		4129000)
 	fmt.Println(balance, err)
 
-	balance, err = cli.GetContractBalanceByBlockNumber("0xdAC17F958D2ee523a2206206994597C13D831ec7", "0x0c134bfee2096f8686466e5ee14f122d5ebe4c80", 43958)
+	balance, err = cli.GetContractBalanceByBlockNumber("0xa74476443119a942de498590fe1f2454d7d4ac0d", "0x166e09f9ae84cb6805e5d85e21e7e8167e9085cb", 4129000)
 	fmt.Println(balance, err)
 	//
 	//kek := sha3.NewLegacyKeccak256()

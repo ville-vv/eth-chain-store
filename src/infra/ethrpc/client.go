@@ -152,7 +152,7 @@ func (sel *Client) GetContractBalanceByBlockNumber(contract, addr string, blockN
 		}).String(),
 	}
 
-	var hex hexutil.Big
+	var hex hexutil.Bytes
 
 	bigInt := hexutil.Big(*big.NewInt(blockNumber))
 
