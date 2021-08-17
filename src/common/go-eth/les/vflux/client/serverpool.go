@@ -78,7 +78,7 @@ type ServerPool struct {
 }
 
 // nodeHistory keeps track of dial costs which determine node weight together with the
-// service value calculated by ValueTracker.
+// server value calculated by ValueTracker.
 type nodeHistory struct {
 	dialCost                       utils.ExpiredValue
 	redialWaitStart, redialWaitEnd int64 // unix time (seconds)
@@ -379,7 +379,7 @@ func (s *ServerPool) UnregisterNode(node *enode.Node) {
 }
 
 // recalTimeout calculates the current recommended timeout. This value is used by
-// the client as a "soft timeout" value. It also affects the service value calculation
+// the client as a "soft timeout" value. It also affects the server value calculation
 // of individual nodes.
 func (s *ServerPool) recalTimeout() {
 	// Use cached result if possible, avoid recalculating too frequently.
@@ -432,7 +432,7 @@ func (s *ServerPool) GetTimeout() time.Duration {
 }
 
 // getTimeoutAndWeight returns the recommended request timeout as well as the
-// response time weight which is necessary to calculate service value.
+// response time weight which is necessary to calculate server value.
 func (s *ServerPool) getTimeoutAndWeight() (time.Duration, ResponseTimeWeights) {
 	s.recalTimeout()
 	s.timeoutLock.RLock()
@@ -454,7 +454,7 @@ func (s *ServerPool) addDialCost(n *nodeHistory, amount int64) uint64 {
 	return totalDialCost
 }
 
-// serviceValue returns the service value accumulated in this session and in total
+// serviceValue returns the server value accumulated in this session and in total
 func (s *ServerPool) serviceValue(node *enode.Node) (sessionValue, totalValue float64) {
 	nvt := s.vt.GetNode(node.ID())
 	if nvt == nil {
@@ -493,12 +493,12 @@ func (s *ServerPool) updateWeight(node *enode.Node, totalValue float64, totalDia
 	s.ns.Persist(node) // saved if node history or hasValue changed
 }
 
-// setRedialWait calculates and sets the redialWait timeout based on the service value
+// setRedialWait calculates and sets the redialWait timeout based on the server value
 // and dial cost accumulated during the last session/attempt and in total.
-// The waiting time is raised exponentially if no service value has been received in order
+// The waiting time is raised exponentially if no server value has been received in order
 // to prevent dialing an unresponsive node frequently for a very long time just because it
 // was useful in the past. It can still be occasionally dialed though and once it provides
-// a significant amount of service value again its waiting time is quickly reduced or reset
+// a significant amount of server value again its waiting time is quickly reduced or reset
 // to the minimum.
 // Note: node weight is also recalculated and updated by this function.
 // Note 2: this function should run inside a NodeStateMachine operation
@@ -510,7 +510,7 @@ func (s *ServerPool) setRedialWait(node *enode.Node, addDialCost int64, waitStep
 	// if the current dial session has yielded at least the average value/dial cost ratio
 	// then the waiting time should be reset to the minimum. If the session value
 	// is below average but still positive then timeout is limited to the ratio of
-	// average / current service value multiplied by the minimum timeout. If the attempt
+	// average / current server value multiplied by the minimum timeout. If the attempt
 	// was unsuccessful then timeout is raised exponentially without limitation.
 	// Note: dialCost is used in the formula below even if dial was not attempted at all
 	// because the pre-negotiation query did not return a positive result. In this case
@@ -538,7 +538,7 @@ func (s *ServerPool) setRedialWait(node *enode.Node, addDialCost int64, waitStep
 	if plannedTimeout > nextTimeout {
 		nextTimeout = plannedTimeout
 	}
-	// we reduce the waiting time if the server has provided service value during the
+	// we reduce the waiting time if the server has provided server value during the
 	// connection (but never under the minimum)
 	a := totalValue * dialCost * float64(minRedialWait)
 	b := float64(totalDialCost) * sessionValue

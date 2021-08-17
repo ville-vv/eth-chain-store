@@ -227,7 +227,7 @@ func (lc *LightChain) StateCache() state.Database {
 }
 
 // GetBody retrieves a block body (transactions and uncles) from the database
-// or ODR service by hash, caching it if found.
+// or ODR server by hash, caching it if found.
 func (lc *LightChain) GetBody(ctx context.Context, hash common.Hash) (*types.Body, error) {
 	// Short circuit if the body's already in the cache, retrieve otherwise
 	if cached, ok := lc.bodyCache.Get(hash); ok {
@@ -248,7 +248,7 @@ func (lc *LightChain) GetBody(ctx context.Context, hash common.Hash) (*types.Bod
 }
 
 // GetBodyRLP retrieves a block body in RLP encoding from the database or
-// ODR service by hash, caching it if found.
+// ODR server by hash, caching it if found.
 func (lc *LightChain) GetBodyRLP(ctx context.Context, hash common.Hash) (rlp.RawValue, error) {
 	// Short circuit if the body's already in the cache, retrieve otherwise
 	if cached, ok := lc.bodyRLPCache.Get(hash); ok {
@@ -274,7 +274,7 @@ func (lc *LightChain) HasBlock(hash common.Hash, number uint64) bool {
 	return blk != nil
 }
 
-// GetBlock retrieves a block from the database or ODR service by hash and number,
+// GetBlock retrieves a block from the database or ODR server by hash and number,
 // caching it if found.
 func (lc *LightChain) GetBlock(ctx context.Context, hash common.Hash, number uint64) (*types.Block, error) {
 	// Short circuit if the block's already in the cache, retrieve otherwise
@@ -290,7 +290,7 @@ func (lc *LightChain) GetBlock(ctx context.Context, hash common.Hash, number uin
 	return block, nil
 }
 
-// GetBlockByHash retrieves a block from the database or ODR service by hash,
+// GetBlockByHash retrieves a block from the database or ODR server by hash,
 // caching it if found.
 func (lc *LightChain) GetBlockByHash(ctx context.Context, hash common.Hash) (*types.Block, error) {
 	number := lc.hc.GetBlockNumber(hash)
@@ -300,7 +300,7 @@ func (lc *LightChain) GetBlockByHash(ctx context.Context, hash common.Hash) (*ty
 	return lc.GetBlock(ctx, hash, *number)
 }
 
-// GetBlockByNumber retrieves a block from the database or ODR service by
+// GetBlockByNumber retrieves a block from the database or ODR server by
 // number, caching it (associated with its hash) if found.
 func (lc *LightChain) GetBlockByNumber(ctx context.Context, number uint64) (*types.Block, error) {
 	hash, err := GetCanonicalHash(ctx, lc.odr, number)
@@ -310,7 +310,7 @@ func (lc *LightChain) GetBlockByNumber(ctx context.Context, number uint64) (*typ
 	return lc.GetBlock(ctx, hash, number)
 }
 
-// Stop stops the blockchain service. If any imports are currently in progress
+// Stop stops the blockchain server. If any imports are currently in progress
 // it will abort them using the procInterrupt.
 func (lc *LightChain) Stop() {
 	if !atomic.CompareAndSwapInt32(&lc.running, 0, 1) {

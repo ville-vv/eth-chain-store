@@ -10,7 +10,7 @@ import (
 )
 
 // GnosisSafeTx is a type to parse the safe-tx returned by the relayer,
-// it also conforms to the API required by the Gnosis Safe tx relay service.
+// it also conforms to the API required by the Gnosis Safe tx relay server.
 // See 'SafeMultisigTransaction' on https://safe-transaction.mainnet.gnosis.io/
 type GnosisSafeTx struct {
 	// These fields are only used on output

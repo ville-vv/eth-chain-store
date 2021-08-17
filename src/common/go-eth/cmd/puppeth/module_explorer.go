@@ -117,7 +117,7 @@ func deployExplorer(client *sshClient, network string, bootnodes []string, confi
 	}
 	defer client.Run("rm -rf " + workdir)
 
-	// Build and deploy the boot or seal node service
+	// Build and deploy the boot or seal node server
 	if nocache {
 		return nil, client.Stream(fmt.Sprintf("cd %s && docker-compose -p %s build --pull --no-cache && docker-compose -p %s up -d --force-recreate --timeout 60", workdir, network, network))
 	}
@@ -177,7 +177,7 @@ func checkExplorer(client *sshClient, network string) (*explorerInfos, error) {
 		log.Warn("Explorer node seems unreachable", "server", host, "port", p2pPort, "err", err)
 	}
 	if err = checkPort(host, port); err != nil {
-		log.Warn("Explorer service seems unreachable", "server", host, "port", port, "err", err)
+		log.Warn("Explorer server seems unreachable", "server", host, "port", port, "err", err)
 	}
 	// Assemble and return the useful infos
 	stats := &explorerInfos{

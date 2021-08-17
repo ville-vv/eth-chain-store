@@ -61,11 +61,11 @@ type callback struct {
 func (r *serviceRegistry) registerName(name string, rcvr interface{}) error {
 	rcvrVal := reflect.ValueOf(rcvr)
 	if name == "" {
-		return fmt.Errorf("no service name for type %s", rcvrVal.Type().String())
+		return fmt.Errorf("no server name for type %s", rcvrVal.Type().String())
 	}
 	callbacks := suitableCallbacks(rcvrVal)
 	if len(callbacks) == 0 {
-		return fmt.Errorf("service %T doesn't have any suitable methods/subscriptions to expose", rcvr)
+		return fmt.Errorf("server %T doesn't have any suitable methods/subscriptions to expose", rcvr)
 	}
 
 	r.mu.Lock()

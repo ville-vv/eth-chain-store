@@ -11,14 +11,16 @@ type EthereumDao struct {
 	contractRecordTb *dhcpTable
 	contractBindTb   *dhcpTable
 	normalAccountTb  *dhcpTable
+	cacheDb          *DbCache
 }
 
-func NewEthereumDao(db DB) *EthereumDao {
+func NewEthereumDao(db DB, cacheDb *DbCache) *EthereumDao {
 	return &EthereumDao{
 		db:               db,
 		contractRecordTb: newDhcpTable(db.GetDB(), "contract_address_records"),
 		contractBindTb:   newDhcpTable(db.GetDB(), "contract_account_binds"),
 		normalAccountTb:  newDhcpTable(db.GetDB(), "ethereum_accounts"),
+		cacheDb:          cacheDb,
 	}
 }
 
@@ -49,11 +51,12 @@ func (sel *EthereumDao) CreateContractRecord(contractCtx *model.ContractContent)
 	if err != nil {
 		return errors.Wrap(err, "ethereum dao create contract record")
 	}
-	if err = sel.db.GetDB().Table(tbName).Create(&model.ContractAddressRecord{
-		ContractContent: *contractCtx,
-	}).Error; err != nil {
-		return err
-	}
+	_ = sel.cacheDb.Insert(tbName, contractCtx)
+	//if err = sel.db.GetDB().Table(tbName).Create(&model.ContractAddressRecord{
+	//	ContractContent: *contractCtx,
+	//}).Error; err != nil {
+	//	return err
+	//}
 	sel.contractRecordTb.Inc()
 	return nil
 }
@@ -85,9 +88,10 @@ func (sel *EthereumDao) CreateContractAccount(contractAccount *model.ContractAcc
 	if err != nil {
 		return errors.Wrap(err, "ethereum dao create contract account bind")
 	}
-	if err = sel.db.GetDB().Table(tbName).Create(contractAccount).Error; err != nil {
-		return err
-	}
+	//if err = sel.db.GetDB().Table(tbName).Create(contractAccount).Error; err != nil {
+	//	return err
+	//}
+	_ = sel.cacheDb.Insert(tbName, contractAccount)
 	sel.contractBindTb.Inc()
 	return nil
 }
@@ -152,9 +156,10 @@ func (sel *EthereumDao) CreateNormalAccount(normalAccount *model.EthereumAccount
 	if err != nil {
 		return errors.Wrap(err, "ethereum dao create ethereum account")
 	}
-	if err = sel.db.GetDB().Table(tbName).Create(normalAccount).Error; err != nil {
-		return err
-	}
+	////if err = sel.db.GetDB().Table(tbName).Create(normalAccount).Error; err != nil {
+	////	return err
+	////}
+	_ = sel.cacheDb.Insert(tbName, normalAccount)
 	sel.normalAccountTb.Inc()
 	return nil
 }

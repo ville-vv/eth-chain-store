@@ -36,7 +36,7 @@ import (
 // This API is considered secure, since a request can only
 // ever arrive from the UI -- and the UI is capable of approving any action, thus we can consider these
 // requests pre-approved.
-// NB: It's very important that these methods are not ever exposed on the external service
+// NB: It's very important that these methods are not ever exposed on the external server
 // registry.
 type UIServerAPI struct {
 	extApi *SignerAPI

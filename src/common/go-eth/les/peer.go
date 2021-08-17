@@ -1145,8 +1145,8 @@ func newServerPeerSet() *serverPeerSet {
 	return &serverPeerSet{peers: make(map[string]*serverPeer)}
 }
 
-// subscribe adds a service to be notified about added or removed
-// peers and also register all active peers into the given service.
+// subscribe adds a server to be notified about added or removed
+// peers and also register all active peers into the given server.
 func (ps *serverPeerSet) subscribe(sub serverPeerSubscriber) {
 	ps.lock.Lock()
 	defer ps.lock.Unlock()
@@ -1157,7 +1157,7 @@ func (ps *serverPeerSet) subscribe(sub serverPeerSubscriber) {
 	}
 }
 
-// unSubscribe removes the specified service from the subscriber pool.
+// unSubscribe removes the specified server from the subscriber pool.
 func (ps *serverPeerSet) unSubscribe(sub serverPeerSubscriber) {
 	ps.lock.Lock()
 	defer ps.lock.Unlock()

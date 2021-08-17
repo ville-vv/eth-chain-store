@@ -117,8 +117,8 @@ func (sel *Client) GetContractBalance(contract, addr string) (string, error) {
 	//	}).HexByte(),
 	//}
 	arg := map[string]interface{}{
-		"from": common.HexToAddress(contract),
-		"to":   &toAddr,
+		//"from": common.HexToAddress(contract),
+		"to": &toAddr,
 		"data": (ContractCallParam{
 			MethodID: ERC20MethodIDForBalanceOf,
 			Params:   []string{addr},
@@ -144,8 +144,8 @@ func (sel *Client) GetContractBalanceByBlockNumber(contract, addr string, blockN
 	//	}).HexByte(),
 	//}
 	arg := map[string]interface{}{
-		"from": common.HexToAddress(contract),
-		"to":   &toAddr,
+		//"from": common.HexToAddress(contract),
+		"to": &toAddr,
 		"data": (ContractCallParam{
 			MethodID: ERC20MethodIDForBalanceOf,
 			Params:   []string{addr},
@@ -176,8 +176,8 @@ func (sel *Client) GetContractTotalSupply(contract string) (string, error) {
 	//}
 
 	arg := map[string]interface{}{
-		"from": common.HexToAddress(contract),
-		"to":   &toAddr,
+		//"from": common.HexToAddress(contract),
+		"to": &toAddr,
 		"data": (ContractCallParam{
 			MethodID: ERC20MethodIDForTotalSupply,
 			Params:   []string{contract},
@@ -240,6 +240,9 @@ func (sel *Client) GetContractSymbol(contract string) (string, error) {
 	var hex string
 	err := sel.ethCli.Call(&hex, "eth_call", arg, "latest")
 	if err != nil {
+		if strings.Contains(err.Error(), "invalid opcode") {
+			return "no symbol", nil
+		}
 		return "0x0", err
 	}
 	return parseErc20StringProperty(hex), nil

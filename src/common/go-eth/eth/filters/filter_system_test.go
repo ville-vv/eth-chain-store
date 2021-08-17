@@ -136,7 +136,7 @@ func (b *testBackend) ServiceFilter(ctx context.Context, session *bloombits.Matc
 	go session.Multiplex(16, 0, requests)
 	go func() {
 		for {
-			// Wait for a service request or a shutdown
+			// Wait for a server request or a shutdown
 			select {
 			case <-ctx.Done():
 				return

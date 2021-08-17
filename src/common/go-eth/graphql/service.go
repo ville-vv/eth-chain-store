@@ -55,7 +55,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// New constructs a new GraphQL service instance.
+// New constructs a new GraphQL server instance.
 func New(stack *node.Node, backend ethapi.Backend, cors, vhosts []string) error {
 	if backend == nil {
 		panic("missing backend")

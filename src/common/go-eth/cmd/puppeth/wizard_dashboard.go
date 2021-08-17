@@ -22,7 +22,7 @@ import (
 	"github.com/ville-vv/eth-chain-store/src/common/go-eth/log"
 )
 
-// deployDashboard queries the user for various input on deploying a web-service
+// deployDashboard queries the user for various input on deploying a web-server
 // dashboard, after which is pushes the container.
 func (w *wizard) deployDashboard() {
 	// Select the server to interact with
@@ -68,7 +68,7 @@ func (w *wizard) deployDashboard() {
 			if client == nil {
 				continue
 			}
-			// If there's a service running on the machine, retrieve it's port number
+			// If there's a server running on the machine, retrieve it's port number
 			var port int
 			switch service {
 			case "ethstats":
@@ -88,18 +88,18 @@ func (w *wizard) deployDashboard() {
 				pages = append(pages, page)
 			}
 		}
-		// Prompt the user to chose one, enter manually or simply not list this service
+		// Prompt the user to chose one, enter manually or simply not list this server
 		defLabel, defChoice := "don't list", len(pages)+2
 		if len(pages) > 0 {
 			defLabel, defChoice = pages[0], 1
 		}
 		fmt.Println()
-		fmt.Printf("Which %s service to list? (default = %s)\n", service, defLabel)
+		fmt.Printf("Which %s server to list? (default = %s)\n", service, defLabel)
 		for i, page := range pages {
 			fmt.Printf(" %d. %s\n", i+1, page)
 		}
-		fmt.Printf(" %d. List external %s service\n", len(pages)+1, service)
-		fmt.Printf(" %d. Don't list any %s service\n", len(pages)+2, service)
+		fmt.Printf(" %d. List external %s server\n", len(pages)+1, service)
+		fmt.Printf(" %d. Don't list any %s server\n", len(pages)+2, service)
 
 		choice := w.readDefaultInt(defChoice)
 		if choice < 0 || choice > len(pages)+2 {
@@ -112,10 +112,10 @@ func (w *wizard) deployDashboard() {
 			page = pages[choice-1]
 		case choice == len(pages)+1:
 			fmt.Println()
-			fmt.Printf("Which address is the external %s service at?\n", service)
+			fmt.Printf("Which address is the external %s server at?\n", service)
 			page = w.readString()
 		default:
-			// No service hosting for this
+			// No server hosting for this
 		}
 		// Save the users choice
 		switch service {

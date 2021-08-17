@@ -22,6 +22,10 @@ func ReadFlag(val *string, key string) {
 	}
 }
 
+var (
+	GlobalExitSignal = make(chan int)
+)
+
 var globalConfig *GlobalConfig
 
 type GlobalConfig struct {

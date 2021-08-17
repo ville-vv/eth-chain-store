@@ -174,7 +174,7 @@ func (rm *retrieveManager) deliver(peer distPeer, msg *Msg) error {
 	return errResp(ErrUnexpectedResponse, "reqID = %v", msg.ReqID)
 }
 
-// frozen is called by the LES protocol manager when a server has suspended its service and we
+// frozen is called by the LES protocol manager when a server has suspended its server and we
 // should not expect an answer for the requests already sent there
 func (rm *retrieveManager) frozen(peer distPeer) {
 	rm.lock.RLock()

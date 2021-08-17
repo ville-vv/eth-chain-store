@@ -358,7 +358,7 @@ type PrivateLightAPI struct {
 	backend *lesCommons
 }
 
-// NewPrivateLightAPI creates a new LES service API.
+// NewPrivateLightAPI creates a new LES server API.
 func NewPrivateLightAPI(backend *lesCommons) *PrivateLightAPI {
 	return &PrivateLightAPI{backend: backend}
 }

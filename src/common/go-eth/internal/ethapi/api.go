@@ -109,7 +109,7 @@ type PublicTxPoolAPI struct {
 	b Backend
 }
 
-// NewPublicTxPoolAPI creates a new tx pool service that gives information about the transaction pool.
+// NewPublicTxPoolAPI creates a new tx pool server that gives information about the transaction pool.
 func NewPublicTxPoolAPI(b Backend) *PublicTxPoolAPI {
 	return &PublicTxPoolAPI{b}
 }
@@ -1410,7 +1410,7 @@ type PublicTransactionPoolAPI struct {
 	signer    types.Signer
 }
 
-// NewPublicTransactionPoolAPI creates a new RPC service with methods specific for the transaction pool.
+// NewPublicTransactionPoolAPI creates a new RPC server with methods specific for the transaction pool.
 func NewPublicTransactionPoolAPI(b Backend, nonceLock *AddrLocker) *PublicTransactionPoolAPI {
 	// The signer used by the API should always be the 'latest' known one because we expect
 	// signers to be backwards-compatible with old transactions.
@@ -1834,7 +1834,7 @@ type PublicDebugAPI struct {
 }
 
 // NewPublicDebugAPI creates a new API definition for the public debug methods
-// of the Ethereum service.
+// of the Ethereum server.
 func NewPublicDebugAPI(b Backend) *PublicDebugAPI {
 	return &PublicDebugAPI{b: b}
 }
@@ -1916,7 +1916,7 @@ type PrivateDebugAPI struct {
 }
 
 // NewPrivateDebugAPI creates a new API definition for the private debug methods
-// of the Ethereum service.
+// of the Ethereum server.
 func NewPrivateDebugAPI(b Backend) *PrivateDebugAPI {
 	return &PrivateDebugAPI{b: b}
 }

@@ -259,6 +259,7 @@ github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymF
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.4/go.mod h1:6rpuAdCZL397s3pYoYcLgu1mIlRU8Am5FuJP05cCM98=
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
+github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5 h1:Yzb9+7DPaBjB8zlTR87/ElzFsnQfuHnVUVqpZZIcV5Y=
 github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5/go.mod h1:a2zkGnVExMxdzMo3M0Hi/3sEU+cWnZpSni0O6/Yb/P0=
 github.com/evanphx/json-patch v4.2.0+incompatible/go.mod h1:50XU6AFN0ol/bzJsmQLiYLvXMP4fmwYFNcr97nuDLSk=
 github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5KwzbycvMj4=
@@ -567,6 +568,7 @@ github.com/jedisct1/go-minisign v0.0.0-20210703085342-c1f07ee84431 h1:zqyV5j9xEu
 github.com/jedisct1/go-minisign v0.0.0-20210703085342-c1f07ee84431/go.mod h1:3VIJLjlf5Iako82IX/5KOoCzDmogK5mO+bl+DRItnR8=
 github.com/jessevdk/go-flags v0.0.0-20141203071132-1679536dcc89/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
+github.com/jinzhu/gorm v1.9.16 h1:+IyIjPEABKRpsu/F8OvDPy9fyQlgsg2luMV2ZIH5i5o=
 github.com/jinzhu/gorm v1.9.16/go.mod h1:G3LB3wezTOWM2ITLzPxEXgSkOXAntiLHS7UdBefADcs=
 github.com/jinzhu/inflection v1.0.0 h1:K317FqzuhWc8YvSVlFMCCUb36O/S9MCKRDI7QkRKD/E=
 github.com/jinzhu/inflection v1.0.0/go.mod h1:h+uFLlag+Qp1Va5pdKtLDYj+kHp5pxUVkryuEj+Srlc=
@@ -907,8 +909,8 @@ github.com/urfave/cli v1.22.1 h1:+mkCCcOFKPnCmVYVcURKps1Xe+3zP90gSYGNfRkjoIY=
 github.com/urfave/cli v1.22.1/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
 github.com/urfave/cli/v2 v2.3.0/go.mod h1:LJmUH05zAU44vOAcrfzZQKsZbVcdbOG8rtL3/XcUArI=
 github.com/vektah/gqlparser v1.1.2/go.mod h1:1ycwN7Ij5njmMkPPAOaRFY4rET2Enx7IkVv3vaXspKw=
-github.com/ville-vv/vilgo v0.0.5-0.20210806090834-39c0512ab9b1 h1:zzvMbjYAcW1WjESsPlxa7EE1DMP+DkseQjwcOXTlQJ0=
-github.com/ville-vv/vilgo v0.0.5-0.20210806090834-39c0512ab9b1/go.mod h1:lfimp4dLIMlNvaEFtxZrAET6LjZXFY1/HubvQeCdodk=
+github.com/ville-vv/vilgo v0.0.5-0.20210816115032-7715c70e28c8 h1:pHQ+3fUSrugzzuPNoh5QSyTNQFqr2WB7+zZn02xQhhc=
+github.com/ville-vv/vilgo v0.0.5-0.20210816115032-7715c70e28c8/go.mod h1:lfimp4dLIMlNvaEFtxZrAET6LjZXFY1/HubvQeCdodk=
 github.com/vilsongwei/vilgo v0.0.1 h1:6qoTANXoMQtrEq0rT5pSqTERpU5HUKOh2ZJlV3TsR0Q=
 github.com/vilsongwei/vilgo v0.0.1/go.mod h1:1+Ze69IrzRtJJZz+Tc8rawBQJd9eMTNMfxfwN3N+C3k=
 github.com/willf/bitset v1.1.3/go.mod h1:RjeCKbqT1RxIR/KWY6phxZiaY1IyutSBfGjNPySAYV4=

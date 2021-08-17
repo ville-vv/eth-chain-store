@@ -43,7 +43,7 @@ func main() {
 	// set the log level to Trace
 	log.Root().SetHandler(log.LvlFilterHandler(log.LvlTrace, log.StreamHandler(os.Stderr, log.TerminalFormat(false))))
 
-	// register a single ping-pong service
+	// register a single ping-pong server
 	services := map[string]adapters.LifecycleConstructor{
 		"ping-pong": func(ctx *adapters.ServiceContext, stack *node.Node) (node.Lifecycle, error) {
 			pps := newPingPongService(ctx.Config.ID)
@@ -112,12 +112,12 @@ func (p *pingPongService) Protocols() []p2p.Protocol {
 }
 
 func (p *pingPongService) Start() error {
-	p.log.Info("ping-pong service starting")
+	p.log.Info("ping-pong server starting")
 	return nil
 }
 
 func (p *pingPongService) Stop() error {
-	p.log.Info("ping-pong service stopping")
+	p.log.Info("ping-pong server stopping")
 	return nil
 }
 

@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-eth library. If not, see <http://www.gnu.org/licenses/>.
 
-// Package ethstats implements the network stats reporting service.
+// Package ethstats implements the network stats reporting server.
 package ethstats
 
 import (
@@ -89,7 +89,7 @@ type Service struct {
 
 	node string // Name of the node to display on the monitoring page
 	pass string // Password to authorize access to the monitoring page
-	host string // Remote address of the monitoring service
+	host string // Remote address of the monitoring server
 
 	pongCh chan struct{} // Pong notifications are fed into this channel
 	histCh chan []uint64 // History request block numbers are fed into this channel
@@ -167,7 +167,7 @@ func parseEthstatsURL(url string) (parts []string, err error) {
 	return []string{nodename, pass, host}, nil
 }
 
-// New returns a monitoring service ready for stats reporting.
+// New returns a monitoring server ready for stats reporting.
 func New(node *node.Node, backend backend, engine consensus.Engine, url string) error {
 	parts, err := parseEthstatsURL(url)
 	if err != nil {

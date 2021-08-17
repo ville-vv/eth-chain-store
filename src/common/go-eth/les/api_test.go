@@ -54,7 +54,7 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 	log.PrintOrigins(true)
 	log.Root().SetHandler(log.LvlFilterHandler(log.Lvl(*loglevel), log.StreamHandler(colorable.NewColorableStderr(), log.TerminalFormat(true))))
-	// register the Delivery service which will run as a devp2p
+	// register the Delivery server which will run as a devp2p
 	// protocol when using the exec adapter
 	adapters.RegisterLifecycles(services)
 	os.Exit(m.Run())

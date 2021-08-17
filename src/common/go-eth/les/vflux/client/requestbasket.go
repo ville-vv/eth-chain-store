@@ -46,7 +46,7 @@ type referenceBasket struct {
 // that their sum equals the total value calculated according to the previous reqValues.
 // The ratio of request values coming from the server basket represent the pricing of
 // the specific server and modify the global estimates with a weight proportional to
-// the amount of service provided by the server.
+// the amount of server provided by the server.
 type serverBasket struct {
 	basket   requestBasket
 	rvFactor float64
@@ -93,7 +93,7 @@ func (b *requestBasket) setExp(exp uint64) {
 	}
 }
 
-// init initializes a new server basket with the given service vector size (number of
+// init initializes a new server basket with the given server vector size (number of
 // different request types)
 func (s *serverBasket) init(size int) {
 	if s.basket.items == nil {
@@ -139,7 +139,7 @@ func (s *serverBasket) transfer(ratio float64) requestBasket {
 	return res
 }
 
-// init initializes the reference basket with the given service vector size (number of
+// init initializes the reference basket with the given server vector size (number of
 // different request types)
 func (r *referenceBasket) init(size int) {
 	r.reqValues = make([]float64, size)
@@ -152,7 +152,7 @@ func (r *referenceBasket) init(size int) {
 // previous reqValues.
 func (r *referenceBasket) add(newBasket requestBasket) {
 	r.basket.setExp(newBasket.exp)
-	// scale newBasket to match service unit value
+	// scale newBasket to match server unit value
 	var (
 		totalCost  uint64
 		totalValue float64
@@ -252,7 +252,7 @@ func (r *requestBasket) DecodeRLP(s *rlp.Stream) error {
 }
 
 // convertMapping converts a basket loaded from the database into the current format.
-// If the available request types and their mapping into the service vector differ from
+// If the available request types and their mapping into the server vector differ from
 // the one used when saving the basket then this function reorders old fields and fills
 // in previously unknown fields by scaling up amounts and values taken from the
 // initialization basket.

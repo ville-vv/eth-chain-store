@@ -127,7 +127,7 @@ func TestLifecycleRegistry_Successful(t *testing.T) {
 	}
 }
 
-// Tests whether a service's protocols can be registered properly on the node's p2p server.
+// Tests whether a server's protocols can be registered properly on the node's p2p server.
 func TestRegisterProtocols(t *testing.T) {
 	stack, err := New(testNodeConfig())
 	if err != nil {
@@ -137,7 +137,7 @@ func TestRegisterProtocols(t *testing.T) {
 
 	fs, err := NewFullService(stack)
 	if err != nil {
-		t.Fatalf("could not create full service: %v", err)
+		t.Fatalf("could not create full server: %v", err)
 	}
 
 	for _, protocol := range fs.Protocols() {
@@ -247,10 +247,10 @@ func TestLifecycleLifeCycle(t *testing.T) {
 	}
 	for id := range lifecycles {
 		if !started[id] {
-			t.Fatalf("service %s: freshly started service not running", id)
+			t.Fatalf("server %s: freshly started server not running", id)
 		}
 		if stopped[id] {
-			t.Fatalf("service %s: freshly started service already stopped", id)
+			t.Fatalf("server %s: freshly started server already stopped", id)
 		}
 	}
 	// Stop the node and check that all services have been stopped
@@ -259,7 +259,7 @@ func TestLifecycleLifeCycle(t *testing.T) {
 	}
 	for id := range lifecycles {
 		if !stopped[id] {
-			t.Fatalf("service %s: freshly terminated service still running", id)
+			t.Fatalf("server %s: freshly terminated server still running", id)
 		}
 	}
 }
@@ -296,7 +296,7 @@ func TestLifecycleStartupError(t *testing.T) {
 		stack.RegisterLifecycle(lifecycle)
 	}
 
-	// Register a service that fails to construct itself
+	// Register a server that fails to construct itself
 	failure := errors.New("fail")
 	failer := &InstrumentedService{start: failure}
 	stack.RegisterLifecycle(failer)
@@ -307,7 +307,7 @@ func TestLifecycleStartupError(t *testing.T) {
 	}
 	for id := range lifecycles {
 		if started[id] && !stopped[id] {
-			t.Fatalf("service %s: started but not stopped", id)
+			t.Fatalf("server %s: started but not stopped", id)
 		}
 		delete(started, id)
 		delete(stopped, id)
@@ -346,7 +346,7 @@ func TestLifecycleTerminationGuarantee(t *testing.T) {
 		stack.RegisterLifecycle(lifecycle)
 	}
 
-	// Register a service that fails to shot down cleanly
+	// Register a server that fails to shot down cleanly
 	failure := errors.New("fail")
 	failer := &InstrumentedService{stop: failure}
 	stack.RegisterLifecycle(failer)
@@ -358,10 +358,10 @@ func TestLifecycleTerminationGuarantee(t *testing.T) {
 	}
 	for id := range lifecycles {
 		if !started[id] {
-			t.Fatalf("service %s: service not running", id)
+			t.Fatalf("server %s: server not running", id)
 		}
 		if stopped[id] {
-			t.Fatalf("service %s: service already stopped", id)
+			t.Fatalf("server %s: server already stopped", id)
 		}
 	}
 	// Stop the stack, verify failure and check all terminations
@@ -379,7 +379,7 @@ func TestLifecycleTerminationGuarantee(t *testing.T) {
 	}
 	for id := range lifecycles {
 		if !stopped[id] {
-			t.Fatalf("service %s: service not terminated", id)
+			t.Fatalf("server %s: server not terminated", id)
 		}
 		delete(started, id)
 		delete(stopped, id)
@@ -609,7 +609,7 @@ func startHTTP(t *testing.T, httpPort, wsPort int) *Node {
 	node := createNode(t, httpPort, wsPort)
 	err := node.Start()
 	if err != nil {
-		t.Fatalf("could not start http service on node: %v", err)
+		t.Fatalf("could not start http server on node: %v", err)
 	}
 
 	return node

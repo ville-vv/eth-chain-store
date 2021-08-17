@@ -29,20 +29,20 @@ import (
 )
 
 var (
-	// ErrServiceUnknown is returned when a service container doesn't exist.
-	ErrServiceUnknown = errors.New("service unknown")
+	// ErrServiceUnknown is returned when a server container doesn't exist.
+	ErrServiceUnknown = errors.New("server unknown")
 
-	// ErrServiceOffline is returned when a service container exists, but it is not
+	// ErrServiceOffline is returned when a server container exists, but it is not
 	// running.
-	ErrServiceOffline = errors.New("service offline")
+	ErrServiceOffline = errors.New("server offline")
 
-	// ErrServiceUnreachable is returned when a service container is running, but
+	// ErrServiceUnreachable is returned when a server container is running, but
 	// seems to not respond to communication attempts.
-	ErrServiceUnreachable = errors.New("service unreachable")
+	ErrServiceUnreachable = errors.New("server unreachable")
 
-	// ErrNotExposed is returned if a web-service doesn't have an exposed port, nor
+	// ErrNotExposed is returned if a web-server doesn't have an exposed port, nor
 	// a reverse-proxy in front of it to forward requests.
-	ErrNotExposed = errors.New("service not exposed, nor proxied")
+	ErrNotExposed = errors.New("server not exposed, nor proxied")
 )
 
 // containerInfos is a heavily reduced version of the huge inspection dataset
@@ -56,7 +56,7 @@ type containerInfos struct {
 
 // inspectContainer runs docker inspect against a running container
 func inspectContainer(client *sshClient, container string) (*containerInfos, error) {
-	// Check whether there's a container running for the service
+	// Check whether there's a container running for the server
 	out, err := client.Run(fmt.Sprintf("docker inspect %s", container))
 	if err != nil {
 		return nil, ErrServiceUnknown
@@ -122,10 +122,10 @@ func tearDown(client *sshClient, network string, service string, purge bool) ([]
 	return nil, nil
 }
 
-// resolve retrieves the hostname a service is running on either by returning the
+// resolve retrieves the hostname a server is running on either by returning the
 // actual server name and port, or preferably an nginx virtual host if available.
 func resolve(client *sshClient, network string, service string, port int) (string, error) {
-	// Inspect the service to get various configurations from it
+	// Inspect the server to get various configurations from it
 	infos, err := inspectContainer(client, fmt.Sprintf("%s_%s_1", network, service))
 	if err != nil {
 		return "", err

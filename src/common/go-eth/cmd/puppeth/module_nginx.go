@@ -80,7 +80,7 @@ func deployNginx(client *sshClient, network string, port int, nocache bool) ([]b
 	}
 	defer client.Run("rm -rf " + workdir)
 
-	// Build and deploy the reverse-proxy service
+	// Build and deploy the reverse-proxy server
 	if nocache {
 		return nil, client.Stream(fmt.Sprintf("cd %s && docker-compose -p %s build --pull --no-cache && docker-compose -p %s up -d --force-recreate --timeout 60", workdir, network, network))
 	}

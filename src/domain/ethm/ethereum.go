@@ -183,35 +183,35 @@ func (sel *EthereumManager) txWrites(txData *model.TransactionData) error {
 	return sel.txWrite.TxWrite(txData)
 }
 
-type EthereumWriter struct {
-	filter            TxWriterFilter
-	accountWriter     TxWriter
-	contractWriter    TxWriter
-	transactionWriter TxWriter
-}
+//type EthereumWriter struct {
+//	filter            TxWriterFilter
+//	accountWriter     TxWriter
+//	contractWriter    TxWriter
+//	transactionWriter TxWriter
+//}
+//
+//func NewEthereumWriter(filter TxWriterFilter, accountWriter TxWriter, contractWriter TxWriter, transactionWriter TxWriter) *EthereumWriter {
+//	return &EthereumWriter{filter: filter, accountWriter: accountWriter, contractWriter: contractWriter, transactionWriter: transactionWriter}
+//}
 
-func NewEthereumWriter(filter TxWriterFilter, accountWriter TxWriter, contractWriter TxWriter, transactionWriter TxWriter) *EthereumWriter {
-	return &EthereumWriter{filter: filter, accountWriter: accountWriter, contractWriter: contractWriter, transactionWriter: transactionWriter}
-}
-
-func (sel *EthereumWriter) TxWrite(txData *model.TransactionData) (err error) {
-	if err = sel.filter.Filter(txData.From); err != nil {
-		// 过滤发生错误不返回
-		return nil
-	}
-	// 写入合约信息
-	if err = sel.contractWriter.TxWrite(txData); err != nil {
-		return
-	}
-
-	// 写入账户信息
-	if err = sel.accountWriter.TxWrite(txData); err != nil {
-		return
-	}
-
-	// 写入交易流水
-	return sel.transactionWriter.TxWrite(txData)
-}
+//func (sel *EthereumWriter) TxWrite(txData *model.TransactionData) (err error) {
+//	if err = sel.filter.Filter(txData.From); err != nil {
+//		// 过滤发生错误不返回
+//		return nil
+//	}
+//	// 写入合约信息
+//	if err = sel.contractWriter.TxWrite(txData); err != nil {
+//		return
+//	}
+//
+//	// 写入账户信息
+//	if err = sel.accountWriter.TxWrite(txData); err != nil {
+//		return
+//	}
+//
+//	// 写入交易流水
+//	return sel.transactionWriter.TxWrite(txData)
+//}
 
 type EthereumPublisher struct {
 	mqPub mqp.MQPublisher

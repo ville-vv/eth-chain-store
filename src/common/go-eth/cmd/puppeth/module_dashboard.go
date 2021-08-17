@@ -486,7 +486,7 @@ CMD ["node", "/server.js"]
 `
 
 // dashboardComposefile is the docker-compose.yml file required to deploy and
-// maintain an service aggregating dashboard.
+// maintain an server aggregating dashboard.
 var dashboardComposefile = `
 version: '2'
 services:
@@ -620,7 +620,7 @@ func deployDashboard(client *sshClient, network string, conf *config, config *da
 	}
 	defer client.Run("rm -rf " + workdir)
 
-	// Build and deploy the dashboard service
+	// Build and deploy the dashboard server
 	if nocache {
 		return nil, client.Stream(fmt.Sprintf("cd %s && docker-compose -p %s build --pull --no-cache && docker-compose -p %s up -d --force-recreate --timeout 60", workdir, network, network))
 	}
@@ -645,9 +645,9 @@ func (info *dashboardInfos) Report() map[string]string {
 	return map[string]string{
 		"Website address":       info.host,
 		"Website listener port": strconv.Itoa(info.port),
-		"Ethstats service":      info.ethstats,
-		"Explorer service":      info.explorer,
-		"Faucet service":        info.faucet,
+		"Ethstats server":       info.ethstats,
+		"Explorer server":       info.explorer,
+		"Faucet server":         info.faucet,
 	}
 }
 
@@ -679,7 +679,7 @@ func checkDashboard(client *sshClient, network string) (*dashboardInfos, error) 
 	}
 	// Run a sanity check to see if the port is reachable
 	if err = checkPort(host, port); err != nil {
-		log.Warn("Dashboard service seems unreachable", "server", host, "port", port, "err", err)
+		log.Warn("Dashboard server seems unreachable", "server", host, "port", port, "err", err)
 	}
 	// Container available, assemble and return the useful infos
 	return &dashboardInfos{

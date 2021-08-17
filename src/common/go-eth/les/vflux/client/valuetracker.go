@@ -41,7 +41,7 @@ var (
 	vtNodeKey = []byte("vtNode:")
 )
 
-// NodeValueTracker collects service value statistics for a specific server node
+// NodeValueTracker collects server value statistics for a specific server node
 type NodeValueTracker struct {
 	lock sync.Mutex
 
@@ -100,7 +100,7 @@ type ServedRequest struct {
 }
 
 // Served adds a served request to the node's statistics. An actual request may be composed
-// of one or more request types (service vector indices).
+// of one or more request types (server vector indices).
 func (nv *NodeValueTracker) Served(reqs []ServedRequest, respTime time.Duration) {
 	nv.vt.statsExpLock.RLock()
 	expFactor := nv.vt.statsExpFactor
@@ -125,7 +125,7 @@ func (nv *NodeValueTracker) RtStats() ResponseTimeStats {
 	return nv.rtStats
 }
 
-// ValueTracker coordinates service value calculation for individual servers and updates
+// ValueTracker coordinates server value calculation for individual servers and updates
 // global statistics
 type ValueTracker struct {
 	clock        mclock.Clock
@@ -162,9 +162,9 @@ type nodeValueTrackerEncV1 struct {
 	ServerBasket        requestBasket
 }
 
-// RequestInfo is an initializer structure for the service vector.
+// RequestInfo is an initializer structure for the server vector.
 type RequestInfo struct {
-	// Name identifies the request type and is used for re-mapping the service vector if necessary
+	// Name identifies the request type and is used for re-mapping the server vector if necessary
 	Name string
 	// InitAmount and InitValue are used to initialize the reference basket
 	InitAmount, InitValue float64
@@ -228,13 +228,13 @@ func NewValueTracker(db ethdb.KeyValueStore, clock mclock.Clock, reqInfo []Reque
 }
 
 // StatsExpirer returns the statistics expirer so that other values can be expired
-// with the same rate as the service value statistics.
+// with the same rate as the server value statistics.
 func (vt *ValueTracker) StatsExpirer() *utils.Expirer {
 	return &vt.statsExpirer
 }
 
 // StatsExpirer returns the current expiration factor so that other values can be expired
-// with the same rate as the service value statistics.
+// with the same rate as the server value statistics.
 func (vt *ValueTracker) StatsExpFactor() utils.ExpirationFactor {
 	vt.statsExpLock.RLock()
 	defer vt.statsExpLock.RUnlock()
@@ -437,16 +437,16 @@ func (vt *ValueTracker) saveNode(id enode.ID, nv *NodeValueTracker) {
 	}
 	enc1, err := rlp.EncodeToBytes(uint(nvtVersion))
 	if err != nil {
-		log.Error("Failed to encode service value information", "id", id, "err", err)
+		log.Error("Failed to encode server value information", "id", id, "err", err)
 		return
 	}
 	enc2, err := rlp.EncodeToBytes(&nve)
 	if err != nil {
-		log.Error("Failed to encode service value information", "id", id, "err", err)
+		log.Error("Failed to encode server value information", "id", id, "err", err)
 		return
 	}
 	if err := vt.db.Put(append(vtNodeKey, id[:]...), append(enc1, enc2...)); err != nil {
-		log.Error("Failed to save service value information", "id", id, "err", err)
+		log.Error("Failed to save server value information", "id", id, "err", err)
 	}
 }
 

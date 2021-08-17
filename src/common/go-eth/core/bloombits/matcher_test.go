@@ -226,7 +226,7 @@ func startRetrievers(session *MatcherSession, quit chan struct{}, retrievals *ui
 		// Start a services to match the above multiplexer
 		go func() {
 			for {
-				// Wait for a service request or a shutdown
+				// Wait for a server request or a shutdown
 				select {
 				case <-quit:
 					return

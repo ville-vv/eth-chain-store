@@ -12,8 +12,7 @@ import (
 func TestClient_GetBalanceByBlockNumber(t *testing.T) {
 	cli := NewClient("https://mainnet.infura.io/v3/21628f8f9b9b423a9ea05a708016b119")
 	cli = NewClient("http://172.16.16.115:8545")
-	balance, err := cli.GetBalanceByBlockNumber("0x0536806df512d6cdde913cf95c9886f65b1d3462",
-		4129000)
+	balance, err := cli.GetBalance("0x0536806df512d6cdde913cf95c9886f65b1d3462")
 	fmt.Println(balance, err)
 
 	balance, err = cli.GetContractBalanceByBlockNumber("0xa74476443119a942de498590fe1f2454d7d4ac0d", "0x166e09f9ae84cb6805e5d85e21e7e8167e9085cb", 4129000)
@@ -27,7 +26,7 @@ func TestClient_GetBalanceByBlockNumber(t *testing.T) {
 }
 
 func TestClient_GetContractTotalSupply(t *testing.T) {
-	cli := NewClient("https://mainnet.infura.io/v3/21628f8f9b9b423a9ea05a708016b119")
+	cli := NewClient("http://172.16.16.115:8545")
 	totalSup, err := cli.GetContractTotalSupply("0xdAC17F958D2ee523a2206206994597C13D831ec7")
 	fmt.Println(totalSup, err)
 	fmt.Println(strconv.ParseInt(totalSup, 0, 64))
@@ -80,7 +79,7 @@ func TestClient_GetTransactionReceipt(t *testing.T) {
 //
 func TestClient_GetSymbol(t *testing.T) {
 	cli := NewClient("http://172.16.16.115:8545")
-	symbol, err := cli.GetContractSymbol("0xdAC17F958D2ee523a2206206994597C13D831ec7")
+	symbol, err := cli.GetContractSymbol("0x8810c63470d38639954c6b41aac545848c46484a")
 	fmt.Println(symbol, err)
 }
 

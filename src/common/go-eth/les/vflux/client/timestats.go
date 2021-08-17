@@ -75,8 +75,8 @@ func StatScaleToTime(r float64) time.Duration {
 	return time.Duration(r * float64(minResponseTime))
 }
 
-// TimeoutWeights calculates the weight function used for calculating service value
-// based on the response time distribution of the received service.
+// TimeoutWeights calculates the weight function used for calculating server value
+// based on the response time distribution of the received server.
 // It is based on the request timeout value of the system. It consists of a half cosine
 // function starting with 1, crossing zero at timeout and reaching -1 at 2*timeout.
 // After 2*timeout the weight is constant -1.
@@ -146,7 +146,7 @@ func (rt *ResponseTimeStats) setExp(exp uint64) {
 	}
 }
 
-// Value calculates the total service value based on the given distribution, using the
+// Value calculates the total server value based on the given distribution, using the
 // specified weight function.
 func (rt ResponseTimeStats) Value(weights ResponseTimeWeights, expFactor utils.ExpirationFactor) float64 {
 	var v float64
@@ -212,7 +212,7 @@ func (rt ResponseTimeStats) Timeout(failRatio float64) time.Duration {
 
 // RtDistribution represents a distribution as a series of (X, Y) chart coordinates,
 // where the X axis is the response time in seconds while the Y axis is the amount of
-// service value received with a response time close to the X coordinate.
+// server value received with a response time close to the X coordinate.
 type RtDistribution [timeStatLength][2]float64
 
 // Distribution returns a RtDistribution, optionally normalized to a sum of 1.

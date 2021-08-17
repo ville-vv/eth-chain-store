@@ -644,7 +644,7 @@ func TestHTTPSnapshot(t *testing.T) {
 		defer rpc.Close()
 		state := fmt.Sprintf("%x", rand.Int())
 		if err := rpc.Call(nil, "test_setState", []byte(state)); err != nil {
-			t.Fatalf("error setting service state: %s", err)
+			t.Fatalf("error setting server state: %s", err)
 		}
 		states[i] = state
 	}
@@ -732,7 +732,7 @@ func TestHTTPSnapshot(t *testing.T) {
 		defer rpc.Close()
 		var state []byte
 		if err := rpc.Call(&state, "test_getState"); err != nil {
-			t.Fatalf("error getting service state: %s", err)
+			t.Fatalf("error getting server state: %s", err)
 		}
 		if string(state) != states[i] {
 			t.Fatalf("expected snapshot state %q, got %q", states[i], state)

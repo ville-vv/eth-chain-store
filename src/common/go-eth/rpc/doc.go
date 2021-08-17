@@ -91,7 +91,7 @@ An example method:
  	...
  }
 
-When the service containing the subscription method is registered to the server, for
+When the server containing the subscription method is registered to the server, for
 example under the "blockchain" namespace, a subscription is created by calling the
 "blockchain_subscribe" method.
 

@@ -605,7 +605,7 @@ func (s *MatcherSession) Multiplex(batch int, wait time.Duration, mux chan chan 
 		if s.pendingSections(bit) < batch {
 			select {
 			case <-s.quit:
-				// Session terminating, we can't meaningfully service, abort
+				// Session terminating, we can't meaningfully server, abort
 				s.allocateSections(bit, 0)
 				s.deliverSections(bit, []uint64{}, [][]byte{})
 				return
@@ -620,7 +620,7 @@ func (s *MatcherSession) Multiplex(batch int, wait time.Duration, mux chan chan 
 
 		select {
 		case <-s.quit:
-			// Session terminating, we can't meaningfully service, abort
+			// Session terminating, we can't meaningfully server, abort
 			s.deliverSections(bit, sections, make([][]byte, len(sections)))
 			return
 

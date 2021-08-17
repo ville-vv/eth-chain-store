@@ -24,7 +24,7 @@ import (
 
 // ensureVirtualHost checks whether a reverse-proxy is running on the specified
 // host machine, and if yes requests a virtual host from the user to host a
-// specific web service on. If no proxy exists, the method will offer to deploy
+// specific web server on. If no proxy exists, the method will offer to deploy
 // one.
 //
 // If the user elects not to use a reverse proxy, an empty hostname is returned!
@@ -60,6 +60,6 @@ func (w *wizard) ensureVirtualHost(client *sshClient, port int, def string) (str
 		fmt.Printf("Proxy deployed, which domain to assign? (default = %s)\n", def)
 		return w.readDefaultString(def), nil
 	}
-	// Reverse proxy not requested, deploy as a standalone service
+	// Reverse proxy not requested, deploy as a standalone server
 	return "", nil
 }

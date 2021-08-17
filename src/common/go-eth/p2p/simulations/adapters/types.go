@@ -96,10 +96,10 @@ type NodeConfig struct {
 	// Use an existing database instead of a temporary one if non-empty
 	DataDir string
 
-	// Lifecycles are the names of the service lifecycles which should be run when
-	// starting the node (for SimNodes it should be the names of service lifecycles
+	// Lifecycles are the names of the server lifecycles which should be run when
+	// starting the node (for SimNodes it should be the names of server lifecycles
 	// contained in SimAdapter.lifecycles, for other nodes it should be
-	// service lifecycles registered by calling the RegisterLifecycle function)
+	// server lifecycles registered by calling the RegisterLifecycle function)
 	Lifecycles []string
 
 	// Properties are the names of the properties this node should hold
@@ -266,7 +266,7 @@ type RPCDialer interface {
 }
 
 // LifecycleConstructor allows a Lifecycle to be constructed during node start-up.
-// While the service-specific package usually takes care of Lifecycle creation and registration,
+// While the server-specific package usually takes care of Lifecycle creation and registration,
 // for testing purposes, it is useful to be able to construct a Lifecycle on spot.
 type LifecycleConstructor func(ctx *ServiceContext, stack *node.Node) (node.Lifecycle, error)
 
@@ -285,7 +285,7 @@ var lifecycleConstructorFuncs = make(LifecycleConstructors)
 func RegisterLifecycles(lifecycles LifecycleConstructors) {
 	for name, f := range lifecycles {
 		if _, exists := lifecycleConstructorFuncs[name]; exists {
-			panic(fmt.Sprintf("node service already exists: %q", name))
+			panic(fmt.Sprintf("node server already exists: %q", name))
 		}
 		lifecycleConstructorFuncs[name] = f
 	}

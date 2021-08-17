@@ -76,11 +76,11 @@ func (e *ExecAdapter) Name() string {
 // NewNode returns a new ExecNode using the given config
 func (e *ExecAdapter) NewNode(config *NodeConfig) (Node, error) {
 	if len(config.Lifecycles) == 0 {
-		return nil, errors.New("node must have at least one service lifecycle")
+		return nil, errors.New("node must have at least one server lifecycle")
 	}
 	for _, service := range config.Lifecycles {
 		if _, exists := lifecycleConstructorFuncs[service]; !exists {
-			return nil, fmt.Errorf("unknown node service %q", service)
+			return nil, fmt.Errorf("unknown node server %q", service)
 		}
 	}
 
@@ -160,7 +160,7 @@ func (n *ExecNode) Client() (*rpc.Client, error) {
 	return n.client, nil
 }
 
-// Start exec's the node passing the ID and service as command line arguments
+// Start exec's the node passing the ID and server as command line arguments
 // and the node config encoded as JSON in an environment variable.
 func (n *ExecNode) Start(snapshots map[string][]byte) (err error) {
 	if n.Cmd != nil {
@@ -406,7 +406,7 @@ func initLogging() {
 }
 
 // execP2PNode starts a simulation node when the current binary is executed with
-// argv[0] being "p2p-node", reading the service / ID from argv[1] / argv[2]
+// argv[0] being "p2p-node", reading the server / ID from argv[1] / argv[2]
 // and the node config from an environment variable.
 func execP2PNode() {
 	initLogging()
@@ -482,7 +482,7 @@ func startExecNodeStack() (*node.Node, error) {
 	for _, name := range serviceNames {
 		lifecycleFunc, exists := lifecycleConstructorFuncs[name]
 		if !exists {
-			return nil, fmt.Errorf("unknown node service %q", err)
+			return nil, fmt.Errorf("unknown node server %q", err)
 		}
 		ctx := &ServiceContext{
 			RPCDialer: &wsRPCDialer{addrs: conf.PeerAddrs},

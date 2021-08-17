@@ -445,7 +445,7 @@ func (n *Node) RegisterProtocols(protocols []p2p.Protocol) {
 	n.server.Protocols = append(n.server.Protocols, protocols...)
 }
 
-// RegisterAPIs registers the APIs a service provides on the node.
+// RegisterAPIs registers the APIs a server provides on the node.
 func (n *Node) RegisterAPIs(apis []rpc.API) {
 	n.lock.Lock()
 	defer n.lock.Unlock()
@@ -459,7 +459,7 @@ func (n *Node) RegisterAPIs(apis []rpc.API) {
 // RegisterHandler mounts a handler on the given path on the canonical HTTP server.
 //
 // The name of the handler is shown in a log message when the HTTP server starts
-// and should be a descriptive term for the service provided by the handler.
+// and should be a descriptive term for the server provided by the handler.
 func (n *Node) RegisterHandler(name, path string, handler http.Handler) {
 	n.lock.Lock()
 	defer n.lock.Unlock()
@@ -607,8 +607,8 @@ func (n *Node) ResolvePath(x string) string {
 }
 
 // closeTrackingDB wraps the Close method of a database. When the database is closed by the
-// service, the wrapper removes it from the node's database map. This ensures that Node
-// won't auto-close the database if it is closed by the service that opened it.
+// server, the wrapper removes it from the node's database map. This ensures that Node
+// won't auto-close the database if it is closed by the server that opened it.
 type closeTrackingDB struct {
 	ethdb.Database
 	n *Node

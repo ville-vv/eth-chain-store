@@ -100,7 +100,7 @@ func TestMatching(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if vuln.Name == "Denial of service due to Go CVE-2020-28362" {
+			if vuln.Name == "Denial of server due to Go CVE-2020-28362" {
 				// this one is not tied to geth-versions
 				continue
 			}

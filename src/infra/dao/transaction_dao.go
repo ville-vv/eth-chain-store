@@ -1,7 +1,6 @@
 package dao
 
 import (
-	"github.com/pkg/errors"
 	"github.com/ville-vv/eth-chain-store/src/infra/model"
 )
 
@@ -11,15 +10,17 @@ type EthereumTransactionDao struct {
 	contractTxDao *contractTransactionDao
 }
 
-func NewEthereumTransactionDao(txDb DB, contractTxDb DB) *EthereumTransactionDao {
+func NewEthereumTransactionDao(txDb DB, contractTxDb DB, normalTxCache *DbCache, contractTxCache *DbCache) *EthereumTransactionDao {
 	e := &EthereumTransactionDao{
 		normalTxDao: &normalTransactionDao{
-			db: txDb,
-			tb: newDhcpTable(txDb.GetDB(), "transaction_records"),
+			db:      txDb,
+			tb:      newDhcpTable(txDb.GetDB(), "transaction_records"),
+			dbCache: normalTxCache,
 		},
 		contractTxDao: &contractTransactionDao{
-			db: contractTxDb,
-			tb: newDhcpTable(contractTxDb.GetDB(), "transaction_records"),
+			db:      contractTxDb,
+			tb:      newDhcpTable(contractTxDb.GetDB(), "transaction_records"),
+			dbCache: contractTxCache,
 		}}
 	return e
 }
@@ -35,8 +36,9 @@ func (sel *EthereumTransactionDao) CreateTransactionRecord(txData *model.Transac
 //==========================================================================================
 
 type contractTransactionDao struct {
-	db DB
-	tb *dhcpTable
+	db      DB
+	tb      *dhcpTable
+	dbCache *DbCache
 }
 
 func (sel *contractTransactionDao) createTransactionRecord(txData *model.TransactionData) error {
@@ -44,9 +46,8 @@ func (sel *contractTransactionDao) createTransactionRecord(txData *model.Transac
 	if err != nil {
 		return nil
 	}
-	db := sel.db.GetDB().Table(tbName)
 
-	if err = db.Create(&model.TransactionRecord{
+	sel.dbCache.Insert(tbName, &model.TransactionRecord{
 		BlockNumber:     txData.BlockNumber,
 		BlockHash:       txData.BlockHash,
 		TxHash:          txData.Hash,
@@ -58,9 +59,11 @@ func (sel *contractTransactionDao) createTransactionRecord(txData *model.Transac
 		Value:           txData.Value,
 		FromAddrBalance: txData.FromBalance,
 		ToAddrBalance:   txData.ToBalance,
-	}).Error; err != nil {
-		return err
-	}
+	})
+	// db := sel.db.GetDB().Table(tbName)
+	// if err = db.Create().Error; err != nil {
+	//	 return err
+	// }
 	sel.tb.Inc()
 
 	return nil
@@ -69,8 +72,9 @@ func (sel *contractTransactionDao) createTransactionRecord(txData *model.Transac
 //==========================================================================================
 
 type normalTransactionDao struct {
-	db DB
-	tb *dhcpTable
+	db      DB
+	tb      *dhcpTable
+	dbCache *DbCache
 }
 
 func (sel *normalTransactionDao) createTransactionRecord(txData *model.TransactionData) error {
@@ -78,8 +82,8 @@ func (sel *normalTransactionDao) createTransactionRecord(txData *model.Transacti
 	if err != nil {
 		return nil
 	}
-	db := sel.db.GetDB().Table(tbName)
-	if err = db.Create(&model.TransactionRecord{
+
+	sel.dbCache.Insert(tbName, &model.TransactionRecord{
 		BlockNumber:     txData.BlockNumber,
 		BlockHash:       txData.BlockHash,
 		TxHash:          txData.Hash,
@@ -91,9 +95,12 @@ func (sel *normalTransactionDao) createTransactionRecord(txData *model.Transacti
 		Value:           txData.Value,
 		FromAddrBalance: txData.FromBalance,
 		ToAddrBalance:   "",
-	}).Error; err != nil {
-		return errors.Wrap(err, "create normal transaction")
-	}
+	})
+
+	//db := sel.db.GetDB().Table(tbName)
+	//if err = db.Create().Error; err != nil {
+	//	return errors.Wrap(err, "create normal transaction")
+	//}
 	sel.tb.Inc()
 
 	return nil

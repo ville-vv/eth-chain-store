@@ -16,14 +16,14 @@ type Erc20Manager interface {
 }
 
 type RingStrList struct {
-	sync.Mutex
+	sync.RWMutex
 	list   []string
 	index  int
 	length int
 }
 
 func NewRingStrList() *RingStrList {
-	lng := 20000000
+	lng := 500000
 	return &RingStrList{
 		list:   make([]string, lng),
 		index:  0,
@@ -32,8 +32,8 @@ func NewRingStrList() *RingStrList {
 }
 
 func (sel *RingStrList) Exist(str string) bool {
-	sel.Lock()
-	defer sel.Unlock()
+	sel.RLock()
+	defer sel.RUnlock()
 	for i := 0; i < sel.length; i++ {
 		if str == sel.list[i] {
 			return true
@@ -45,6 +45,10 @@ func (sel *RingStrList) Exist(str string) bool {
 func (sel *RingStrList) Set(str string) {
 	sel.Lock()
 	sel.list[sel.index] = str
+	sel.index++
+	if sel.index >= sel.length {
+		sel.index = 0
+	}
 	sel.Unlock()
 }
 
@@ -55,6 +59,38 @@ func (sel *RingStrList) Del(str string) {
 			sel.list[i] = ""
 		}
 	}
+	sel.Unlock()
+}
+
+type RingStrListV2 struct {
+	sync.RWMutex
+	list   map[string]interface{}
+	length int
+}
+
+func NewRingStrListV2() *RingStrListV2 {
+	return &RingStrListV2{
+		list:   make(map[string]interface{}),
+		length: 0,
+	}
+}
+
+func (sel *RingStrListV2) Exist(str string) bool {
+	sel.RLock()
+	defer sel.RUnlock()
+	_, ok := sel.list[str]
+	return ok
+}
+
+func (sel *RingStrListV2) Set(str string) {
+	sel.Lock()
+	sel.list[str] = nil
+	sel.Unlock()
+}
+
+func (sel *RingStrListV2) Del(str string) {
+	sel.Lock()
+	delete(sel.list, str)
 	sel.Unlock()
 }
 
@@ -74,12 +110,12 @@ func (sel *Erc20Contract) IsErc20() bool {
 type ContractManager struct {
 	rpcCli        ethrpc.EthRPC
 	contractRepo  *repo.ContractRepo
-	haveWriteList *RingStrList
+	haveWriteList *RingStrListV2
 	sync.Mutex
 }
 
 func NewContractManager(rpcCli ethrpc.EthRPC, contractRepo *repo.ContractRepo) *ContractManager {
-	return &ContractManager{rpcCli: rpcCli, contractRepo: contractRepo, haveWriteList: NewRingStrList()}
+	return &ContractManager{rpcCli: rpcCli, contractRepo: contractRepo, haveWriteList: NewRingStrListV2()}
 }
 
 // GetErc20ContractInfo ERC20 协议的合约有固定的合约接口来获取合约的基本信息
@@ -146,9 +182,9 @@ func (sel *ContractManager) TxWrite(txData *model.TransactionData) (err error) {
 	}
 
 	// 检查 from 地址
-	if err = sel.writeTokenContractInfo(txData.From, txData.TimeStamp); err != nil {
-		return nil
-	}
+	//if err = sel.writeTokenContractInfo(txData.From, txData.TimeStamp); err != nil {
+	//	return nil
+	//}
 
 	// 检查 to 地址
 	if err = sel.writeTokenContractInfo(txData.To, txData.TimeStamp); err != nil {

@@ -109,7 +109,7 @@ func (net *Network) NewNodeWithConfig(conf *adapters.NodeConfig) (*Node, error) 
 		return nil, fmt.Errorf("node with name %q already exists", conf.Name)
 	}
 
-	// if no services are configured, use the default service
+	// if no services are configured, use the default server
 	if len(conf.Lifecycles) == 0 {
 		conf.Lifecycles = []string{net.DefaultService}
 	}

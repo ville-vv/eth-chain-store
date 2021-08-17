@@ -178,7 +178,7 @@ func main() {
 	if err := ks.Unlock(acc, pass); err != nil {
 		log.Crit("Failed to unlock faucet signer account", "err", err)
 	}
-	// Assemble and start the faucet light service
+	// Assemble and start the faucet light server
 	faucet, err := newFaucet(genesis, *ethPortFlag, enodes, *netFlag, *statsFlag, ks, website.Bytes())
 	if err != nil {
 		log.Crit("Failed to start faucet", "err", err)
@@ -255,10 +255,10 @@ func newFaucet(genesis *core.Genesis, port int, enodes []*enode.Node, network ui
 
 	lesBackend, err := les.New(stack, &cfg)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to register the Ethereum service: %w", err)
+		return nil, fmt.Errorf("Failed to register the Ethereum server: %w", err)
 	}
 
-	// Assemble the ethstats monitoring and reporting service'
+	// Assemble the ethstats monitoring and reporting server'
 	if stats != "" {
 		if err := ethstats.New(stack, lesBackend.ApiBackend, lesBackend.Engine(), stats); err != nil {
 			return nil, err
@@ -300,7 +300,7 @@ func (f *faucet) close() error {
 }
 
 // listenAndServe registers the HTTP handlers for the faucet and boots it up
-// for service user funding requests.
+// for server user funding requests.
 func (f *faucet) listenAndServe(port int) error {
 	go f.loop()
 

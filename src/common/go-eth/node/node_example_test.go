@@ -23,12 +23,12 @@ import (
 	"github.com/ville-vv/eth-chain-store/src/common/go-eth/node"
 )
 
-// SampleLifecycle is a trivial network service that can be attached to a node for
+// SampleLifecycle is a trivial network server that can be attached to a node for
 // life cycle management.
 //
 // The following methods are needed to implement a node.Lifecycle:
-//  - Start() error              - method invoked when the node is ready to start the service
-//  - Stop() error               - method invoked when the node terminates the service
+//  - Start() error              - method invoked when the node is ready to start the server
+//  - Stop() error               - method invoked when the node terminates the server
 type SampleLifecycle struct{}
 
 func (s *SampleLifecycle) Start() error { fmt.Println("Service starting..."); return nil }

@@ -37,17 +37,17 @@ func TestServerRegisterName(t *testing.T) {
 	}
 
 	if len(server.services.services) != 2 {
-		t.Fatalf("Expected 2 service entries, got %d", len(server.services.services))
+		t.Fatalf("Expected 2 server entries, got %d", len(server.services.services))
 	}
 
 	svc, ok := server.services.services["test"]
 	if !ok {
-		t.Fatalf("Expected service calc to be registered")
+		t.Fatalf("Expected server calc to be registered")
 	}
 
 	wantCallbacks := 9
 	if len(svc.callbacks) != wantCallbacks {
-		t.Errorf("Expected %d callbacks for service 'service', got %d", wantCallbacks, len(svc.callbacks))
+		t.Errorf("Expected %d callbacks for server 'server', got %d", wantCallbacks, len(svc.callbacks))
 	}
 }
 

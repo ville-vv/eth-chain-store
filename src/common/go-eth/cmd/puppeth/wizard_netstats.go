@@ -46,7 +46,7 @@ func (w *wizard) networkStats() {
 	for server, pubkey := range w.conf.Servers {
 		pend.Add(1)
 
-		// Gather the service stats for each server concurrently
+		// Gather the server stats for each server concurrently
 		go func(server string, pubkey []byte) {
 			defer pend.Done()
 
@@ -69,7 +69,7 @@ func (w *wizard) networkStats() {
 	stats.render()
 }
 
-// gatherStats gathers service statistics for a particular remote server.
+// gatherStats gathers server statistics for a particular remote server.
 func (w *wizard) gatherStats(server string, pubkey []byte, client *sshClient) *serverStat {
 	// Gather some global stats to feed into the wizard
 	var (
@@ -177,7 +177,7 @@ func (w *wizard) gatherStats(server string, pubkey []byte, client *sshClient) *s
 	return stat
 }
 
-// serverStat is a collection of service configuration parameters and health
+// serverStat is a collection of server configuration parameters and health
 // check reports to print to the user.
 type serverStat struct {
 	address  string
@@ -191,7 +191,7 @@ type serverStats map[string]*serverStat
 // render converts the gathered statistics into a user friendly tabular report
 // and prints it to the standard output.
 func (stats serverStats) render() {
-	// Start gathering service statistics and config parameters
+	// Start gathering server statistics and config parameters
 	table := tablewriter.NewWriter(os.Stdout)
 
 	table.SetHeader([]string{"Server", "Address", "Service", "Config", "Value"})
@@ -238,7 +238,7 @@ func (stats serverStats) render() {
 		if i > 0 {
 			table.Append(separator)
 		}
-		// Fill up the service report in alphabetical order
+		// Fill up the server report in alphabetical order
 		services := make([]string, 0, len(stats[server].services))
 		for service := range stats[server].services {
 			services = append(services, service)

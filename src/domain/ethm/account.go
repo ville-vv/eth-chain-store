@@ -7,6 +7,7 @@ import (
 	"github.com/ville-vv/eth-chain-store/src/infra/ethrpc"
 	"github.com/ville-vv/eth-chain-store/src/infra/model"
 	"github.com/ville-vv/vilgo/vlog"
+	"strings"
 	"sync"
 )
 
@@ -30,12 +31,13 @@ func NewAccountManager(ethCli ethrpc.EthRPC, contractAccountRepo *repo.ContractA
 		contractActMng: &contractAccountManager{
 			ethCli:        ethCli,
 			accountRepo:   contractAccountRepo,
-			haveWriteList: NewRingStrList(),
+			haveWriteList: NewRingStrListV2(),
+			contractCache: cache.NewRingCache(),
 		},
 		normalActMng: &normalAccountManager{
 			ethCli:        ethCli,
 			accountRepo:   normalAccountRepo,
-			haveWriteList: NewRingStrList(),
+			haveWriteList: NewRingStrListV2(),
 		},
 	}
 	return ac
@@ -50,6 +52,7 @@ func (sel *AccountManager) TxWrite(txData *model.TransactionData) error {
 		return sel.contractActMng.UpdateAccount(txData)
 	}
 	return sel.normalActMng.UpdateAccount(txData)
+	//return nil
 }
 
 // contractAccountUpdater 处理合约账户
@@ -78,16 +81,16 @@ func (sel *AccountManager) contractAccountUpdater(txData *model.TransactionData)
 type contractAccountManager struct {
 	ethCli        ethrpc.EthRPC
 	accountRepo   *repo.ContractAccountRepo
-	haveWriteList *RingStrList
+	haveWriteList *RingStrListV2
 	contractCache *cache.RingCache
 	sync.Mutex
 }
 
 // UpdateAccount 合约代币交易账户信息写入, contractAddress 是合约地址
 func (sel *contractAccountManager) UpdateAccount(txData *model.TransactionData) error {
-	if err := sel.writeAccount(txData.From, txData.ContractAddress, txData.IsLatest()); err != nil {
-		return errors.Wrap(err, "write contract account from address")
-	}
+	//if err := sel.writeAccount(txData.From, txData.ContractAddress, txData.IsLatest()); err != nil {
+	//	return errors.Wrap(err, "write contract account from address")
+	//}
 	if err := sel.writeAccount(txData.To, txData.ContractAddress, txData.IsLatest()); err != nil {
 		return errors.Wrap(err, "write contract account to address")
 	}
@@ -110,15 +113,15 @@ func (sel *contractAccountManager) writeAccount(accountAddr string, contractAddr
 			sel.haveWriteList.Del(unique)
 			return err
 		}
-		if bindInfo.ID > 0 {
-			exist = true
+		if bindInfo.ID <= 0 {
+			err = sel.createAccount(accountAddr, contractAddress)
+			if err != nil {
+				sel.haveWriteList.Del(unique)
+				return err
+			}
+			return nil
 		}
-		err = sel.createAccount(accountAddr, contractAddress)
-		if err != nil {
-			sel.haveWriteList.Del(unique)
-			return err
-		}
-		return nil
+		exist = true
 	}
 
 	if isLatest {
@@ -152,23 +155,27 @@ func (sel *contractAccountManager) writeAccount(accountAddr string, contractAddr
 func (sel *contractAccountManager) createAccount(accountAddr string, contractAddress string) error {
 	balance, err := sel.ethCli.GetContractBalance(contractAddress, accountAddr)
 	if err != nil {
+		vlog.WARN("create contract address balance failed addr:%s contract:%s error:%s", accountAddr, contractAddress, err.Error())
+		if strings.Contains(err.Error(), "invalid opcode") {
+			return nil
+		}
 		if err.Error() != "execution reverted" {
-			vlog.ERROR("writeAccount.createAccount get contract balance failed addr:%s contract:%s error:%s", accountAddr, contractAddress, err.Error())
+			//vlog.ERROR("writeAccount.createAccount get contract balance failed addr:%s contract:%s error:%s", accountAddr, contractAddress, err.Error())
 			return err
 		}
 		return nil
 	}
-	symbol, err := sel.getContractSymbol(contractAddress)
-	if err != nil {
-		vlog.ERROR("writeAccount get contract symbol failed contract:%s error:%s", contractAddress, err.Error())
-		return err
-	}
+	//symbol, err := sel.getContractSymbol(contractAddress)
+	//if err != nil {
+	//	vlog.ERROR("writeAccount get contract symbol failed contract:%s error:%s", contractAddress, err.Error())
+	//	return err
+	//}
 
 	err = sel.accountRepo.CreateEthAccount(&model.ContractAccountBind{
 		Address:         accountAddr,
 		ContractAddress: contractAddress,
-		Symbol:          symbol,
-		Balance:         balance,
+		//Symbol:          symbol,
+		Balance: balance,
 	})
 	if err != nil {
 		return err
@@ -198,14 +205,15 @@ func (sel *contractAccountManager) getContractSymbol(contractAddress string) (st
 type normalAccountManager struct {
 	ethCli        ethrpc.EthRPC
 	accountRepo   *repo.NormalAccountRepo
-	haveWriteList *RingStrList
+	haveWriteList *RingStrListV2
+	lock          sync.Mutex
 }
 
 // 以太坊正常的交易账户写入，这里就不判断该账户是不是合约账户了直接写入 from 和 to
 func (sel *normalAccountManager) UpdateAccount(txData *model.TransactionData) error {
-	if err := sel.writeAccount(txData.From, txData.TimeStamp, txData.Hash, txData.IsLatest()); err != nil {
-		return errors.Wrap(err, "write normal account from address")
-	}
+	//if err := sel.writeAccount(txData.From, txData.TimeStamp, txData.Hash, txData.IsLatest()); err != nil {
+	//	return errors.Wrap(err, "write normal account from address")
+	//}
 	if err := sel.writeAccount(txData.To, txData.TimeStamp, txData.Hash, txData.IsLatest()); err != nil {
 		return errors.Wrap(err, "write normal account to address")
 	}
@@ -217,6 +225,8 @@ func (sel *normalAccountManager) writeAccount(accountAddr string, timeStamp stri
 	var err error
 	var tableName string
 	var bindInfo *model.EthereumAccount
+	sel.lock.Lock()
+	defer sel.lock.Unlock()
 
 	if !sel.haveWriteList.Exist(accountAddr) {
 		sel.haveWriteList.Set(accountAddr)
@@ -225,26 +235,26 @@ func (sel *normalAccountManager) writeAccount(accountAddr string, timeStamp stri
 			sel.haveWriteList.Del(accountAddr)
 			return err
 		}
-		if bindInfo.ID > 0 {
-			exist = true
+		if bindInfo.ID <= 0 {
+			// 获取的余额
+			balance, err := sel.ethCli.GetBalance(accountAddr)
+			if err != nil {
+				sel.haveWriteList.Del(accountAddr)
+				return err
+			}
+			err = sel.accountRepo.CreateEthAccount(&model.EthereumAccount{
+				Address:     accountAddr,
+				FirstTxTime: timeStamp,
+				FirstTxHash: hash,
+				Balance:     balance,
+			})
+			if err != nil {
+				sel.haveWriteList.Del(accountAddr)
+				return err
+			}
+			return nil
 		}
-		// 获取的余额
-		balance, err := sel.ethCli.GetBalance(accountAddr)
-		if err != nil {
-			sel.haveWriteList.Del(accountAddr)
-			return err
-		}
-		err = sel.accountRepo.CreateEthAccount(&model.EthereumAccount{
-			Address:     accountAddr,
-			FirstTxTime: timeStamp,
-			FirstTxHash: hash,
-			Balance:     balance,
-		})
-		if err != nil {
-			sel.haveWriteList.Del(accountAddr)
-			return err
-		}
-		return nil
+		exist = true
 	}
 
 	if isLatest {

@@ -10,6 +10,13 @@ type RingCache struct {
 	sync.RWMutex
 }
 
+func NewRingCache() *RingCache {
+	return &RingCache{
+		keyList: make([]string, 20000),
+		list:    make([]interface{}, 20000),
+	}
+}
+
 func (sel *RingCache) Set(key string, val interface{}) error {
 	sel.Lock()
 	sel.keyList[sel.index] = key

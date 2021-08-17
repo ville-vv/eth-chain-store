@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	balanceCacheLimit = 8192 // the maximum number of cached items in service token balance queue
+	balanceCacheLimit = 8192 // the maximum number of cached items in server token balance queue
 
 	// nodeDBVersion is the version identifier of the node data in db
 	//

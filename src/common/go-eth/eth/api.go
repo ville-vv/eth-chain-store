@@ -88,7 +88,7 @@ type PrivateMinerAPI struct {
 	e *Ethereum
 }
 
-// NewPrivateMinerAPI create a new RPC service which controls the miner of this node.
+// NewPrivateMinerAPI create a new RPC server which controls the miner of this node.
 func NewPrivateMinerAPI(e *Ethereum) *PrivateMinerAPI {
 	return &PrivateMinerAPI{e: e}
 }
@@ -147,7 +147,7 @@ type PrivateAdminAPI struct {
 }
 
 // NewPrivateAdminAPI creates a new API definition for the full node private
-// admin methods of the Ethereum service.
+// admin methods of the Ethereum server.
 func NewPrivateAdminAPI(eth *Ethereum) *PrivateAdminAPI {
 	return &PrivateAdminAPI{eth: eth}
 }
@@ -257,7 +257,7 @@ type PublicDebugAPI struct {
 }
 
 // NewPublicDebugAPI creates a new API definition for the full node-
-// related public debug methods of the Ethereum service.
+// related public debug methods of the Ethereum server.
 func NewPublicDebugAPI(eth *Ethereum) *PublicDebugAPI {
 	return &PublicDebugAPI{eth: eth}
 }
@@ -298,7 +298,7 @@ type PrivateDebugAPI struct {
 }
 
 // NewPrivateDebugAPI creates a new API definition for the full node-related
-// private debug methods of the Ethereum service.
+// private debug methods of the Ethereum server.
 func NewPrivateDebugAPI(eth *Ethereum) *PrivateDebugAPI {
 	return &PrivateDebugAPI{eth: eth}
 }

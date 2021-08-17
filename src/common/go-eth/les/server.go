@@ -81,7 +81,7 @@ func NewLesServer(node *node.Node, e ethBackend, config *ethconfig.Config) (*Les
 	if err != nil {
 		return nil, err
 	}
-	// Calculate the number of threads used to service the light client
+	// Calculate the number of threads used to server the light client
 	// requests based on the user-specified value.
 	threads := config.LightServ * 4 / 100
 	if threads < 4 {
@@ -140,7 +140,7 @@ func NewLesServer(node *node.Node, e ethBackend, config *ethconfig.Config) (*Les
 	srv.clientPool = vfs.NewClientPool(lesDb, srv.minCapacity, defaultConnectedBias, mclock.System{}, issync)
 	srv.clientPool.Start()
 	srv.clientPool.SetDefaultFactors(defaultPosFactors, defaultNegFactors)
-	srv.vfluxServer.Register(srv.clientPool, "les", "Ethereum light client service")
+	srv.vfluxServer.Register(srv.clientPool, "les", "Ethereum light client server")
 
 	checkpoint := srv.latestLocalCheckpoint()
 	if !checkpoint.Empty() {
@@ -207,7 +207,7 @@ func (s *LesServer) Start() error {
 	return nil
 }
 
-// Stop stops the LES service
+// Stop stops the LES server
 func (s *LesServer) Stop() error {
 	close(s.closeCh)
 

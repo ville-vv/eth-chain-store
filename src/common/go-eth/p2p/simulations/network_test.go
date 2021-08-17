@@ -33,14 +33,14 @@ import (
 	"github.com/ville-vv/eth-chain-store/src/common/go-eth/p2p/simulations/adapters"
 )
 
-// Tests that a created snapshot with a minimal service only contains the expected connections
+// Tests that a created snapshot with a minimal server only contains the expected connections
 // and that a network when loaded with this snapshot only contains those same connections
 func TestSnapshot(t *testing.T) {
 
 	// PART I
 	// create snapshot from ring network
 
-	// this is a minimal service, whose protocol will take exactly one message OR close of connection before quitting
+	// this is a minimal server, whose protocol will take exactly one message OR close of connection before quitting
 	adapter := adapters.NewSimAdapter(adapters.LifecycleConstructors{
 		"noopwoop": func(ctx *adapters.ServiceContext, stack *node.Node) (node.Lifecycle, error) {
 			return NewNoopService(nil), nil
@@ -702,8 +702,8 @@ func benchmarkMinimalServiceTmp(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		// this is a minimal service, whose protocol will close a channel upon run of protocol
-		// making it possible to bench the time it takes for the service to start and protocol actually to be run
+		// this is a minimal server, whose protocol will close a channel upon run of protocol
+		// making it possible to bench the time it takes for the server to start and protocol actually to be run
 		protoCMap := make(map[enode.ID]map[enode.ID]chan struct{})
 		adapter := adapters.NewSimAdapter(adapters.LifecycleConstructors{
 			"noopwoop": func(ctx *adapters.ServiceContext, stack *node.Node) (node.Lifecycle, error) {

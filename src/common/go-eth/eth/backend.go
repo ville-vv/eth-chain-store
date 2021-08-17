@@ -61,7 +61,7 @@ import (
 // Deprecated: use ethconfig.Config instead.
 type Config = ethconfig.Config
 
-// Ethereum implements the Ethereum full node service.
+// Ethereum implements the Ethereum full node server.
 type Ethereum struct {
 	config *ethconfig.Config
 
@@ -251,7 +251,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		return nil, err
 	}
 
-	// Start the RPC service
+	// Start the RPC server
 	eth.netRPCService = ethapi.NewPublicNetAPI(eth.p2pServer, config.NetworkId)
 
 	// Register the backend on the node

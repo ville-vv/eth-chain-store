@@ -83,10 +83,10 @@ Here's an example handler that prints logfmt output to Stdout:
 
 Here's an example handler that defers to two other handlers. One handler only prints records
 from the rpc package in logfmt to standard out. The other prints records at Error level
-or above in JSON formatted output to the file /var/log/service.json
+or above in JSON formatted output to the file /var/log/server.json
 
     handler := log.MultiHandler(
-        log.LvlFilterHandler(log.LvlError, log.Must.FileHandler("/var/log/service.json", log.JSONFormat())),
+        log.LvlFilterHandler(log.LvlError, log.Must.FileHandler("/var/log/server.json", log.JSONFormat())),
         log.MatchFilterHandler("pkg", "app/rpc" log.StdoutHandler())
     )
 

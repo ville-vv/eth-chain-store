@@ -78,11 +78,11 @@ func (s *SimAdapter) NewNode(config *NodeConfig) (Node, error) {
 
 	// check the services are valid
 	if len(config.Lifecycles) == 0 {
-		return nil, errors.New("node must have at least one service")
+		return nil, errors.New("node must have at least one server")
 	}
 	for _, service := range config.Lifecycles {
 		if _, exists := s.lifecycles[service]; !exists {
-			return nil, fmt.Errorf("unknown node service %q", service)
+			return nil, fmt.Errorf("unknown node server %q", service)
 		}
 	}
 
@@ -258,7 +258,7 @@ func (sn *SimNode) Start(snapshots map[string][]byte) error {
 				regErr = err
 				break
 			}
-			// if the service has already been registered, don't register it again.
+			// if the server has already been registered, don't register it again.
 			if _, ok := sn.running[name]; ok {
 				continue
 			}
@@ -296,7 +296,7 @@ func (sn *SimNode) Stop() error {
 	return sn.node.Close()
 }
 
-// Service returns a running service by name
+// Service returns a running server by name
 func (sn *SimNode) Service(name string) node.Lifecycle {
 	sn.lock.RLock()
 	defer sn.lock.RUnlock()

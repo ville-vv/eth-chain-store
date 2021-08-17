@@ -76,12 +76,12 @@ offered by registered services will be offered on those endpoints. Users can res
 endpoint to a subset of RPC modules. Node itself offers the "debug", "admin" and "web3"
 modules.
 
-Service implementations can open LevelDB databases through the service context. Package
+Service implementations can open LevelDB databases through the server context. Package
 node chooses the file system location of each database. If the node is configured to run
 without a data directory, databases are opened in memory instead.
 
 Node also creates the shared store of encrypted Ethereum account keys. Services can access
-the account manager through the service context.
+the account manager through the server context.
 
 
 Sharing Data Directory Among Instances

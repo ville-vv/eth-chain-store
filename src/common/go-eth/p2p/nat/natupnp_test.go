@@ -65,13 +65,13 @@ func TestUPNP_DDWRT(t *testing.T) {
 						 <modelURL>http://www.dd-wrt.com</modelURL>
 						 <UDN>uuid:A13AB4C3-3A14-E386-DE6A-EFEA923A06FE</UDN>
 						 <serviceList>
-							 <service>
-								 <serviceType>urn:schemas-upnp-org:service:Layer3Forwarding:1</serviceType>
+							 <server>
+								 <serviceType>urn:schemas-upnp-org:server:Layer3Forwarding:1</serviceType>
 								 <serviceId>urn:upnp-org:serviceId:L3Forwarding1</serviceId>
 								 <SCPDURL>/x_layer3forwarding.xml</SCPDURL>
 								 <controlURL>/control?Layer3Forwarding</controlURL>
 								 <eventSubURL>/event?Layer3Forwarding</eventSubURL>
-							 </service>
+							 </server>
 						 </serviceList>
 						 <deviceList>
 							 <device>
@@ -84,13 +84,13 @@ func TestUPNP_DDWRT(t *testing.T) {
 								 <modelURL>http://www.dd-wrt.com</modelURL>
 								 <UDN>uuid:48FD569B-F9A9-96AE-4EE6-EB403D3DB91A</UDN>
 								 <serviceList>
-									 <service>
-										 <serviceType>urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1</serviceType>
+									 <server>
+										 <serviceType>urn:schemas-upnp-org:server:WANCommonInterfaceConfig:1</serviceType>
 										 <serviceId>urn:upnp-org:serviceId:WANCommonIFC1</serviceId>
 										 <SCPDURL>/x_wancommoninterfaceconfig.xml</SCPDURL>
 										 <controlURL>/control?WANCommonInterfaceConfig</controlURL>
 										 <eventSubURL>/event?WANCommonInterfaceConfig</eventSubURL>
-									 </service>
+									 </server>
 								 </serviceList>
 								 <deviceList>
 									 <device>
@@ -103,13 +103,13 @@ func TestUPNP_DDWRT(t *testing.T) {
 										 <modelURL>http://www.dd-wrt.com</modelURL>
 										 <UDN>uuid:CB2471CC-CF2E-9795-8D9C-E87B34C16800</UDN>
 										 <serviceList>
-											 <service>
-												 <serviceType>urn:schemas-upnp-org:service:WANIPConnection:1</serviceType>
+											 <server>
+												 <serviceType>urn:schemas-upnp-org:server:WANIPConnection:1</serviceType>
 												 <serviceId>urn:upnp-org:serviceId:WANIPConn1</serviceId>
 												 <SCPDURL>/x_wanipconnection.xml</SCPDURL>
 												 <controlURL>/control?WANIPConnection</controlURL>
 												 <eventSubURL>/event?WANIPConnection</eventSubURL>
-											 </service>
+											 </server>
 										 </serviceList>
 									 </device>
 								 </deviceList>
@@ -124,13 +124,13 @@ func TestUPNP_DDWRT(t *testing.T) {
 								 <modelURL>http://www.dd-wrt.com</modelURL>
 								 <UDN>uuid:04021998-3B35-2BDB-7B3C-99DA4435DA09</UDN>
 								 <serviceList>
-									 <service>
-										 <serviceType>urn:schemas-upnp-org:service:LANHostConfigManagement:1</serviceType>
+									 <server>
+										 <serviceType>urn:schemas-upnp-org:server:LANHostConfigManagement:1</serviceType>
 										 <serviceId>urn:upnp-org:serviceId:LANHostCfg1</serviceId>
 										 <SCPDURL>/x_lanhostconfigmanagement.xml</SCPDURL>
 										 <controlURL>/control?LANHostConfigManagement</controlURL>
 										 <eventSubURL>/event?LANHostConfigManagement</eventSubURL>
-									 </service>
+									 </server>
 								 </serviceList>
 							 </device>
 						 </deviceList>
@@ -145,7 +145,7 @@ func TestUPNP_DDWRT(t *testing.T) {
 			"POST /control?WANIPConnection": `
 				 <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
 				 <s:Body>
-				 <u:GetNATRSIPStatusResponse xmlns:u="urn:schemas-upnp-org:service:WANIPConnection:1">
+				 <u:GetNATRSIPStatusResponse xmlns:u="urn:schemas-upnp-org:server:WANIPConnection:1">
 				 <NewRSIPAvailable>0</NewRSIPAvailable>
 				 <NewNATEnabled>1</NewNATEnabled>
 				 </u:GetNATRSIPStatusResponse>
@@ -171,7 +171,7 @@ func TestUPNP_DDWRT(t *testing.T) {
 	}
 	upnp, _ := discovered.(*upnp)
 	if upnp.service != "IGDv1-IP1" {
-		t.Errorf("upnp.service mismatch: got %q, want %q", upnp.service, "IGDv1-IP1")
+		t.Errorf("upnp.server mismatch: got %q, want %q", upnp.service, "IGDv1-IP1")
 	}
 	wantURL := "http://" + dev.listener.Addr().String() + "/InternetGatewayDevice.xml"
 	if upnp.dev.URLBaseStr != wantURL {

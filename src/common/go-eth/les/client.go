@@ -212,8 +212,8 @@ func (s *LightEthereum) VfluxRequest(n *enode.Node, reqs vflux.Requests) vflux.R
 	return replies
 }
 
-// vfxVersion returns the version number of the "les" service subdomain of the vflux UDP
-// service, as advertised in the ENR record
+// vfxVersion returns the version number of the "les" server subdomain of the vflux UDP
+// server, as advertised in the ENR record
 func (s *LightEthereum) vfxVersion(n *enode.Node) uint {
 	if n.Seq() == 0 {
 		var err error

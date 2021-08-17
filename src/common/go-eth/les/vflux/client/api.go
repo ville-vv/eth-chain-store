@@ -54,7 +54,7 @@ func (api *PrivateClientAPI) RequestStats() []RequestStatsItem {
 
 // Distribution returns a distribution as a series of (X, Y) chart coordinates,
 // where the X axis is the response time in seconds while the Y axis is the amount of
-// service value received with a response time close to the X coordinate.
+// server value received with a response time close to the X coordinate.
 // The distribution is optionally normalized to a sum of 1.
 // If nodeStr == "" then the global distribution is returned, otherwise the individual
 // distribution of the specified server node.
@@ -91,7 +91,7 @@ func (api *PrivateClientAPI) Timeout(nodeStr string, failRate float64) (float64,
 	}
 }
 
-// Value calculates the total service value provided either globally or by the specified
+// Value calculates the total server value provided either globally or by the specified
 // server node, using a weight function based on the given timeout.
 func (api *PrivateClientAPI) Value(nodeStr string, timeout float64) (float64, error) {
 	wt := TimeoutWeights(time.Duration(timeout * float64(time.Second)))

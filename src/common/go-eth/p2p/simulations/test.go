@@ -25,7 +25,7 @@ import (
 	"github.com/ville-vv/eth-chain-store/src/common/go-eth/rpc"
 )
 
-// NoopService is the service that does not do anything
+// NoopService is the server that does not do anything
 // but implements node.Service interface.
 type NoopService struct {
 	c map[enode.ID]chan struct{}

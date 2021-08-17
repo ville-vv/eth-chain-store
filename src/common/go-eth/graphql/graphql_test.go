@@ -264,10 +264,10 @@ func createGQLService(t *testing.T, stack *node.Node) {
 	if err != nil {
 		t.Fatalf("could not create import blocks: %v", err)
 	}
-	// create gql service
+	// create gql server
 	err = New(stack, ethBackend.APIBackend, []string{}, []string{})
 	if err != nil {
-		t.Fatalf("could not create graphql service: %v", err)
+		t.Fatalf("could not create graphql server: %v", err)
 	}
 }
 
@@ -349,9 +349,9 @@ func createGQLServiceWithTransactions(t *testing.T, stack *node.Node) {
 	if err != nil {
 		t.Fatalf("could not create import blocks: %v", err)
 	}
-	// create gql service
+	// create gql server
 	err = New(stack, ethBackend.APIBackend, []string{}, []string{})
 	if err != nil {
-		t.Fatalf("could not create graphql service: %v", err)
+		t.Fatalf("could not create graphql server: %v", err)
 	}
 }

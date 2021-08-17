@@ -38,7 +38,7 @@ type (
 		delayPerRequest time.Duration
 	}
 
-	// Service is a service registered at the Server and identified by a string id
+	// Service is a server registered at the Server and identified by a string id
 	Service interface {
 		Handle(id enode.ID, address string, name string, data []byte) []byte // never called concurrently
 	}
@@ -62,7 +62,7 @@ func NewServer(delayPerRequest time.Duration) *Server {
 func (s *Server) Register(b Service, id, desc string) {
 	srv := &serviceEntry{backend: b, id: id, desc: desc}
 	if strings.Contains(srv.id, ":") {
-		// srv.id + ":" will be used as a service database prefix
+		// srv.id + ":" will be used as a server database prefix
 		log.Error("Service ID contains ':'", "id", srv.id)
 		return
 	}
@@ -86,7 +86,7 @@ func (s *Server) Serve(id enode.ID, address string, requests vflux.Requests) vfl
 		return nil
 	}
 	// Note: the limiter ensures that the following section is not running concurrently,
-	// the lock only protects against contention caused by new service registration
+	// the lock only protects against contention caused by new server registration
 	s.lock.Lock()
 	results := make(vflux.Replies, len(requests))
 	for i, req := range requests {

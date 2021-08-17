@@ -309,7 +309,7 @@ func TestPostiveBalanceCounting(t *testing.T) {
 		nodes = append(nodes, node)
 	}
 
-	// Allocate service token
+	// Allocate server token
 	var sum uint64
 	for i := 0; i < 100; i += 1 {
 		amount := int64(rand.Intn(100) + 100)

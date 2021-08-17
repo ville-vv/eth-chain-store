@@ -77,7 +77,7 @@ func (w *wizard) deployFaucet() {
 		log.Error("At least one funding tier must be set")
 		return
 	}
-	// Accessing the reCaptcha service requires API authorizations, request it
+	// Accessing the reCaptcha server requires API authorizations, request it
 	if infos.captchaToken != "" {
 		fmt.Println()
 		fmt.Println("Reuse previous reCaptcha API authorization (y/n)? (default = yes)")

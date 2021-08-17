@@ -137,7 +137,7 @@ func deployFaucet(client *sshClient, network string, bootnodes []string, config 
 	}
 	defer client.Run("rm -rf " + workdir)
 
-	// Build and deploy the faucet service
+	// Build and deploy the faucet server
 	if nocache {
 		return nil, client.Stream(fmt.Sprintf("cd %s && docker-compose -p %s build --pull --no-cache && docker-compose -p %s up -d --force-recreate --timeout 60", workdir, network, network))
 	}
@@ -230,7 +230,7 @@ func checkFaucet(client *sshClient, network string) (*faucetInfos, error) {
 	}
 	// Run a sanity check to see if the port is reachable
 	if err = checkPort(host, port); err != nil {
-		log.Warn("Faucet service seems unreachable", "server", host, "port", port, "err", err)
+		log.Warn("Faucet server seems unreachable", "server", host, "port", port, "err", err)
 	}
 	// Container available, assemble and return the useful infos
 	return &faucetInfos{

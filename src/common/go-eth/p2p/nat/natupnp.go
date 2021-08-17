@@ -171,8 +171,8 @@ func discoverUPnP() Interface {
 }
 
 // finds devices matching the given target and calls matcher for all
-// advertised services of each device. The first non-nil service found
-// is sent into out. If no service matched, nil is sent.
+// advertised services of each device. The first non-nil server found
+// is sent into out. If no server matched, nil is sent.
 func discover(out chan<- *upnp, target string, matcher func(goupnp.ServiceClient) *upnp) {
 	devs, err := goupnp.DiscoverDevices(target)
 	if err != nil {
@@ -188,7 +188,7 @@ func discover(out chan<- *upnp, target string, matcher func(goupnp.ServiceClient
 			if found {
 				return
 			}
-			// check for a matching IGD service
+			// check for a matching IGD server
 			sc := goupnp.ServiceClient{
 				SOAPClient: service.NewSOAPClient(),
 				RootDevice: devs[i].Root,

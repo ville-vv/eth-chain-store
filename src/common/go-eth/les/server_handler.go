@@ -205,7 +205,7 @@ func (h *serverHandler) beforeHandle(p *clientPeer, reqID, responseCount uint64,
 		return nil, 0
 	}
 	// Create a multi-stage task, estimate the time it takes for the task to
-	// execute, and cache it in the request service queue.
+	// execute, and cache it in the request server queue.
 	factor := h.server.costTracker.globalFactor()
 	if factor < 0.001 {
 		factor = 1

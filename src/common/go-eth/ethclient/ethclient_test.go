@@ -200,7 +200,7 @@ func newTestBackend(t *testing.T) (*node.Node, []*types.Block) {
 	config.Ethash.PowMode = ethash.ModeFake
 	ethservice, err := eth.New(n, config)
 	if err != nil {
-		t.Fatalf("can't create new ethereum service: %v", err)
+		t.Fatalf("can't create new ethereum server: %v", err)
 	}
 	// Import the test chain.
 	if err := n.Start(); err != nil {

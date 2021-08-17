@@ -146,7 +146,7 @@ type requestInfo struct {
 	refBasketFirst, refBasketRest float64
 }
 
-// reqMapping maps an LES request to one or two vflux service vector entries.
+// reqMapping maps an LES request to one or two vflux server vector entries.
 // If rest != -1 and the request type is used with amounts larger than one then the
 // first one of the multi-request is mapped to first while the rest is mapped to rest.
 type reqMapping struct {
@@ -172,7 +172,7 @@ var (
 )
 
 // init creates a request list and mapping between protocol message codes and vflux
-// service vector indices.
+// server vector indices.
 func init() {
 	requestMapping = make(map[uint32]reqMapping)
 	for code, req := range requests {

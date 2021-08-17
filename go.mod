@@ -36,6 +36,7 @@ require (
 	github.com/influxdata/influxdb v1.9.2
 	github.com/jackpal/go-nat-pmp v1.0.2
 	github.com/jedisct1/go-minisign v0.0.0-20210703085342-c1f07ee84431
+	github.com/jinzhu/gorm v1.9.16
 	github.com/json-iterator/go v1.1.10
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/karalabe/usb v0.0.0-20210518091819-4ea20957c210
@@ -58,7 +59,8 @@ require (
 	github.com/tklauser/go-sysconf v0.3.6 // indirect
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/urfave/cli v1.22.1
-	github.com/ville-vv/vilgo v0.0.5-0.20210806090834-39c0512ab9b1
+	github.com/ville-vv/vilgo v0.0.5-0.20210816115032-7715c70e28c8
+	go.uber.org/zap v1.16.0
 	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1

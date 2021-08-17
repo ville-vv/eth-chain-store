@@ -76,7 +76,7 @@ func newBalanceTracker(ns *nodestate.NodeStateMachine, setup *serverSetup, db et
 	negExp.SetLogOffset(clock.Now(), negOffset)
 
 	// Load all persisted balance entries of priority nodes,
-	// calculate the total number of issued service tokens.
+	// calculate the total number of issued server tokens.
 	bt.ndb.forEachBalance(false, func(id enode.ID, balance utils.ExpiredValue) bool {
 		bt.inactive.AddExp(balance)
 		return true
@@ -154,7 +154,7 @@ func (bt *balanceTracker) stop() {
 	bt.ndb.close()
 }
 
-// TotalTokenAmount returns the current total amount of service tokens in existence
+// TotalTokenAmount returns the current total amount of server tokens in existence
 func (bt *balanceTracker) TotalTokenAmount() uint64 {
 	bt.lock.Lock()
 	defer bt.lock.Unlock()

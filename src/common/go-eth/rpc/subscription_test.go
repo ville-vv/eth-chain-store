@@ -65,7 +65,7 @@ func TestSubscriptions(t *testing.T) {
 	// setup and start server
 	for _, namespace := range namespaces {
 		if err := server.RegisterName(namespace, service); err != nil {
-			t.Fatalf("unable to register test service %v", err)
+			t.Fatalf("unable to register test server %v", err)
 		}
 	}
 	go server.ServeCodec(NewCodec(serverConn), 0)

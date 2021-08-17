@@ -134,9 +134,9 @@ func (w *wizard) manageComponents() {
 		log.Error("Invalid component choice, aborting")
 		return
 	}
-	// If the user selected an existing service, destroy it
+	// If the user selected an existing server, destroy it
 	if choice <= len(serviceHosts) {
-		// Figure out the service to destroy and execute it
+		// Figure out the server to destroy and execute it
 		service := serviceNames[choice-1]
 		server := serviceHosts[choice-1]
 		client := w.servers[server]
@@ -158,7 +158,7 @@ func (w *wizard) manageComponents() {
 				}
 			}
 		}
-		log.Info("Torn down existing component", "server", server, "service", service)
+		log.Info("Torn down existing component", "server", server, "server", service)
 		return
 	}
 	// If the user requested deploying a new component, do it

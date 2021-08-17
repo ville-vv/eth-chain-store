@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/ville-vv/eth-chain-store/src/infra/monitor"
 	"github.com/ville-vv/vilgo/runner"
 	"github.com/ville-vv/vilgo/vtask"
 	"net/http"
@@ -48,7 +49,7 @@ func (sel *MQD) Init() error {
 func (sel *MQD) Start() error {
 	runner.Go(sel.msgPump)
 	//go sel.msgPump()
-	runner.Go(sel.monitor)
+	//runner.Go(sel.monitor)
 	return nil
 }
 
@@ -93,7 +94,7 @@ func (sel *MQD) msgPump() {
 	for {
 		select {
 		case msg = <-msgChan:
-			sel.poolSize.Dec()
+			monitor.MqSize.Dec()
 		case <-sel.updateCSM:
 			csms = csms[:0]
 			sel.RLock()
@@ -132,7 +133,7 @@ func (sel *MQD) Publish(msg *Message) error {
 	}
 	select {
 	case sel.msgChan <- msg:
-		sel.poolSize.Inc()
+		monitor.MqSize.Inc()
 	}
 	return nil
 }
@@ -141,7 +142,7 @@ func (sel *MQD) ClearMsgChan() {
 	close(sel.msgChan)
 	sel.logf("clear msg ")
 	for v := range sel.msgChan {
-		sel.poolSize.Dec()
+		monitor.MqSize.Dec()
 		for _, csm := range sel.csmMap {
 			err := csm.Process(v)
 			if err != nil {

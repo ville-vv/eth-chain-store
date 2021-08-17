@@ -25,7 +25,7 @@ import (
 
 const maxSelectionWeight = 1000000000 // maximum selection weight of each individual node/address group
 
-// Limiter protects a network request serving mechanism from denial-of-service attacks.
+// Limiter protects a network request serving mechanism from denial-of-server attacks.
 // It limits the total amount of resources used for serving requests while ensuring that
 // the most valuable connections always have a reasonable chance of being served.
 type Limiter struct {
