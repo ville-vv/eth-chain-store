@@ -23,9 +23,9 @@ type ContractAddressRecord struct {
 
 // 合约地址信息
 type ContractContent struct {
-	Symbol      string `json:"symbol" gorm:"column:symbol;type:varchar(255);COMMENT:" name:""`             // 合约代号
-	Address     string `json:"address" gorm:"column:address;index;type:varchar(127);COMMENT:" name:""`     // 合约地址
-	PublishTime string `json:"publish_time" gorm:"column:publish_time;type:varchar(255);COMMENT:" name:""` // 合约发布时间
+	Symbol      string `json:"symbol" gorm:"column:symbol;type:varchar(255) CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';COMMENT:" name:""` // 合约代号
+	Address     string `json:"address" gorm:"column:address;index;type:varchar(127);COMMENT:" name:""`                                              // 合约地址
+	PublishTime string `json:"publish_time" gorm:"column:publish_time;type:varchar(255);COMMENT:" name:""`                                          // 合约发布时间
 	//EthBalance  string `json:"balance" gorm:"column:balance;COMMENT:" name:""`           // 合约Eth余额
 	//TokenBalance string `json:"contract_balance" gorm:"column:contract_balance;COMMENT:" name:""` // 合约代币余额
 	IsErc20     bool   `json:"is_erc20" gorm:"column:is_erc20;COMMENT:" name:""`                           // 是否为ERC20代币

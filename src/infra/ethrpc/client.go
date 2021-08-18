@@ -102,7 +102,7 @@ func (sel *Client) GetBalanceByBlockNumber(addr string, blockNumber int64) (stri
 	if err != nil {
 		return "0", err
 	}
-	return result.String(), nil
+	return result.ToInt().String(), nil
 }
 
 // GetContractBalance 获取ERC20合约代币最新余额
@@ -160,7 +160,7 @@ func (sel *Client) GetContractBalanceByBlockNumber(contract, addr string, blockN
 	if err != nil {
 		return "0", err
 	}
-	return hex.String(), nil
+	return common.HexToHash(hex.String()).Big().String(), nil
 }
 
 // GetContractTotalSupply 获取ERC 20 代币 发行总量

@@ -7,8 +7,10 @@ import (
 	"github.com/ville-vv/eth-chain-store/src/infra/ethrpc"
 	"github.com/ville-vv/eth-chain-store/src/infra/model"
 	"github.com/ville-vv/vilgo/vlog"
+	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 type Account struct {
@@ -91,13 +93,13 @@ func (sel *contractAccountManager) UpdateAccount(txData *model.TransactionData) 
 	//if err := sel.writeAccount(txData.From, txData.ContractAddress, txData.IsLatest()); err != nil {
 	//	return errors.Wrap(err, "write contract account from address")
 	//}
-	if err := sel.writeAccount(txData.To, txData.ContractAddress, txData.IsLatest()); err != nil {
+	if err := sel.writeAccount(txData.To, txData.ContractAddress, txData.TimeStamp, txData.IsLatest()); err != nil {
 		return errors.Wrap(err, "write contract account to address")
 	}
 	return nil
 }
 
-func (sel *contractAccountManager) writeAccount(accountAddr string, contractAddress string, isLatest bool) error {
+func (sel *contractAccountManager) writeAccount(accountAddr string, contractAddress string, timestamp string, isLatest bool) error {
 	var exist bool
 	var err error
 	var tableName string
@@ -114,7 +116,7 @@ func (sel *contractAccountManager) writeAccount(accountAddr string, contractAddr
 			return err
 		}
 		if bindInfo.ID <= 0 {
-			err = sel.createAccount(accountAddr, contractAddress)
+			err = sel.createAccount(accountAddr, contractAddress, timestamp)
 			if err != nil {
 				sel.haveWriteList.Del(unique)
 				return err
@@ -152,7 +154,7 @@ func (sel *contractAccountManager) writeAccount(accountAddr string, contractAddr
 	return nil
 }
 
-func (sel *contractAccountManager) createAccount(accountAddr string, contractAddress string) error {
+func (sel *contractAccountManager) createAccount(accountAddr string, contractAddress string, timestamp string) error {
 	balance, err := sel.ethCli.GetContractBalance(contractAddress, accountAddr)
 	if err != nil {
 		vlog.WARN("create contract address balance failed addr:%s contract:%s error:%s", accountAddr, contractAddress, err.Error())
@@ -171,11 +173,14 @@ func (sel *contractAccountManager) createAccount(accountAddr string, contractAdd
 	//	return err
 	//}
 
+	unixTm, _ := strconv.ParseInt(timestamp, 10, 64)
+	timeFm := time.Unix(unixTm, 0)
+
 	err = sel.accountRepo.CreateEthAccount(&model.ContractAccountBind{
 		Address:         accountAddr,
 		ContractAddress: contractAddress,
-		//Symbol:          symbol,
-		Balance: balance,
+		Timestamp:       &timeFm,
+		Balance:         balance,
 	})
 	if err != nil {
 		return err

@@ -76,12 +76,12 @@ func buildService() runner.Runner {
 	)
 
 	var (
-		normalTxDbCache   = dao.NewDbCache(writeToDbInterval, transactionDb)
-		contractTxDbCache = dao.NewDbCache(writeToDbInterval, contractTxDb)
+		normalTxDbCache   = dao.NewDbCache("err_data/normal_traction.sql", writeToDbInterval, transactionDb)
+		contractTxDbCache = dao.NewDbCache("err_data/contract_traction.sql", writeToDbInterval, contractTxDb)
 
 		normalTranDao = dao.NewEthereumTransactionDao(transactionDb, contractTxDb, normalTxDbCache, contractTxDbCache)
 		//erc20TokenCfgDao  = dao.NewErc20TokenConfigDao(businessDb)
-		ethereumCacheDb   = dao.NewDbCache(writeToDbInterval, ethereumDb)
+		ethereumCacheDb   = dao.NewDbCache("err_data/ethereum_other.sql", writeToDbInterval, ethereumDb)
 		ethereumDao       = dao.NewEthereumDao(ethereumDb, ethereumCacheDb)
 		ethBlockNumberDao = dao.NewEthereumBlockNumberDao(ethereumDb)
 		errorDao          = dao.NewSyncErrorDao(ethereumDb)
@@ -94,7 +94,7 @@ func buildService() runner.Runner {
 		contractMngWriter   = ethm.NewRetryProcess("contract", maxWriteNum, contractMng, repo.NewSyncErrorRepository(errorDao))
 		transactionReWriter = ethm.NewRetryProcess("transaction", maxWriteNum, transactionWriter, repo.NewSyncErrorRepository(errorDao))
 
-		mqPublish       = mqp.NewMDP(vlog.ERROR)
+		mqPublish       = mqp.NewMDP(maxWriteNum*2, vlog.ERROR)
 		txWriterPublish = ethm.NewEthereumPublisher(mqPublish)
 
 		ethMng       = ethm.NewEthereumManager(ethm.NewEthRpcExecutor(rpcEndpoint, ""), txWriterPublish)

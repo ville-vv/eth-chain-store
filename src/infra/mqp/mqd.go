@@ -24,12 +24,12 @@ type MQD struct {
 	poolSize  vtask.AtomicInt64
 }
 
-func NewMDP(logf LogFunc) *MQD {
+func NewMDP(pooSize int, logf LogFunc) *MQD {
 	if logf == nil {
 		logf = logPrintf
 	}
 	m := &MQD{
-		msgChan:   make(chan *Message, 20000),
+		msgChan:   make(chan *Message, pooSize),
 		updateCSM: make(chan int),
 		exitChan:  make(chan int),
 		csmMap:    make(map[string]Consumer),

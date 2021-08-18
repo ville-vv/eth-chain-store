@@ -51,7 +51,10 @@ func (sel *EthereumDao) CreateContractRecord(contractCtx *model.ContractContent)
 	if err != nil {
 		return errors.Wrap(err, "ethereum dao create contract record")
 	}
-	_ = sel.cacheDb.Insert(tbName, contractCtx)
+
+	_ = sel.cacheDb.Insert(tbName, &model.ContractAddressRecord{
+		ContractContent: *contractCtx,
+	})
 	//if err = sel.db.GetDB().Table(tbName).Create(&model.ContractAddressRecord{
 	//	ContractContent: *contractCtx,
 	//}).Error; err != nil {

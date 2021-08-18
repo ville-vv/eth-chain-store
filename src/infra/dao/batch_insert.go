@@ -22,6 +22,16 @@ func DoBatchInsert(tableName string, data interface{}, db *gorm.DB) error {
 	return db.Exec(batch.ResultSql()).Error
 }
 
+func BatchInsertToSqlStr(tableName string, data interface{}) string {
+	batch := NewBatchInsertSql(tableName)
+	rv := reflect.ValueOf(data)
+	rvLen := rv.Len()
+	for i := 0; i < rvLen; i++ {
+		batch.Add(rv.Index(i).Interface())
+	}
+	return batch.InsertSql
+}
+
 // 每次批量插入都要new一个
 func NewBatchInsertSql(tableName string) *BatchInsertSql {
 	nowT := time.Now()

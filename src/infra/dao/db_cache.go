@@ -2,7 +2,10 @@ package dao
 
 import (
 	"context"
+	"github.com/ville-vv/vilgo/vfile"
 	"github.com/ville-vv/vilgo/vlog"
+	"os"
+	"path"
 	"sync"
 	"time"
 )
@@ -23,14 +26,27 @@ type DbCache struct {
 	isStop     bool
 	stopCh     chan int
 	wrInterval int
+	perFile    *os.File
 }
 
-func NewDbCache(wrInterval int, db DB) *DbCache {
+func NewDbCache(perFile string, wrInterval int, db DB) *DbCache {
 	if wrInterval <= 0 {
 		wrInterval = 1
 	}
 
 	cachePool := [3]cacheList{make(cacheList, 0, 100000), make(cacheList, 0, 100000), make(cacheList, 0, 100000)}
+	dirPath := path.Dir(perFile)
+	if !vfile.PathExists(dirPath) {
+		err := os.Mkdir(dirPath, os.ModePerm)
+		if err != nil {
+			panic(err)
+		}
+	}
+	f, err := os.OpenFile(perFile, os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		panic(err)
+	}
+
 	d := &DbCache{
 		RWMutex:    sync.RWMutex{},
 		db:         db,
@@ -39,7 +55,9 @@ func NewDbCache(wrInterval int, db DB) *DbCache {
 		isStop:     false,
 		stopCh:     make(chan int),
 		wrInterval: wrInterval,
+		perFile:    f,
 	}
+
 	return d
 }
 
@@ -59,6 +77,7 @@ func (sel *DbCache) Start() error {
 
 func (sel *DbCache) Exit(ctx context.Context) error {
 	close(sel.stopCh)
+	sel.perFile.Close()
 	time.Sleep(time.Second)
 	return nil
 }
@@ -99,13 +118,18 @@ func (sel *DbCache) saveCacheToDb() {
 		tempCacheMap[v.TableName] = lst
 	}
 	for tbName, v := range tempCacheMap {
-
 		//vlog.INFO("插入到数据库 %s %d", tbName, len(v))
-
-		err := DoBatchInsert(tbName, v, sel.db.GetDB())
+		db := sel.db.GetDB().Begin()
+		sqlStr := BatchInsertToSqlStr(tbName, v)
+		err := db.Exec(sqlStr).Error
+		//err := DoBatchInsert(tbName, v, sel.db.GetDB())
 		if err != nil {
-			vlog.ERROR("save data to db len:%d error %s", len(v), err.Error())
+			vlog.ERROR("save data to db table %s len:%d error %s", tbName, len(v), err.Error())
+			_, _ = sel.perFile.WriteString(sqlStr + ";\n")
+			db.Rollback()
+			continue
 		}
+		db.Commit()
 	}
 	tempCacheMap = nil
 }

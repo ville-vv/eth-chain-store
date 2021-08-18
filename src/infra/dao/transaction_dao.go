@@ -94,7 +94,7 @@ func (sel *normalTransactionDao) createTransactionRecord(txData *model.Transacti
 		GasPrice:        txData.GasPrice,
 		Value:           txData.Value,
 		FromAddrBalance: txData.FromBalance,
-		ToAddrBalance:   "",
+		ToAddrBalance:   txData.ToBalance,
 	})
 
 	//db := sel.db.GetDB().Table(tbName)

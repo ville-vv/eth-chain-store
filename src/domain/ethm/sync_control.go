@@ -315,6 +315,7 @@ func (sel *SyncBlockControl) genSyncBlockNumber() {
 		}
 		if !sel.rpcNotOpen {
 			vlog.WARN("eth node rpc server is stop !!!!!!!!")
+			time.Sleep(time.Second)
 			return
 		}
 
