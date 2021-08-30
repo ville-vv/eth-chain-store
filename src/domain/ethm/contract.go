@@ -268,6 +268,7 @@ func (sel *ContractManager) writeTokenContractInfo(addr string, timeStamp string
 		contractInfo.TotalSupply = erc20ContractInfo.TotalSupply
 		contractInfo.Symbol = erc20ContractInfo.Symbol
 		contractInfo.IsErc20 = erc20ContractInfo.IsErc20()
+		contractInfo.Decimal = erc20ContractInfo.Decimal
 	}
 	// 如果不存在就创建
 	if err = sel.contractRepo.CreateContract(contractInfo); err != nil {

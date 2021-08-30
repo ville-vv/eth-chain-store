@@ -36,6 +36,6 @@ func (s *Server) Exit(ctx context.Context) error {
 	return nil
 }
 
-func (s *Server) Add(r runner.Runner) {
-	s.runner = append(s.runner, r)
+func (s *Server) Add(r ...runner.Runner) {
+	s.runner = append(s.runner, r...)
 }

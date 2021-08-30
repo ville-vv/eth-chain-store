@@ -2,7 +2,10 @@ package repo
 
 import (
 	"fmt"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/ville-vv/eth-chain-store/src/infra/dao"
+	"io"
+	"io/ioutil"
 )
 
 //type BlockNumberRepo interface {
@@ -10,12 +13,12 @@ import (
 //	UpdateSyncBlockNUmber(n int64) error
 //}
 
-func NewBlockNumberRepo(ebnDao *dao.EthereumBlockNumberDao) *BlockNumberRepo {
-	return &BlockNumberRepo{ebnDao: ebnDao}
-}
-
 type BlockNumberRepo struct {
 	ebnDao *dao.EthereumBlockNumberDao
+}
+
+func NewBlockNumberRepo(ebnDao *dao.EthereumBlockNumberDao) *BlockNumberRepo {
+	return &BlockNumberRepo{ebnDao: ebnDao}
 }
 
 // 初始最新区块
@@ -37,6 +40,69 @@ func (sel *BlockNumberRepo) UpdateLatestBlockNumber(bkNum int64) error {
 func (sel *BlockNumberRepo) GetCntSyncBlockNumber() (int64, error) {
 	return sel.ebnDao.GetSyncBlockNumber()
 }
+
 func (sel *BlockNumberRepo) UpdateSyncBlockNUmber(n int64) error {
 	return sel.ebnDao.UpdateSyncBlockNumber(n)
+}
+
+type ConfigData struct {
+	LatestBlockNumber  int64 `json:"latest_block_number" name:""`
+	CntSyncBlockNumber int64 `json:"cnt_sync_block_number" name:""`
+}
+type BlockNumberRepoV2 struct {
+	fs      io.ReadWriteSeeker
+	cfgData *ConfigData
+}
+
+func NewBlockNumberRepoV2(rws io.ReadWriteSeeker) *BlockNumberRepoV2 {
+	//f, err := os.OpenFile("sync_data.json", os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
+	//if err != nil {
+	//	panic(err)
+	//}
+	data, err := ioutil.ReadAll(rws)
+	if err != nil {
+		panic(err)
+	}
+	var cfgData = new(ConfigData)
+	if len(data) != 0 {
+		if err = jsoniter.Unmarshal(data, cfgData); err != nil {
+			panic(err)
+		}
+	}
+	return &BlockNumberRepoV2{
+		fs:      rws,
+		cfgData: cfgData,
+	}
+}
+
+func (sel *BlockNumberRepoV2) InitLatestBlockNumber(bkNum int64) error {
+	sel.cfgData.LatestBlockNumber = bkNum
+	return nil
+}
+
+func (sel *BlockNumberRepoV2) UpdateLatestBlockNumber(bkNum int64) error {
+	sel.cfgData.LatestBlockNumber = bkNum
+	return sel.writeToFile()
+}
+
+func (sel *BlockNumberRepoV2) GetCntSyncBlockNumber() (int64, error) {
+	return sel.cfgData.CntSyncBlockNumber, nil
+}
+
+func (sel *BlockNumberRepoV2) UpdateSyncBlockNUmber(n int64) error {
+	sel.cfgData.CntSyncBlockNumber = n
+	return sel.writeToFile()
+}
+
+func (sel *BlockNumberRepoV2) writeToFile() error {
+	data, err := jsoniter.Marshal(sel.cfgData)
+	if err != nil {
+		return err
+	}
+	_, err = sel.fs.Seek(0, io.SeekEnd)
+	if err != nil {
+		return err
+	}
+	_, err = sel.fs.Write(data)
+	return err
 }

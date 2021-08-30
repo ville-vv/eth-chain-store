@@ -3,7 +3,6 @@ package ethm
 import (
 	"context"
 	"github.com/ville-vv/eth-chain-store/src/common/conf"
-	"github.com/ville-vv/eth-chain-store/src/domain/repo"
 	"github.com/ville-vv/eth-chain-store/src/infra/ethrpc"
 	"github.com/ville-vv/vilgo/runner"
 	"github.com/ville-vv/vilgo/vlog"
@@ -12,7 +11,7 @@ import (
 	"time"
 )
 
-type SyncBlockNumberPersist interface {
+type SyncConfigDataPersist interface {
 	//
 	InitLatestBlockNumber(bkNum int64) error
 
@@ -21,132 +20,6 @@ type SyncBlockNumberPersist interface {
 	GetCntSyncBlockNumber() (int64, error)
 	// 更新当前同步了的区块号
 	UpdateSyncBlockNUmber(n int64) error
-}
-
-// 区块同步计数器
-type SyncBlockNumberCounter struct {
-	haveDoneLock     sync.Mutex
-	syncLock         sync.RWMutex
-	finishLock       sync.Mutex
-	cntSyncingNumber int64
-	haveDoneCap      int
-	haveDoneIndex    int
-	haveDoneList     []int64
-	latestNumber     int64
-	ethRpcCli        ethrpc.EthRPC
-	persist          SyncBlockNumberPersist
-	beforeSyncNumber int64
-}
-
-func NewSyncBlockNumberCounter(ethRpcCli ethrpc.EthRPC, persist SyncBlockNumberPersist) (*SyncBlockNumberCounter, error) {
-	cntNumber, err := persist.GetCntSyncBlockNumber()
-	//cntNumber = 12696310 // 12696310
-	if err != nil {
-		return nil, err
-	}
-	s := &SyncBlockNumberCounter{
-		cntSyncingNumber: cntNumber + 1,
-		haveDoneCap:      1000,
-		haveDoneList:     make([]int64, 1000),
-		ethRpcCli:        ethRpcCli,
-		persist:          persist,
-	}
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go s.loopSyncBlockNumber(&wg)
-	wg.Wait()
-	return s, nil
-}
-
-func (sel *SyncBlockNumberCounter) loopSyncBlockNumber(wg *sync.WaitGroup) {
-	first := true
-	for {
-		latestNumber, err := sel.ethRpcCli.GetBlockNumber()
-		if err != nil {
-			vlog.ERROR("get latest block number from main chain %s", err.Error())
-			time.Sleep(time.Second)
-			continue
-		}
-		sel.syncLock.Lock()
-		sel.latestNumber = int64(latestNumber)
-		sel.syncLock.Unlock()
-		if first {
-			first = false
-			wg.Done()
-			err = sel.persist.InitLatestBlockNumber(sel.latestNumber)
-			if err != nil {
-				panic(err)
-			}
-		}
-		// 更新数据库
-		if err = sel.persist.UpdateLatestBlockNumber(sel.latestNumber); err != nil {
-			vlog.ERROR("get block number is error %s", err.Error())
-		}
-		time.Sleep(time.Second * 15)
-	}
-}
-
-// IsLatestBlockNumber 是不是最新区块
-func (sel *SyncBlockNumberCounter) IsLatestBlockNumber() bool {
-	sel.syncLock.Lock()
-	latestNumber := sel.latestNumber
-	sel.syncLock.Unlock()
-	return sel.cntSyncingNumber >= latestNumber
-}
-
-func (sel *SyncBlockNumberCounter) GetLatestBlockNumber() int64 {
-	sel.syncLock.RLock()
-	latestNumber := sel.latestNumber
-	sel.syncLock.RUnlock()
-	return latestNumber
-}
-
-func (sel *SyncBlockNumberCounter) SetSyncing(blockNumber int64) bool {
-	// 设置正在同步的区块
-	sel.haveDoneLock.Lock()
-	sel.haveDoneList[sel.haveDoneIndex] = blockNumber
-	sel.haveDoneIndex++
-	if sel.haveDoneIndex >= sel.haveDoneCap {
-		sel.haveDoneIndex++
-	}
-	sel.haveDoneLock.Unlock()
-	return false
-}
-
-func (sel *SyncBlockNumberCounter) IsSyncing(blockNumber int64) bool {
-	for i := 0; i < sel.haveDoneCap; i++ {
-		// 判断该区块是否正在同步
-		if sel.haveDoneList[i] == blockNumber {
-			return true
-		}
-	}
-	return false
-}
-
-func (sel *SyncBlockNumberCounter) GetSyncBlockNumber() (blockNumber int64, err error) {
-	sel.syncLock.Lock()
-	blockNumber = sel.cntSyncingNumber
-	sel.haveDoneList[sel.haveDoneIndex] = blockNumber
-	sel.cntSyncingNumber++
-	if sel.cntSyncingNumber > sel.latestNumber {
-		sel.cntSyncingNumber = sel.latestNumber
-	}
-	sel.syncLock.Unlock()
-
-	return blockNumber, nil
-}
-
-func (sel *SyncBlockNumberCounter) FinishThisSync(blockNumber int64) error {
-	sel.finishLock.Lock()
-	defer sel.finishLock.Unlock()
-	can := blockNumber > sel.beforeSyncNumber
-	if can {
-		sel.beforeSyncNumber = blockNumber
-	}
-	if can {
-		return sel.persist.UpdateSyncBlockNUmber(sel.beforeSyncNumber)
-	}
-	return nil
 }
 
 type SyncBlockPullFunc func(cntBKNum int64, laterBKNum int64) error
@@ -159,31 +32,39 @@ type SyncBlockPuller interface {
 	Pull(cntBKNum int64, laterBKNum int64) error
 }
 
-type SyncBlockControl struct {
-	lbnLock   sync.RWMutex
-	ethRpcCli ethrpc.EthRPC
-	//syncFinishList      []int64
-	bknRepo             *repo.BlockNumberRepo
-	lbNum               int64      // 最新区块
-	cntSyncBlockNumber  int64      // 当前同步的区块号
-	maxSyncNum          int        // 最大同时同步数(每秒)
-	syncBlockNumberChan chan int64 // 同步的区块号分发
-	stopCh              chan int
-	syncStopCh          chan int
-	isStop              bool
-	finishLock          sync.Mutex
-	beforeSyncNumber    int64
-	threadNum           vtask.AtomicInt64
-	puller              SyncBlockPuller
-
-	rpcNotOpen bool
+type OptionConfig struct {
+	StartBlockNumber int64
+	EndBlockNumber   int64
+	MaxSyncThreads   int
+	EthRpcCli        ethrpc.EthRPC
+	BknRepo          SyncConfigDataPersist
 }
 
-func NewSyncBlockControl(maxSyncNum int, ethRpcCli ethrpc.EthRPC, bknRepo *repo.BlockNumberRepo) *SyncBlockControl {
+type SyncBlockControl struct {
+	lbnLock              sync.RWMutex
+	ethRpcCli            ethrpc.EthRPC
+	bknRepo              SyncConfigDataPersist
+	latestNum            int64      // 最新区块
+	beforeSyncNumber     int64      // 上一次同步的区块号
+	cntSyncBlockNumber   int64      // 当前同步的区块号
+	startSyncBlockNumber int64      // 开始同步区块号
+	endSyncBlockNumber   int64      // 同步结束的区块号， 如果为0就一直同步到最新区块号
+	maxSyncThreads       int        // 最大同时同步数(每秒)
+	syncBlockNumberChan  chan int64 // 同步的区块号分发
+	stopCh               chan int
+	syncStopCh           chan int
+	isStop               bool
+	finishLock           sync.Mutex
+	threadNum            vtask.AtomicInt64
+	puller               SyncBlockPuller
+	rpcNotOpen           bool
+}
+
+func NewSyncBlockControl(maxSyncNum int, ethRpcCli ethrpc.EthRPC, bknRepo SyncConfigDataPersist) *SyncBlockControl {
 	sbn := &SyncBlockControl{
 		ethRpcCli:           ethRpcCli,
 		bknRepo:             bknRepo,
-		maxSyncNum:          maxSyncNum,
+		maxSyncThreads:      maxSyncNum,
 		syncBlockNumberChan: make(chan int64, maxSyncNum),
 		stopCh:              make(chan int),
 		syncStopCh:          make(chan int, maxSyncNum),
@@ -191,10 +72,26 @@ func NewSyncBlockControl(maxSyncNum int, ethRpcCli ethrpc.EthRPC, bknRepo *repo.
 	return sbn
 }
 
+func NewSyncBlockControlWithOpt(opt *OptionConfig) *SyncBlockControl {
+	sbn := &SyncBlockControl{
+		ethRpcCli:            opt.EthRpcCli,
+		bknRepo:              opt.BknRepo,
+		maxSyncThreads:       opt.MaxSyncThreads,
+		endSyncBlockNumber:   opt.EndBlockNumber,
+		startSyncBlockNumber: opt.StartBlockNumber,
+		syncBlockNumberChan:  make(chan int64, opt.MaxSyncThreads),
+		stopCh:               make(chan int),
+		syncStopCh:           make(chan int, opt.MaxSyncThreads),
+	}
+	return sbn
+}
+
 func (sel *SyncBlockControl) Start() {
-	// 获取已经同步到的最近区块
 	cntNumber, err := sel.bknRepo.GetCntSyncBlockNumber()
-	//cntNumber = 12696310 // 12696310
+	// 获取已经同步到的最近区块
+	if sel.startSyncBlockNumber > 0 {
+		cntNumber = sel.startSyncBlockNumber
+	}
 	if err != nil {
 		panic("NewSyncBlockControl " + err.Error())
 	}
@@ -234,7 +131,7 @@ func (sel *SyncBlockControl) loopSyncLatestBlockNumber(waitStart chan int) {
 		}
 
 		sel.lbnLock.Lock()
-		sel.lbNum = int64(latestNumber)
+		sel.latestNum = int64(latestNumber)
 		sel.lbnLock.Unlock()
 		if first {
 			first = false
@@ -269,12 +166,12 @@ func (sel *SyncBlockControl) loopSyncConfigUpdate() {
 		}
 
 		sel.lbnLock.Lock()
-		latestNumber = sel.lbNum
+		latestNumber = sel.latestNum
 		sel.lbnLock.Unlock()
 
-		if sel.lbNum > 0 {
+		if sel.latestNum > 0 {
 			// 更新数据库
-			if err := sel.bknRepo.UpdateLatestBlockNumber(sel.lbNum); err != nil {
+			if err := sel.bknRepo.UpdateLatestBlockNumber(sel.latestNum); err != nil {
 				vlog.ERROR("get block number is error %s", err.Error())
 			}
 		}
@@ -306,8 +203,16 @@ func (sel *SyncBlockControl) loopGenSyncNumber() {
 
 func (sel *SyncBlockControl) genSyncBlockNumber() {
 	// 一段时间内生成maxSyncNun需要同步的区块
-	for index := 0; index < sel.maxSyncNum; index++ {
-		if sel.lbNum < sel.cntSyncBlockNumber {
+	for index := 0; index < sel.maxSyncThreads; index++ {
+		if sel.endSyncBlockNumber > 0 && sel.endSyncBlockNumber < sel.cntSyncBlockNumber {
+			vlog.INFO("sync finished end sync block number is %d", sel.cntSyncBlockNumber)
+			// 发送退出的系统信号
+			sel.Exit()
+			return
+		}
+
+		if sel.latestNum < sel.cntSyncBlockNumber {
+			// 如果当前要同步的区块号大于最新的区块号就值跳出
 			return
 		}
 		if sel.isStop {
@@ -324,19 +229,14 @@ func (sel *SyncBlockControl) genSyncBlockNumber() {
 	}
 }
 
-//// 订阅同步区块
-//func (sel *SyncBlockControl) SubSyncNumberChan() <-chan int64 {
-//	return sel.syncBlockNumberChan
-//}
-
 func (sel *SyncBlockControl) SetPuller(pull SyncBlockPuller) {
 	sel.puller = pull
 }
 
 func (sel *SyncBlockControl) startPull() {
 	var waitGp sync.WaitGroup
-	waitGp.Add(sel.maxSyncNum)
-	for i := 0; i < sel.maxSyncNum; i++ {
+	waitGp.Add(sel.maxSyncThreads)
+	for i := 0; i < sel.maxSyncThreads; i++ {
 		go func(seq int) {
 			var err error
 			var bkNumber int64
@@ -370,8 +270,8 @@ func (sel *SyncBlockControl) startPull() {
 
 func (sel *SyncBlockControl) SetSyncFunc(ctx context.Context, syncFunc func(cntBKNum, laterBKNum int64) error) {
 	var waitGp sync.WaitGroup
-	waitGp.Add(sel.maxSyncNum)
-	for i := 0; i < sel.maxSyncNum; i++ {
+	waitGp.Add(sel.maxSyncThreads)
+	for i := 0; i < sel.maxSyncThreads; i++ {
 		go func(seq int) {
 			var err error
 			var bkNumber int64
@@ -407,7 +307,7 @@ func (sel *SyncBlockControl) SetSyncFunc(ctx context.Context, syncFunc func(cntB
 
 func (sel *SyncBlockControl) GetLatestBlockNumber() int64 {
 	sel.lbnLock.RLock()
-	lbn := sel.lbNum
+	lbn := sel.latestNum
 	sel.lbnLock.RUnlock()
 	return lbn
 }
@@ -431,11 +331,14 @@ func (sel *SyncBlockControl) WaitExit() {
 }
 
 func (sel *SyncBlockControl) Exit() {
+	if sel.isStop {
+		return
+	}
 	sel.isStop = true
 	close(sel.stopCh)
 	close(sel.syncStopCh)
 	// 更新数据库
-	if err := sel.bknRepo.UpdateLatestBlockNumber(sel.lbNum); err != nil {
+	if err := sel.bknRepo.UpdateLatestBlockNumber(sel.latestNum); err != nil {
 		vlog.ERROR("get block number is error %s", err.Error())
 	}
 	_ = sel.bknRepo.UpdateSyncBlockNUmber(sel.beforeSyncNumber)

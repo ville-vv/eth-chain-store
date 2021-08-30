@@ -29,24 +29,12 @@ func (sel *SyncBlockChainServiceV2) Init() error {
 func (sel *SyncBlockChainServiceV2) Start() error {
 	sel.counter.SetPuller(sel)
 	sel.counter.Start()
-	//sel.counter.SetSyncFunc(context.Background(), sel.doneSync)
 	return nil
 }
 
 func (sel *SyncBlockChainServiceV2) Exit(ctx context.Context) error {
 	sel.counter.Exit()
 	vlog.INFO("同步工具退出exit")
-	return nil
-}
-
-func (sel *SyncBlockChainServiceV2) doneSync(bkNumber, latestBlockNumber int64) error {
-	var err error
-	//vlog.INFO("starting sync block [%d]", bkNumber)
-	if err = sel.ethMng.PullBlockByNumber(bkNumber, fmt.Sprintf("%d", latestBlockNumber)); err != nil {
-		vlog.ERROR("sync block number data failed %d %s", bkNumber, err.Error())
-		return err
-	}
-	vlog.INFO("finished sync block [%d]", bkNumber)
 	return nil
 }
 

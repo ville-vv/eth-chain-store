@@ -6,7 +6,7 @@ type EthRpcExecutor struct {
 	ethrpc.EthRPC
 }
 
-func NewEthRpcExecutor(endPoint string, backEndPoint string) *EthRpcExecutor {
+func NewEthRpcExecutor(endPoint string) *EthRpcExecutor {
 	ethRPC := ethrpc.NewClient(endPoint)
 
 	return &EthRpcExecutor{EthRPC: ethRPC}

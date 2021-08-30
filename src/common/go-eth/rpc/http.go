@@ -179,7 +179,7 @@ func (hc *httpConn) doRequest(ctx context.Context, msg interface{}) (io.ReadClos
 	hc.mu.Lock()
 	req.Header = hc.headers.Clone()
 	hc.mu.Unlock()
-
+	req.Close = true
 	// do request
 	resp, err := hc.client.Do(req)
 	if err != nil {

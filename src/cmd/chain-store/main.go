@@ -87,9 +87,9 @@ func buildService() runner.Runner {
 		errorDao          = dao.NewSyncErrorDao(ethereumDb)
 	)
 	var (
-		contractMng         = ethm.NewContractManager(ethm.NewEthRpcExecutor(rpcEndpoint, ""), repo.NewContractRepo(ethereumDao))
-		accountMng          = ethm.NewAccountManager(ethm.NewEthRpcExecutor(rpcEndpoint, ""), repo.NewContractAccountRepo(ethereumDao), repo.NewNormalAccountRepo(ethereumDao))
-		transactionWriter   = ethm.NewTransactionWriter(ethm.NewEthRpcExecutor(rpcEndpoint, ""), repo.NewTransactionRepo(normalTranDao))
+		contractMng         = ethm.NewContractManager(ethm.NewEthRpcExecutor(rpcEndpoint), repo.NewContractRepo(ethereumDao))
+		accountMng          = ethm.NewAccountManager(ethm.NewEthRpcExecutor(rpcEndpoint), repo.NewContractAccountRepo(ethereumDao), repo.NewNormalAccountRepo(ethereumDao))
+		transactionWriter   = ethm.NewTransactionWriter(ethm.NewEthRpcExecutor(rpcEndpoint), repo.NewTransactionRepo(normalTranDao))
 		accountMngWriter    = ethm.NewRetryProcess("account", maxWriteNum, accountMng, repo.NewSyncErrorRepository(errorDao))
 		contractMngWriter   = ethm.NewRetryProcess("contract", maxWriteNum, contractMng, repo.NewSyncErrorRepository(errorDao))
 		transactionReWriter = ethm.NewRetryProcess("transaction", maxWriteNum, transactionWriter, repo.NewSyncErrorRepository(errorDao))
@@ -97,8 +97,8 @@ func buildService() runner.Runner {
 		mqPublish       = mqp.NewMDP(maxWriteNum*2, vlog.ERROR)
 		txWriterPublish = ethm.NewEthereumPublisher(mqPublish)
 
-		ethMng       = ethm.NewEthereumManager(ethm.NewEthRpcExecutor(rpcEndpoint, ""), txWriterPublish)
-		bkNumCounter = ethm.NewSyncBlockControl(maxPullNum, ethm.NewEthRpcExecutor(rpcEndpoint, ""), repo.NewBlockNumberRepo(ethBlockNumberDao))
+		ethMng       = ethm.NewEthereumManager(ethm.NewEthRpcExecutor(rpcEndpoint), txWriterPublish)
+		bkNumCounter = ethm.NewSyncBlockControl(maxPullNum, ethm.NewEthRpcExecutor(rpcEndpoint), repo.NewBlockNumberRepo(ethBlockNumberDao))
 		serviceRun   = server.NewSyncBlockChainServiceV2(ethMng, bkNumCounter)
 	)
 

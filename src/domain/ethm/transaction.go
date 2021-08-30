@@ -10,10 +10,10 @@ import (
 
 type TransactionWriter struct {
 	ethCli ethrpc.EthRPC
-	txRepo *repo.TransactionRepo
+	txRepo repo.TransactionRepository
 }
 
-func NewTransactionWriter(ethCli ethrpc.EthRPC, txRepo *repo.TransactionRepo) *TransactionWriter {
+func NewTransactionWriter(ethCli ethrpc.EthRPC, txRepo repo.TransactionRepository) *TransactionWriter {
 	txw := &TransactionWriter{
 		ethCli: ethCli,
 		txRepo: txRepo,
