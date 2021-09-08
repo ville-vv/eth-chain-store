@@ -2,6 +2,8 @@ package ethrpc
 
 import (
 	"github.com/ville-vv/eth-chain-store/src/common/go-eth/common"
+	"strconv"
+	"time"
 )
 
 type EthBlockHeader struct {
@@ -14,6 +16,11 @@ type EthBlockHeader struct {
 	Size              string `json:"size" name:""`
 	TimeStamp         string `json:"timestamp" name:""`
 	TotalDifficulty   string `json:"totalDifficulty" name:""`
+}
+
+func (sel *EthBlockHeader) TimeStampFormatTmString() string {
+	sec, _ := strconv.ParseInt(common.HexToHash(sel.TimeStamp).Big().String(), 10, 64)
+	return time.Unix(sec, 0).Format("2006-01-02 15:04:05")
 }
 
 type EthBlock struct {

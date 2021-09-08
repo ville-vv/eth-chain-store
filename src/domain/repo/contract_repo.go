@@ -28,6 +28,6 @@ func (sel *ContractRepo) IsContractExist(addr string) bool {
 }
 
 func (sel *ContractRepo) CreateContract(ct *model.ContractContent) error {
-	vlog.DEBUG("create contract information Address:%s Symbol:%s TotalSupply:%s", ct.Address, ct.Symbol, ct.TotalSupply)
+	// vlog.DEBUG("create contract information Address:%s Symbol:%s TotalSupply:%s", ct.Address, ct.Symbol, ct.TotalSupply)
 	return sel.contractDao.CreateContractRecord(ct)
 }

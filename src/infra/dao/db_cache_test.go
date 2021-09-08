@@ -9,7 +9,7 @@ import (
 
 func TestNewDbCache(t *testing.T) {
 	log.Init()
-	chDb := NewDbCache(nil)
+	chDb := NewDbCache("", 1, nil)
 	_ = chDb.Start()
 	go func() {
 		for {

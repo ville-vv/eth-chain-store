@@ -73,7 +73,7 @@ func (sel *MQD) Exit(ctx context.Context) error {
 }
 
 func logPrintf(format string, args ...interface{}) {
-	fmt.Printf(format, args)
+	fmt.Printf(format, args...)
 }
 
 func (sel *MQD) msgPump() {

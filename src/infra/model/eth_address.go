@@ -30,5 +30,5 @@ type ContractContent struct {
 	//TokenBalance string `json:"contract_balance" gorm:"column:contract_balance;COMMENT:" name:""` // 合约代币余额
 	IsErc20     bool   `json:"is_erc20" gorm:"column:is_erc20;COMMENT:" name:""`                           // 是否为ERC20代币
 	TotalSupply string `json:"total_supply" gorm:"column:total_supply;type:varchar(255);COMMENT:" name:""` // 代币总发行量
-	Decimal     int    `json:"decimal" gorm:"column:decimal;COMMENT:" name:""`
+	DecimalBit  int    `json:"decimal_bit" gorm:"column:decimal_bit;COMMENT:" name:""`                     // 小数位
 }

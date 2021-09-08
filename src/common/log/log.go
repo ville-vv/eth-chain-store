@@ -30,7 +30,7 @@ func Init() {
 	}
 	cnf := &vlog.LogCnf{
 		OutPutFile:  []string{logFile},
-		ProgramName: "eth-chain-store",
+		ProgramName: "eth-chain-store-mysql",
 		Level:       logLevel,
 	}
 	vlog.SetLogger(vlog.NewGoLogger(cnf))

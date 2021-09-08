@@ -9,18 +9,18 @@ type Server struct {
 	runner []runner.Runner
 }
 
-func (s *Server) Scheme() string {
+func (s *Server) Schema() string {
 	return "Server"
 }
 
-func (s *Server) Init() error {
+func (s *Server) Init(ctx context.Context) error {
 	for _, r := range s.runner {
 		return r.Init()
 	}
 	return nil
 }
 
-func (s *Server) Start() error {
+func (s *Server) Start(ctx context.Context) error {
 	for _, r := range s.runner {
 		runner.Go(func() {
 			_ = r.Start()

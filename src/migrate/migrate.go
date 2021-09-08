@@ -11,10 +11,10 @@ import (
 )
 
 func Create(_ *cli.Context) {
-	businessDbCfg := conf.GetEthBusinessDbConfig()
-	businessDb := vstore.MakeDBUtil(businessDbCfg)
-	vlog.INFO("create db name %s", businessDbCfg.DbName)
-	businessDb.CreateDB()
+	//businessDbCfg := conf.GetEthBusinessDbConfig()
+	//businessDb := vstore.MakeDBUtil(businessDbCfg)
+	//vlog.INFO("create db name %s", businessDbCfg.DbName)
+	//businessDb.CreateDB()
 
 	ethereumDbCfg := conf.GetEthereumDbConfig()
 	ethereumDb := vstore.MakeDBUtil(ethereumDbCfg)
@@ -44,14 +44,14 @@ func drop(mysqlCfg *conf.MysqlConf) {
 }
 
 func Drop(_ *cli.Context) {
-	drop(conf.GetEthBusinessDbConfig())
+	// drop(conf.GetEthBusinessDbConfig())
 	drop(conf.GetEthereumDbConfig())
 	drop(conf.GetEthContractTransactionDbConfig())
 	drop(conf.GetEthTransactionDbConfig())
 }
 
 func Migrate(_ *cli.Context) {
-	businessDbMigrate()
+	//businessDbMigrate()
 	ethereumDbMigrate()
 	contractTxDbDbMigrate()
 	transactionDbMigrate()

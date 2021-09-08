@@ -207,7 +207,7 @@ func TestAndroid(t *testing.T) {
 		}
 	}
 	// Generate the mobile bindings for Geth and add the tester class
-	gobind := exec.Command("gomobile", "bind", "-javapkg", "org.ethereum", "github.com/ville-vv/eth-chain-store/src/common/go-eth/mobile")
+	gobind := exec.Command("gomobile", "bind", "-javapkg", "org.ethereum", "github.com/ville-vv/eth-chain-store-mysql/src/common/go-eth/mobile")
 	if output, err := gobind.CombinedOutput(); err != nil {
 		t.Logf("%s", output)
 		t.Fatalf("failed to run gomobile bind: %v", err)

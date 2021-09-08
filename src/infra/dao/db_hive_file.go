@@ -1,15 +1,20 @@
 package dao
 
 import (
+	"bufio"
 	"context"
 	"github.com/ville-vv/eth-chain-store/src/infra/model"
+	"github.com/ville-vv/vilgo/vfile"
 	"github.com/ville-vv/vilgo/vlog"
 	"os"
+	"path"
+	"sync"
+	"time"
 )
 
 type TransactionHiveDataFile struct {
-	normalTxFs   *os.File
-	contractTxFs *os.File
+	normalTxFs   *txHiveDataFile
+	contractTxFs *txHiveDataFile
 }
 
 func (sel *TransactionHiveDataFile) Scheme() string {
@@ -21,44 +26,156 @@ func (sel *TransactionHiveDataFile) Init() error {
 }
 
 func (sel *TransactionHiveDataFile) Start() error {
+	go sel.normalTxFs.Start()
+	go sel.contractTxFs.Start()
 	return nil
 }
 
 func (sel *TransactionHiveDataFile) Exit(ctx context.Context) error {
-	_ = sel.contractTxFs.Close()
-	_ = sel.normalTxFs.Close()
+	sel.normalTxFs.Exit()
+	sel.contractTxFs.Exit()
 	return nil
 }
 
-func NewHiveDataFile(normalTxFile string, contractTxFile string) *TransactionHiveDataFile {
-	normalTxFs, err := os.OpenFile(normalTxFile, os.O_WRONLY|os.O_CREATE, 0644)
-	if err != nil {
-		panic(err.Error() + normalTxFile)
-	}
-
-	contractTxFs, err := os.OpenFile(contractTxFile, os.O_WRONLY|os.O_CREATE, 0644)
-	if err != nil {
-		panic(err.Error() + contractTxFile)
-	}
-
+func NewHiveDataFile(normalTxFile string, contractTxFile string, interval int64) *TransactionHiveDataFile {
 	return &TransactionHiveDataFile{
-		normalTxFs:   normalTxFs,
-		contractTxFs: contractTxFs,
+		normalTxFs:   newTxHiveDataFile(normalTxFile, interval),
+		contractTxFs: newTxHiveDataFile(contractTxFile, interval),
 	}
 }
 
 func (sel *TransactionHiveDataFile) CreateTransactionRecord(txData *model.TransactionData) error {
-	vlog.INFO("创建交易数据")
-	if txData.IsContractToken {
-		return sel.InsertContractData(txData)
+	// vlog.INFO("创建交易数据")
+	//return nil
+	txRecord := &model.TransactionRecord{
+		CreatedAt:       time.Now(),
+		BlockNumber:     txData.BlockNumber,
+		BlockHash:       txData.BlockHash,
+		TxHash:          txData.Hash,
+		Timestamp:       txData.TimeStamp,
+		ContractAddress: txData.ContractAddress,
+		FromAddr:        txData.From,
+		ToAddr:          txData.To,
+		GasPrice:        txData.GasPrice,
+		Value:           txData.Value,
+		FromAddrBalance: txData.FromBalance,
+		ToAddrBalance:   txData.ToBalance,
 	}
-	return sel.InsertNormalData(txData)
+
+	if txData.IsContractToken {
+		return sel.contractTxFs.InsertData(txRecord)
+	}
+	return sel.normalTxFs.InsertData(txRecord)
 }
 
-func (sel *TransactionHiveDataFile) InsertNormalData(txData *model.TransactionData) error {
-	return nil
+type txHiveDataFile struct {
+	interval  int64
+	fileName  string
+	dataFile  *os.File
+	waitExit  chan int
+	stopCh    chan int
+	dataCache []string
+	maxLen    int
+	seq       int64
+	sync.Mutex
 }
 
-func (sel *TransactionHiveDataFile) InsertContractData(txData *model.TransactionData) error {
+func newTxHiveDataFile(fileName string, interval int64) *txHiveDataFile {
+	dirPath := path.Dir(fileName)
+	if !vfile.PathExists(dirPath) {
+		err := os.Mkdir(dirPath, os.ModePerm)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	seq, err := ReadLineNum(fileName)
+	if err != nil {
+		panic(err)
+	}
+
+	f, err := os.OpenFile(fileName, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
+	if err != nil {
+		panic(err.Error() + fileName)
+	}
+	return &txHiveDataFile{
+		interval:  interval,
+		dataFile:  f,
+		waitExit:  make(chan int),
+		stopCh:    make(chan int),
+		maxLen:    100000,
+		seq:       seq,
+		dataCache: make([]string, 0, 100000),
+	}
+}
+
+func ReadLineNum(fileName string) (int64, error) {
+	f, err := os.OpenFile(fileName, os.O_RDONLY|os.O_CREATE, 0644)
+	if err != nil {
+		panic(err.Error() + fileName)
+	}
+	defer f.Close()
+	fd := bufio.NewReader(f)
+	count := int64(0)
+	for {
+		_, err := fd.ReadString('\n')
+		if err != nil {
+			break
+		}
+		count++
+	}
+	return count, nil
+}
+
+func (sel *txHiveDataFile) Start() {
+	tmr := time.NewTicker(time.Second * time.Duration(sel.interval))
+	for {
+		select {
+		case <-sel.stopCh:
+			sel.save()
+			sel.waitExit <- 1
+			return
+		case <-tmr.C:
+			sel.save()
+		}
+	}
+}
+
+func (sel *txHiveDataFile) save() {
+	sel.Lock()
+	dataCache := sel.dataCache
+	l := len(dataCache)
+	if sel.maxLen < l {
+		sel.maxLen = l
+	}
+	sel.dataCache = make([]string, 0, sel.maxLen)
+	sel.Unlock()
+
+	if l > 0 {
+		//vlog.INFO("当前条数：%d", l)
+		data := ""
+		for i := 0; i < l; i++ {
+			data = data + dataCache[i]
+		}
+		_, err := sel.dataFile.WriteString(data)
+		if err != nil {
+			vlog.ERROR("write file data failed fileName%s \n%s", sel.fileName, data)
+		}
+	}
+}
+
+func (sel *txHiveDataFile) Exit() {
+	close(sel.stopCh)
+	<-sel.waitExit
+	close(sel.waitExit)
+	_ = sel.dataFile.Close()
+}
+
+func (sel *txHiveDataFile) InsertData(txData *model.TransactionRecord) error {
+	sel.Lock()
+	sel.seq++
+	txData.ID = sel.seq
+	sel.dataCache = append(sel.dataCache, txData.String())
+	sel.Unlock()
 	return nil
 }

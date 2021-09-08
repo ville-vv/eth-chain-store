@@ -23,7 +23,8 @@ func ReadFlag(val *string, key string) {
 }
 
 var (
-	GlobalExitSignal = make(chan int)
+	GlobalExitSignal          = make(chan int)
+	GlobalProgramFinishSigmal = make(chan int)
 )
 
 var globalConfig *GlobalConfig

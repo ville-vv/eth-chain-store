@@ -3,11 +3,23 @@ package ethrpc
 import (
 	"bytes"
 	"fmt"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/ville-vv/eth-chain-store/src/common/go-eth/common"
 	"github.com/ville-vv/eth-chain-store/src/common/go-eth/common/hexutil"
 	"strconv"
 	"testing"
 )
+
+func TestClient_GetBlock(t *testing.T) {
+	cli := NewClient("http://172.16.16.115:8545")
+
+	blockInfo, err := cli.GetBlockByNumber(1807900)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	fmt.Println(jsoniter.MarshalToString(blockInfo))
+}
 
 func TestClient_GetBalanceByBlockNumber(t *testing.T) {
 	cli := NewClient("https://mainnet.infura.io/v3/21628f8f9b9b423a9ea05a708016b119")
@@ -15,9 +27,12 @@ func TestClient_GetBalanceByBlockNumber(t *testing.T) {
 	balance, err := cli.GetBalance("0x0536806df512d6cdde913cf95c9886f65b1d3462")
 	fmt.Println(balance, err)
 
-	balance, err = cli.GetContractBalanceByBlockNumber("0xa74476443119a942de498590fe1f2454d7d4ac0d", "0x166e09f9ae84cb6805e5d85e21e7e8167e9085cb", 4129000)
+	balance, err = cli.GetContractBalanceByBlockNumber("0xbb9bc244d798123fde783fcc1c72d3bb8c189413", "0xfbb1b73c4f0bda4f67dca266ce6ef42f520fbb98", 1725104)
 	fmt.Println(balance, err)
 	//
+
+	balance, err = cli.GetBalanceByBlockNumber("0xea674fdde714fd979de3edf0f56aa9716b898ec8", 1800000)
+	fmt.Println(balance, err)
 	//kek := sha3.NewLegacyKeccak256()
 	//kek.Reset()
 	//kek.Write([]byte("balanceOf(address)"))

@@ -49,7 +49,7 @@ func NewAccountManager(ethCli ethrpc.EthRPC, contractAccountRepo *repo.ContractA
 // 如果交易类型是合约代币交易，那么合约地址为 contractAddress
 // 内部交易无法确定,就当做是普通账户写入
 func (sel *AccountManager) TxWrite(txData *model.TransactionData) error {
-	vlog.DEBUG("tx writer to account manager %v %s ", txData.IsLatest(), txData.Hash)
+	//vlog.DEBUG("tx writer to account manager %v %s ", txData.IsLatest(), txData.Hash)
 	if txData.IsContractToken {
 		return sel.contractActMng.UpdateAccount(txData)
 	}

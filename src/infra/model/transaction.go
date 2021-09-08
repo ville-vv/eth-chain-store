@@ -1,6 +1,10 @@
 package model
 
-import "time"
+import (
+	"fmt"
+	"github.com/ville-vv/eth-chain-store/src/common/utils"
+	"time"
+)
 
 const (
 	TxEventTypeTransfer = "transfer"
@@ -58,6 +62,23 @@ type TransactionRecord struct {
 	Value           string    `json:"value" gorm:"column:value;type:varchar(255);COMMENT:" name:""`
 	FromAddrBalance string    `json:"from_addr_balance" gorm:"column:from_addr_balance;type:varchar(255);COMMENT:" name:""`
 	ToAddrBalance   string    `json:"to_addr_balance" gorm:"column:to_addr_balance;type:varchar(255);COMMENT:" name:""`
+}
+
+func (sel *TransactionRecord) String() string {
+	sp := "\001"
+	res := ""
+	first := true
+	utils.WalkField(sel, func(name string, val interface{}) {
+		if first {
+			res = fmt.Sprintf("%v", val)
+			first = false
+			return
+		}
+		res = res + sp + fmt.Sprintf("%v", val)
+	})
+	res = res + "\n"
+
+	return res
 }
 
 type SplitTableInfo struct {

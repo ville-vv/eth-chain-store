@@ -51,13 +51,14 @@ type SyncBlockControl struct {
 	endSyncBlockNumber   int64      // 同步结束的区块号， 如果为0就一直同步到最新区块号
 	maxSyncThreads       int        // 最大同时同步数(每秒)
 	syncBlockNumberChan  chan int64 // 同步的区块号分发
-	stopCh               chan int
-	syncStopCh           chan int
-	isStop               bool
-	finishLock           sync.Mutex
-	threadNum            vtask.AtomicInt64
-	puller               SyncBlockPuller
-	rpcNotOpen           bool
+	//syncBlockNumberChanNoLimit chan int64
+	stopCh     chan int
+	syncStopCh chan int
+	isStop     bool
+	finishLock sync.Mutex
+	threadNum  vtask.AtomicInt64
+	puller     SyncBlockPuller
+	rpcNotOpen bool
 }
 
 func NewSyncBlockControl(maxSyncNum int, ethRpcCli ethrpc.EthRPC, bknRepo SyncConfigDataPersist) *SyncBlockControl {
@@ -66,8 +67,9 @@ func NewSyncBlockControl(maxSyncNum int, ethRpcCli ethrpc.EthRPC, bknRepo SyncCo
 		bknRepo:             bknRepo,
 		maxSyncThreads:      maxSyncNum,
 		syncBlockNumberChan: make(chan int64, maxSyncNum),
-		stopCh:              make(chan int),
-		syncStopCh:          make(chan int, maxSyncNum),
+		//syncBlockNumberChanNoLimit: make(chan int64),
+		stopCh:     make(chan int),
+		syncStopCh: make(chan int, maxSyncNum),
 	}
 	return sbn
 }
@@ -106,7 +108,7 @@ func (sel *SyncBlockControl) Start() {
 	sel.startPull()
 
 	runner.Go(func() {
-		sel.loopGenSyncNumber()
+		sel.loopGenSyncNumberOneSecond()
 	})
 }
 
@@ -145,7 +147,6 @@ func (sel *SyncBlockControl) loopSyncLatestBlockNumber(waitStart chan int) {
 				vlog.ERROR("get block number is error %s", err.Error())
 			}
 		}
-
 		oldNumber = latestNumber
 	}
 }
@@ -153,14 +154,15 @@ func (sel *SyncBlockControl) loopSyncLatestBlockNumber(waitStart chan int) {
 func (sel *SyncBlockControl) loopSyncConfigUpdate() {
 	var cntBKNum = int64(0)
 	var latestNumber = int64(0)
-
+	var diffNum = int64(0)
+	var interval = int64(5)
 	for {
 		select {
 		case <-conf.GlobalExitSignal:
 			return
 		default:
 		}
-		time.Sleep(time.Second * 5)
+		time.Sleep(time.Second * time.Duration(interval))
 		if !sel.rpcNotOpen {
 			continue
 		}
@@ -176,17 +178,22 @@ func (sel *SyncBlockControl) loopSyncConfigUpdate() {
 			}
 		}
 		sel.finishLock.Lock()
+		diffNum = sel.beforeSyncNumber - cntBKNum
 		cntBKNum = sel.beforeSyncNumber
 		sel.finishLock.Unlock()
 		if cntBKNum > 0 {
-			vlog.INFO("synchronized block number [%d], latest block number [%d]", cntBKNum, latestNumber)
+			if cntBKNum >= sel.endSyncBlockNumber && sel.endSyncBlockNumber > 0 {
+				break
+			}
+			vlog.INFO("blocks=[%d], total=[%d], latest=[%d]", diffNum, cntBKNum, latestNumber)
 			_ = sel.bknRepo.UpdateSyncBlockNUmber(sel.beforeSyncNumber)
 		}
 	}
+	vlog.INFO("同步到最后区块，请主动结束")
 }
 
 // loopGenSyncNumber 没秒中生成区块数
-func (sel *SyncBlockControl) loopGenSyncNumber() {
+func (sel *SyncBlockControl) loopGenSyncNumberOneSecond() {
 	tmr := time.NewTicker(time.Second)
 	for {
 		select {
@@ -201,13 +208,37 @@ func (sel *SyncBlockControl) loopGenSyncNumber() {
 	}
 }
 
+// loopGenSyncNumberNoLimit 获取区块的速度取决于，写数据的数据， 这里不控制每秒取多少个块的数据
+// 只要 syncBlockNumberChan 存在多余的缓存就直接获取
+// TODO 未完成后续有时间再写
+func (sel *SyncBlockControl) loopGenSyncNumberNoLimit() {
+	for {
+		if sel.endSyncBlockNumber > 0 && sel.endSyncBlockNumber < sel.cntSyncBlockNumber {
+			// 同步结束了
+			return
+		}
+		// 如果当前区块
+		if sel.latestNum < sel.cntSyncBlockNumber {
+			// 如果当前要同步的区块号大于最新的区块号就值跳出
+			return
+		}
+		if sel.isStop {
+			return
+		}
+		if !sel.rpcNotOpen {
+			vlog.WARN("eth node rpc server is stop !!!!!!!!")
+			time.Sleep(time.Second)
+			return
+		}
+		sel.syncBlockNumberChan <- sel.cntSyncBlockNumber
+		sel.cntSyncBlockNumber++
+	}
+}
+
 func (sel *SyncBlockControl) genSyncBlockNumber() {
-	// 一段时间内生成maxSyncNun需要同步的区块
+	// 一段时间内生成 maxSyncNun 需要同步的区块
 	for index := 0; index < sel.maxSyncThreads; index++ {
 		if sel.endSyncBlockNumber > 0 && sel.endSyncBlockNumber < sel.cntSyncBlockNumber {
-			vlog.INFO("sync finished end sync block number is %d", sel.cntSyncBlockNumber)
-			// 发送退出的系统信号
-			sel.Exit()
 			return
 		}
 
@@ -247,6 +278,7 @@ func (sel *SyncBlockControl) startPull() {
 				select {
 				// 定时生成需要同步的区块号，在这里捕捉
 				case bkNumber = <-sel.syncBlockNumberChan:
+					//vlog.INFO("同步区块：%d", bkNumber)
 					err = sel.puller.Pull(bkNumber, sel.GetLatestBlockNumber())
 					if err != nil {
 						vlog.ERROR("sync block number data failed %d %s", bkNumber, err.Error())
@@ -256,6 +288,7 @@ func (sel *SyncBlockControl) startPull() {
 						vlog.ERROR("update finished sync block number error %s", err.Error())
 						continue
 					}
+					//vlog.INFO("同步区块完成：%d", bkNumber)
 				case <-sel.syncStopCh:
 					goto exit
 				}
@@ -343,4 +376,6 @@ func (sel *SyncBlockControl) Exit() {
 	}
 	_ = sel.bknRepo.UpdateSyncBlockNUmber(sel.beforeSyncNumber)
 	sel.WaitExit()
+	vlog.INFO("sync block number control exited")
+
 }

@@ -10,10 +10,12 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.4.1
 	github.com/aws/aws-sdk-go-v2/credentials v1.3.0
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.7.0
+	github.com/beltran/gohive v1.5.1
 	github.com/btcsuite/btcd v0.22.0-beta
 	github.com/cespare/cp v1.1.1
 	github.com/cloudflare/cloudflare-go v0.18.0
 	github.com/davecgh/go-spew v1.1.1
+	github.com/dazheng/gohive v0.0.0-20190904024313-b1810177c8f2
 	github.com/deckarep/golang-set v1.7.1
 	github.com/docker/docker v20.10.7+incompatible
 	github.com/dop251/goja v0.0.0-20210630164231-8f81471d5d0b
@@ -60,7 +62,7 @@ require (
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/urfave/cli v1.22.1
 	github.com/ville-vv/vilgo v0.0.5-0.20210816115032-7715c70e28c8
-	go.uber.org/zap v1.16.0
+	go.uber.org/atomic v1.6.0
 	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1

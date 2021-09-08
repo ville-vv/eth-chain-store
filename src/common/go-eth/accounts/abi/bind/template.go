@@ -91,12 +91,12 @@ import (
 	"math/big"
 	"strings"
 
-	ethereum "github.com/ville-vv/eth-chain-store/src/common/go-eth"
-	"github.com/ville-vv/eth-chain-store/src/common/go-eth/accounts/abi"
-	"github.com/ville-vv/eth-chain-store/src/common/go-eth/accounts/abi/bind"
-	"github.com/ville-vv/eth-chain-store/src/common/go-eth/common"
-	"github.com/ville-vv/eth-chain-store/src/common/go-eth/core/types"
-	"github.com/ville-vv/eth-chain-store/src/common/go-eth/event"
+	ethereum "github.com/ville-vv/eth-chain-store-mysql/src/common/go-eth"
+	"github.com/ville-vv/eth-chain-store-mysql/src/common/go-eth/accounts/abi"
+	"github.com/ville-vv/eth-chain-store-mysql/src/common/go-eth/accounts/abi/bind"
+	"github.com/ville-vv/eth-chain-store-mysql/src/common/go-eth/common"
+	"github.com/ville-vv/eth-chain-store-mysql/src/common/go-eth/core/types"
+	"github.com/ville-vv/eth-chain-store-mysql/src/common/go-eth/event"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

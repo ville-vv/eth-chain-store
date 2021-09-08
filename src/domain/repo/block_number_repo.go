@@ -55,10 +55,6 @@ type BlockNumberRepoV2 struct {
 }
 
 func NewBlockNumberRepoV2(rws io.ReadWriteSeeker) *BlockNumberRepoV2 {
-	//f, err := os.OpenFile("sync_data.json", os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
-	//if err != nil {
-	//	panic(err)
-	//}
 	data, err := ioutil.ReadAll(rws)
 	if err != nil {
 		panic(err)
@@ -99,7 +95,7 @@ func (sel *BlockNumberRepoV2) writeToFile() error {
 	if err != nil {
 		return err
 	}
-	_, err = sel.fs.Seek(0, io.SeekEnd)
+	_, err = sel.fs.Seek(0, io.SeekStart)
 	if err != nil {
 		return err
 	}

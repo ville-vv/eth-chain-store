@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"github.com/ville-vv/eth-chain-store/src/common/go-eth/core/vm"
-	//"github.com/ville-vv/eth-chain-store/src/common/go-eth/tests"
+	//"github.com/ville-vv/eth-chain-store-mysql/src/common/go-eth/tests"
 	"gopkg.in/urfave/cli.v1"
 )
 

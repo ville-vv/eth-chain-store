@@ -277,7 +277,7 @@ func (sel *Client) GetContractDecimals(contract string) (string, error) {
 	var hex string
 	err := sel.ethCli.Call(&hex, "eth_call", arg, "latest")
 	if err != nil {
-		return "18", err
+		return "0x0", err
 	}
 	return hex, nil
 }

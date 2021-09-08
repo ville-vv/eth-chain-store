@@ -136,7 +136,9 @@ type Erc20Contract struct {
 }
 
 func (sel *Erc20Contract) IsErc20() bool {
-	return sel.Name != "" && sel.Symbol != "" && sel.TotalSupply != "" && sel.Decimal != 0
+	//return sel.Name != "" && sel.Symbol != "" && sel.TotalSupply != "" && sel.DecimalBit != 0
+	// 自要存在发行总量就认为是 token
+	return sel.TotalSupply != ""
 }
 
 type ContractManager struct {
@@ -161,12 +163,16 @@ func (sel *ContractManager) GetErc20ContractInfo(contractAddr string) (*Erc20Con
 
 	name, err := sel.rpcCli.GetContractName(contractAddr)
 	if err != nil {
-		return nil, err
+		// 没有获取到合约的 name 不返回
+		// vlog.WARN("not get contract name")
+		//
+		//return nil, err
 	}
 
 	symbol, err := sel.rpcCli.GetContractSymbol(contractAddr)
 	if err != nil {
-		return nil, err
+		// 没有获取到合约的 symbol 不返回
+		//return nil, err
 	}
 
 	balance, err := sel.rpcCli.GetContractBalance(contractAddr, contractAddr)
@@ -176,16 +182,19 @@ func (sel *ContractManager) GetErc20ContractInfo(contractAddr string) (*Erc20Con
 
 	decimal, err := sel.rpcCli.GetContractDecimals(contractAddr)
 	if err != nil {
-		return nil, err
+		// 获取小数位错误
+		decimal = "0x0"
+		//return nil, err
 	}
 	decimal = common.HexToHash(decimal).Big().String()
 
-	vlog.DEBUG("get erc20 information decimal %s", decimal)
+	// vlog.DEBUG("get erc20 information decimal %s", decimal)
 
 	var decimalInt int64
 	decimalInt, err = strconv.ParseInt(decimal, 10, 64)
 	if err != nil {
-		return nil, errors.Wrap(err, "parse int contract decimal value "+decimal)
+		// 获取小数位错误不返回
+		//return nil, errors.Wrap(err, "parse int contract decimal value "+decimal)
 	}
 	//if decimal != "0x" {
 	//	decimalInt, err = strconv.ParseInt(decimal, 10, 64)
@@ -207,16 +216,11 @@ func (sel *ContractManager) GetErc20ContractInfo(contractAddr string) (*Erc20Con
 // TxWrite 合约信息写入，一笔交易存在两个地址，一个是from 地址，一个是 to 地址，两个地址都有可能是合约地址，
 // 如果是  token transfer 交易，那么 to 地址一定是合约地址
 func (sel *ContractManager) TxWrite(txData *model.TransactionData) (err error) {
-	vlog.DEBUG("tx writer to contract information %s", txData.Hash)
+	// vlog.DEBUG("tx writer to contract information %s", txData.Hash)
 
 	if txData.IsContractToken {
 		return sel.writeTokenContractInfo(txData.ContractAddress, txData.TimeStamp)
 	}
-
-	// 检查 from 地址
-	//if err = sel.writeTokenContractInfo(txData.From, txData.TimeStamp); err != nil {
-	//	return nil
-	//}
 
 	// 检查 to 地址
 	if err = sel.writeTokenContractInfo(txData.To, txData.TimeStamp); err != nil {
@@ -268,7 +272,7 @@ func (sel *ContractManager) writeTokenContractInfo(addr string, timeStamp string
 		contractInfo.TotalSupply = erc20ContractInfo.TotalSupply
 		contractInfo.Symbol = erc20ContractInfo.Symbol
 		contractInfo.IsErc20 = erc20ContractInfo.IsErc20()
-		contractInfo.Decimal = erc20ContractInfo.Decimal
+		contractInfo.DecimalBit = erc20ContractInfo.Decimal // 这里加上小数位
 	}
 	// 如果不存在就创建
 	if err = sel.contractRepo.CreateContract(contractInfo); err != nil {

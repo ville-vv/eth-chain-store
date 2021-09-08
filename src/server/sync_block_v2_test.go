@@ -1,14 +1,13 @@
 package server
 
 import (
+	"context"
 	"github.com/ville-vv/eth-chain-store/src/common/conf"
+	"github.com/ville-vv/eth-chain-store/src/common/go_exec"
 	"github.com/ville-vv/eth-chain-store/src/common/log"
 	"github.com/ville-vv/eth-chain-store/src/domain/ethm"
 	"github.com/ville-vv/eth-chain-store/src/domain/repo"
 	"github.com/ville-vv/eth-chain-store/src/infra/dao"
-	"github.com/ville-vv/eth-chain-store/src/infra/mqp"
-	"github.com/ville-vv/vilgo/runner"
-	"github.com/ville-vv/vilgo/vlog"
 	"github.com/ville-vv/vilgo/vstore"
 	"testing"
 )
@@ -43,28 +42,24 @@ func TestNewSyncBlockChainService(t *testing.T) {
 		contractMng         = ethm.NewContractManager(ethm.NewEthRpcExecutor(rpcEndpoint), repo.NewContractRepo(ethereumDao))
 		accountMng          = ethm.NewAccountManager(ethm.NewEthRpcExecutor(rpcEndpoint), repo.NewContractAccountRepo(ethereumDao), repo.NewNormalAccountRepo(ethereumDao))
 		transactionWriter   = ethm.NewTransactionWriter(ethm.NewEthRpcExecutor(rpcEndpoint), repo.NewTransactionRepo(normalTranDao))
-		accountMngWriter    = ethm.NewRetryProcess("account", maxWriteNum, accountMng, repo.NewSyncErrorRepository(errorDao))
-		contractMngWriter   = ethm.NewRetryProcess("contract", maxWriteNum, contractMng, repo.NewSyncErrorRepository(errorDao))
-		transactionReWriter = ethm.NewRetryProcess("transaction", maxWriteNum, transactionWriter, repo.NewSyncErrorRepository(errorDao))
+		accountMngWriter    = ethm.NewRetryProcess("account", accountMng, repo.NewSyncErrorRepository(errorDao))
+		contractMngWriter   = ethm.NewRetryProcess("contract", contractMng, repo.NewSyncErrorRepository(errorDao))
+		transactionReWriter = ethm.NewRetryProcess("transaction", transactionWriter, repo.NewSyncErrorRepository(errorDao))
 
-		mqPublish       = mqp.NewMDP(100, vlog.INFO)
-		txWriterPublish = ethm.NewEthereumPublisher(mqPublish)
+		txWriterPublish = ethm.NewEthWriterControl(maxWriteNum, accountMngWriter, contractMngWriter, transactionReWriter)
 
 		ethMng       = ethm.NewEthereumManager(ethm.NewEthRpcExecutor(rpcEndpoint), txWriterPublish)
 		bkNumCounter = ethm.NewSyncBlockControl(maxPullNum, ethm.NewEthRpcExecutor(rpcEndpoint), repo.NewBlockNumberRepo(ethBlockNumberDao))
 		serviceRun   = NewSyncBlockChainServiceV2(ethMng, bkNumCounter)
 	)
-	mqPublish.SubScribe(accountMngWriter)
-	mqPublish.SubScribe(contractMngWriter)
-	mqPublish.SubScribe(transactionReWriter)
 
 	svr := &Server{}
 	svr.Add(serviceRun)
-	svr.Add(mqPublish)
+
 	svr.Add(accountMngWriter)
 	svr.Add(contractMngWriter)
 	svr.Add(transactionReWriter)
 	svr.Add(ethereumCacheDb)
-	runner.Run(svr)
+	go_exec.Run(context.Background(), svr)
 
 }

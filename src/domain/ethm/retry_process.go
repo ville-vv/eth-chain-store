@@ -2,13 +2,10 @@ package ethm
 
 import (
 	"context"
-	"fmt"
 	"github.com/ville-vv/eth-chain-store/src/domain/repo"
 	"github.com/ville-vv/eth-chain-store/src/infra/model"
-	"github.com/ville-vv/eth-chain-store/src/infra/mqp"
 	"github.com/ville-vv/vilgo/vlog"
 	"github.com/ville-vv/vilgo/vtask"
-	"time"
 )
 
 type reTryElem struct {
@@ -39,18 +36,21 @@ func (r *reTryElem) GetData() interface{} {
 	return r.data
 }
 
-type RetryProcess struct {
-	mTask      *vtask.MiniTask
-	errorRepo  repo.SyncErrorRepository
-	txWriter   TxWriter
-	name       string
-	maxGoRun   chan int
-	runCounter *vtask.AtomicInt64
-	isStop     bool
+type RetryProcessor struct {
+	mTask     *vtask.MiniTask
+	errorRepo repo.SyncErrorRepository
+	txWriter  TxWriter
+	name      string
+	isStop    bool
+	stopCh    chan int
 }
 
-func NewRetryProcess(name string, maxNum int, txWriter TxWriter, errorRepo repo.SyncErrorRepository) *RetryProcess {
-	er := &RetryProcess{name: name, txWriter: txWriter, maxGoRun: make(chan int, maxNum), errorRepo: errorRepo}
+func NewRetryProcess(name string, txWriter TxWriter, errorRepo repo.SyncErrorRepository) *RetryProcessor {
+	er := &RetryProcessor{
+		name: name, txWriter: txWriter,
+		errorRepo: errorRepo,
+		stopCh:    make(chan int),
+	}
 	er.mTask = vtask.NewMiniTask(&vtask.TaskOption{
 		RetryFlag:       true,
 		NewRetry:        newReTryElem,
@@ -60,11 +60,7 @@ func NewRetryProcess(name string, maxNum int, txWriter TxWriter, errorRepo repo.
 	return er
 }
 
-func (sel *RetryProcess) SetMonitor(runCounter *vtask.AtomicInt64) {
-	sel.runCounter = runCounter
-}
-
-func (sel *RetryProcess) ErrWriter(ctx interface{}, err error) {
+func (sel *RetryProcessor) ErrWriter(ctx interface{}, err error) {
 	data, ok := ctx.(*model.TransactionData)
 	if !ok {
 		vlog.ERROR("ctx:%v, error:%s", ctx, err.Error())
@@ -75,7 +71,7 @@ func (sel *RetryProcess) ErrWriter(ctx interface{}, err error) {
 	}
 }
 
-func (sel *RetryProcess) exec(val interface{}) (retry bool) {
+func (sel *RetryProcessor) exec(val interface{}) (retry bool) {
 	data, ok := val.(*model.TransactionData)
 	if !ok {
 		return false
@@ -88,38 +84,45 @@ func (sel *RetryProcess) exec(val interface{}) (retry bool) {
 	return false
 }
 
-func (sel *RetryProcess) Scheme() string {
-	return "RetryProcess"
+func (sel *RetryProcessor) Scheme() string {
+	return sel.name
 }
 
-func (sel *RetryProcess) Init() error {
+func (sel *RetryProcessor) Schema() string {
+	return sel.name
+}
+
+func (sel *RetryProcessor) Init() error {
 	return nil
 }
 
-func (sel *RetryProcess) Exit(ctx context.Context) error {
+func (sel *RetryProcessor) Exit(ctx context.Context) error {
 	sel.mTask.Stop()
-	sel.waitStop()
+	close(sel.stopCh)
+	vlog.INFO("retry processor exited %s,", sel.name)
 	return nil
 }
 
-func (sel *RetryProcess) waitStop() {
-	for {
-		vlog.INFO("Wait Close RetryProcess %s %d", sel.name, sel.runCounter.Load())
-		if sel.runCounter.Load() <= 0 {
-			vlog.INFO("Exit RetryProcess %s ", sel.name)
-			return
-		}
-
-		time.Sleep(time.Second)
-	}
-}
-
-func (sel *RetryProcess) Start() error {
+func (sel *RetryProcessor) Start() error {
 	sel.mTask.Start()
+	//for i := 0; i < sel.maxNum; i++ {
+	//	go func() {
+	//		for {
+	//			select {
+	//			case data, ok := <-sel.dataChan:
+	//				if !ok {
+	//					return
+	//				}
+	//				_ = sel.TxWrite(data)
+	//				sel.runCounter.Dec()
+	//			}
+	//		}
+	//	}()
+	//}
 	return nil
 }
 
-func (sel *RetryProcess) TxWrite(txData *model.TransactionData) error {
+func (sel *RetryProcessor) TxWrite(txData *model.TransactionData) error {
 	err := sel.txWriter.TxWrite(txData)
 	if err != nil {
 		vlog.WARN("tx write failed push to retry %s", err.Error())
@@ -127,32 +130,5 @@ func (sel *RetryProcess) TxWrite(txData *model.TransactionData) error {
 			vlog.ERROR("eth retry push error %s", err.Error())
 		}
 	}
-	return nil
-}
-
-func (sel *RetryProcess) ID() string {
-	return sel.name
-}
-
-func (sel *RetryProcess) Process(msg *mqp.Message) error {
-	if msg == nil {
-		return nil
-	}
-	if sel.isStop {
-		return fmt.Errorf("%s write process is stop", sel.name)
-	}
-	txData := &model.TransactionData{}
-	err := msg.UnMarshalFromBody(txData)
-	if err != nil {
-		return err
-	}
-
-	sel.maxGoRun <- 1
-	sel.runCounter.Inc()
-	go func(dt *model.TransactionData) {
-		_ = sel.TxWrite(dt)
-		<-sel.maxGoRun
-		sel.runCounter.Dec()
-	}(txData)
 	return nil
 }

@@ -24,7 +24,7 @@ const (
 
 // locationTrims are trimmed for display to avoid unwieldy log lines.
 var locationTrims = []string{
-	"github.com/ville-vv/eth-chain-store/src/common/go-eth/",
+	"github.com/ville-vv/eth-chain-store-mysql/src/common/go-eth/",
 }
 
 // PrintOrigins sets or unsets log location (file:line) printing for terminal

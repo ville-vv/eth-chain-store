@@ -19,5 +19,5 @@ func TestBlockCaptor_PullBlockByNumber(t *testing.T) {
 	}
 
 	bc := NewEthereumManager(ethClt, TxWriteFun(txWrite))
-	bc.PullBlockByNumber(12696216, "12696216")
+	bc.Pull(12696216, 12696216)
 }

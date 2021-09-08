@@ -469,7 +469,7 @@ func (f *faucet) apiHandler(w http.ResponseWriter, r *http.Request) {
 			id = username
 		default:
 			//lint:ignore ST1005 This error is to be displayed in the browser
-			err = errors.New("Something funky happened, please open an issue at https://github.com/ville-vv/eth-chain-store/src/common/go-eth/issues")
+			err = errors.New("Something funky happened, please open an issue at https://github.com/ville-vv/eth-chain-store-mysql/src/common/go-eth/issues")
 		}
 		if err != nil {
 			if err = sendError(wsconn, err); err != nil {

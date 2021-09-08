@@ -6,6 +6,8 @@ type TxWriter interface {
 	TxWrite(txData *model.TransactionData) error
 }
 
-type TxWriterFilter interface {
-	Filter(addr string) (err error)
+type TxWriteFun func(*model.TransactionData) error
+
+func (tw TxWriteFun) TxWrite(txData *model.TransactionData) error {
+	return tw(txData)
 }

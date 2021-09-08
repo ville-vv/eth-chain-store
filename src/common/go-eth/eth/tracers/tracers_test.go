@@ -23,7 +23,7 @@ import (
 	"github.com/ville-vv/eth-chain-store/src/common/go-eth/common/math"
 	"github.com/ville-vv/eth-chain-store/src/common/go-eth/core"
 	"reflect"
-	//"github.com/ville-vv/eth-chain-store/src/common/go-eth/tests"
+	//"github.com/ville-vv/eth-chain-store-mysql/src/common/go-eth/tests"
 )
 
 // To generate a new callTracer test, copy paste the makeTest method below into
