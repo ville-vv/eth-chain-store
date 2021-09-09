@@ -192,7 +192,7 @@ func (sel *SyncBlockControl) loopSyncConfigUpdate() {
 	vlog.INFO("同步到最后区块，请主动结束")
 }
 
-// loopGenSyncNumber 没秒中生成区块数
+// loopGenSyncNumber 每秒中生成区块数
 func (sel *SyncBlockControl) loopGenSyncNumberOneSecond() {
 	tmr := time.NewTicker(time.Second)
 	for {

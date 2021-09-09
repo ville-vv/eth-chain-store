@@ -166,9 +166,11 @@ func (sel *txHiveDataFile) save() {
 
 func (sel *txHiveDataFile) Exit() {
 	close(sel.stopCh)
+	vlog.INFO("Hive数据文件写入线程退出等待中")
 	<-sel.waitExit
 	close(sel.waitExit)
 	_ = sel.dataFile.Close()
+	vlog.INFO("Hive数据文件写入线程退出正常")
 }
 
 func (sel *txHiveDataFile) InsertData(txData *model.TransactionRecord) error {
