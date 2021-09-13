@@ -6,6 +6,7 @@ require (
 	github.com/Azure/azure-storage-blob-go v0.14.0
 	github.com/StackExchange/wmi v0.0.0-20210224194228-fe8f1750fd46 // indirect
 	github.com/VictoriaMetrics/fastcache v1.6.0
+	github.com/apache/thrift v0.14.1
 	github.com/aws/aws-sdk-go-v2 v1.7.0
 	github.com/aws/aws-sdk-go-v2/config v1.4.1
 	github.com/aws/aws-sdk-go-v2/credentials v1.3.0

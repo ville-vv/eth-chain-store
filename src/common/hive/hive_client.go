@@ -1,35 +1,39 @@
 package hive
 
 //
-//import (
-//	"fmt"
-//
-//  // "github.com/uxff/gohive"
-//	"github.com/beltran/gohive"
-//	//"github.com/dazheng/gohive"
-//)
-//
-//type HiveClient struct {
-//}
-//
-//func New() {
-//
-//	gh, err := gohive.Connect("172.16.16.155:10000", gohive.DefaultOptions)
-//	if err != nil {
-//		fmt.Println(err)
-//		return
-//	}
-//
-//	rs, err := gh.Query("select count(*) from etherum.transaction_records ;")
-//	if err != nil {
-//		panic(err)
-//	}
-//
-//	var i int
-//	for rs.Next() {
-//		rs.Scan(&i)
-//		fmt.Println(i)
-//	}
-//
-//	gh.Close()
-//}
+import (
+	"context"
+	"fmt"
+
+	"github.com/beltran/gohive"
+)
+
+//"github.com/dazheng/gohive"
+//"github.com/uxff/gohive"
+
+type HiveClient struct {
+}
+
+func New() {
+	cfg := gohive.NewConnectConfiguration()
+	cfg.Service = "hive"
+	cfg.Database = "test"
+	ghConn, err := gohive.Connect("localhost", 10000, "NONE", cfg)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	cursor := ghConn.Cursor()
+	cursor.Exec(context.Background(), "show databases")
+	for cursor.HasMore(context.Background()) {
+		if cursor.Err != nil {
+			fmt.Println(cursor.Err)
+			break
+		}
+		var data map[string]interface{}
+		cursor.FetchOne(context.Background(), data)
+
+		fmt.Println(data)
+	}
+}
