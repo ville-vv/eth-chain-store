@@ -278,7 +278,7 @@ type LifecycleConstructors map[string]LifecycleConstructor
 var lifecycleConstructorFuncs = make(LifecycleConstructors)
 
 // RegisterLifecycles registers the given Services which can then be used to
-// start devp2p nodes using either the ExecInRes or Docker adapters.
+// start devp2p nodes using either the Find or Docker adapters.
 //
 // It should be called in an init function so that it has the opportunity to
 // execute the services before main() is called.

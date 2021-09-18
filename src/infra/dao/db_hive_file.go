@@ -52,7 +52,7 @@ func (sel *TransactionHiveDataFile) CreateTransactionRecord(txData *model.Transa
 		BlockNumber:     txData.BlockNumber,
 		BlockHash:       txData.BlockHash,
 		TxHash:          txData.Hash,
-		Timestamp:       txData.TimeStamp,
+		TxTime:          txData.TimeStamp,
 		ContractAddress: txData.ContractAddress,
 		FromAddr:        txData.From,
 		ToAddr:          txData.To,

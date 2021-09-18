@@ -32,7 +32,7 @@ func (sel *SyncBlockChainServiceV2) Start() error {
 }
 
 func (sel *SyncBlockChainServiceV2) Exit(ctx context.Context) error {
-	sel.counter.Exit()
+	sel.counter.Exit(ctx)
 	return nil
 }
 

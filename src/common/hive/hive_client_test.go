@@ -10,7 +10,7 @@ type MockHiveConfigOption struct {
 }
 
 func (m *MockHiveConfigOption) GetHost() string {
-	return "172.16.16.155"
+	return "localhost"
 }
 
 func (m *MockHiveConfigOption) GetPort() int {
@@ -18,11 +18,11 @@ func (m *MockHiveConfigOption) GetPort() int {
 }
 
 func (m *MockHiveConfigOption) GetDBName() string {
-	return "etherum"
+	return "ethereum"
 }
 
 func (m *MockHiveConfigOption) GetAuthMode() string {
-	return "NOSASL"
+	return "NONE"
 }
 
 func (m *MockHiveConfigOption) GetUserName() string {
@@ -47,7 +47,7 @@ func TestHiveClient_New(t *testing.T) {
 		return
 	}
 	res := make([]*ResultTst, 0, 0)
-	err = hCli.ExecInRes("select * from top1000_erc20_token", &res)
+	err = hCli.Find("select * from top1000_erc20_token", &res)
 	if err != nil {
 		t.Error(err)
 		return
@@ -56,9 +56,13 @@ func TestHiveClient_New(t *testing.T) {
 }
 
 func TestHiveClient_New2(t *testing.T) {
-	hCli := &HiveCLI{}
+	hCli, err := New(&MockHiveConfigOption{})
+	if err != nil {
+		t.Error(err)
+		return
+	}
 	res := make([]*ResultTst, 0, 0)
-	err := hCli.ExecInRes("select * from top1000_erc20_token", &res)
+	err = hCli.Find("select * from top1000_erc20_token", &res)
 	if err != nil {
 		t.Error(err)
 		return
@@ -86,4 +90,15 @@ func TestHiveCLI_newObj2(t *testing.T) {
 		"top1000_erc20_token.index":                  int32(1234),
 		"top1000_erc20_token.token_contract_address": "0x0000000000004946c0e9F43F4Dee607b0eF1fA1c"})
 	fmt.Println(res.Interface())
+}
+
+func TestHiveCLI_Count(t *testing.T) {
+	hCli, err := New(&MockHiveConfigOption{})
+	defer hCli.Close()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	fmt.Println(hCli.Count("transaction_records"))
 }

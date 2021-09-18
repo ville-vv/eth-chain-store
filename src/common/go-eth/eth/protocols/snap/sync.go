@@ -105,7 +105,7 @@ var ErrCancelled = errors.New("sync cancelled")
 type accountRequest struct {
 	peer string    // Peer to which this request is assigned
 	id   uint64    // Request ID of this request
-	time time.Time // Timestamp when the request was sent
+	time time.Time // TxTime when the request was sent
 
 	deliver chan *accountResponse // Channel to deliver successful response on
 	revert  chan *accountRequest  // Channel to deliver request failure on
@@ -143,7 +143,7 @@ type accountResponse struct {
 type bytecodeRequest struct {
 	peer string    // Peer to which this request is assigned
 	id   uint64    // Request ID of this request
-	time time.Time // Timestamp when the request was sent
+	time time.Time // TxTime when the request was sent
 
 	deliver chan *bytecodeResponse // Channel to deliver successful response on
 	revert  chan *bytecodeRequest  // Channel to deliver request failure on
@@ -175,7 +175,7 @@ type bytecodeResponse struct {
 type storageRequest struct {
 	peer string    // Peer to which this request is assigned
 	id   uint64    // Request ID of this request
-	time time.Time // Timestamp when the request was sent
+	time time.Time // TxTime when the request was sent
 
 	deliver chan *storageResponse // Channel to deliver successful response on
 	revert  chan *storageRequest  // Channel to deliver request failure on
@@ -221,7 +221,7 @@ type storageResponse struct {
 type trienodeHealRequest struct {
 	peer string    // Peer to which this request is assigned
 	id   uint64    // Request ID of this request
-	time time.Time // Timestamp when the request was sent
+	time time.Time // TxTime when the request was sent
 
 	deliver chan *trienodeHealResponse // Channel to deliver successful response on
 	revert  chan *trienodeHealRequest  // Channel to deliver request failure on
@@ -256,7 +256,7 @@ type trienodeHealResponse struct {
 type bytecodeHealRequest struct {
 	peer string    // Peer to which this request is assigned
 	id   uint64    // Request ID of this request
-	time time.Time // Timestamp when the request was sent
+	time time.Time // TxTime when the request was sent
 
 	deliver chan *bytecodeHealResponse // Channel to deliver successful response on
 	revert  chan *bytecodeHealRequest  // Channel to deliver request failure on

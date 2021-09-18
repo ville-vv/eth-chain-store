@@ -54,7 +54,7 @@ type TransactionRecord struct {
 	BlockNumber     string    `json:"block_number" gorm:"column:block_number;type:varchar(255);COMMENT:" name:""` // 区块号
 	BlockHash       string    `json:"block_hash" gorm:"column:block_hash;type:varchar(255);COMMENT:" name:""`
 	TxHash          string    `json:"tx_hash" gorm:"column:tx_hash;index:idx_tx_records_tx_hash;type:varchar(200);COMMENT:" name:""`
-	Timestamp       string    `json:"timestamp" gorm:"column:timestamp;type:varchar(255);COMMENT:" name:""`
+	TxTime          string    `json:"tx_time" gorm:"column:tx_time;type:varchar(255);COMMENT:" name:""`
 	ContractAddress string    `json:"contract_address" gorm:"column:contract_address;varchar(255);COMMENT:" name:""`
 	FromAddr        string    `json:"from_addr" gorm:"column:from_addr;type:varchar(255);COMMENT:" name:""`
 	ToAddr          string    `json:"to_addr" gorm:"column:to_addr;type:varchar(255);COMMENT:" name:""`

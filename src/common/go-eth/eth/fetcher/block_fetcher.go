@@ -103,7 +103,7 @@ type blockAnnounce struct {
 	hash   common.Hash   // Hash of the block being announced
 	number uint64        // Number of the block being announced (0 = unknown | old protocol)
 	header *types.Header // Header of the block partially reassembled (new protocol)
-	time   time.Time     // Timestamp of the announcement
+	time   time.Time     // TxTime of the announcement
 
 	origin string // Identifier of the peer originating the notification
 

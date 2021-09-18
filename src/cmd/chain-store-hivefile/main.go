@@ -122,7 +122,7 @@ func buildService() go_exec.Runner {
 		transactionWriter   = ethm.NewTransactionWriter(ethm.NewEthRpcExecutor(rpcEndpoint), txDataRepo)
 		transactionReWriter = ethm.NewRetryProcess("transaction", transactionWriter, repo.NewSyncErrorRepositoryV2(errDataFile))
 
-		ethDataWriter = ethm.NewEthWriterControl(maxPullNum, transactionReWriter)
+		ethDataWriter = ethm.NewEthWriterControl(maxWriteNum, transactionReWriter)
 		ethMng        = ethm.NewEthereumManager(ethm.NewEthRpcExecutor(rpcEndpoint), ethDataWriter)
 
 		syncControl = ethm.NewSyncBlockControlWithOpt(

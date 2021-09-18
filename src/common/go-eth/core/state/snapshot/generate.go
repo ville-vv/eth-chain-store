@@ -97,7 +97,7 @@ var (
 // for logging purposes.
 type generatorStats struct {
 	origin   uint64             // Origin prefix where generation started
-	start    time.Time          // Timestamp when generation started
+	start    time.Time          // TxTime when generation started
 	accounts uint64             // Number of accounts indexed(generated or recovered)
 	slots    uint64             // Number of storage slots indexed(generated or recovered)
 	storage  common.StorageSize // Total account and storage slot size(generation or recovery)

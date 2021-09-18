@@ -6,6 +6,14 @@ import (
 	"github.com/ville-vv/vilgo/vlog"
 )
 
+type EthAccountRepository interface {
+	IsAccountExist(addr string) (bool, error)
+	//
+	CreateAccount(account *model.EthereumAccount) error
+	//
+	UpdateAccountByAddr(addr string, updateInfo map[string]interface{}) error
+}
+
 //===============================================================================================
 // 普通账户处理
 type NormalAccountRepo struct {

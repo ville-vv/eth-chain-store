@@ -6,6 +6,11 @@ import (
 	"github.com/ville-vv/vilgo/vlog"
 )
 
+type ContractRepository interface {
+	CreateContract(ct *model.ContractContent) error
+	IsContractExist(addr string) bool
+}
+
 // ContractRepo 合约信息处理
 type ContractRepo struct {
 	contractDao *dao.EthereumDao

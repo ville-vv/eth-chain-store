@@ -17,6 +17,22 @@ type cacheElm struct {
 
 type cacheList []*cacheElm
 
+func (sel cacheList) distribute() map[string][]interface{} {
+	tempCacheMap := make(map[string][]interface{})
+	for _, v := range sel {
+		if v == nil {
+			break
+		}
+		lst, ok := tempCacheMap[v.TableName]
+		if !ok {
+			lst = make([]interface{}, 0, len(sel))
+		}
+		lst = append(lst, v.Record)
+		tempCacheMap[v.TableName] = lst
+	}
+	return tempCacheMap
+}
+
 type DbCache struct {
 	sync.RWMutex
 	db         DB
@@ -147,5 +163,73 @@ func (sel *DbCache) Select(fn func(tbName string, val interface{})) error {
 		fn(val.TableName, val.Record)
 	}
 	sel.RUnlock()
+	return nil
+}
+
+//========================================================================
+
+type Executor interface {
+	Exec(tbName string, record []interface{}) error
+}
+
+type InsertSqlFormatter interface {
+	FormatInsertSql(tbName string, datas []interface{}) string
+}
+
+type HiveDbCache struct {
+	sync.Mutex
+	*TickTask
+	do              Executor
+	cachePool       [3]cacheList
+	poolIdx         int
+	errFile         *os.File
+	insertFormatter InsertSqlFormatter
+}
+
+func NewHiveDbCache(do Executor) *HiveDbCache {
+	cachePool := [3]cacheList{make(cacheList, 0, 100000), make(cacheList, 0, 100000), make(cacheList, 0, 100000)}
+	thd := &HiveDbCache{
+		do:              do,
+		cachePool:       cachePool,
+		poolIdx:         0,
+		errFile:         nil,
+		insertFormatter: nil,
+	}
+	thd.TickTask = NewTickTask("HiveDbCache", time.Second*time.Duration(2), thd.exec)
+	return thd
+}
+
+func (sel *HiveDbCache) Init() error {
+	return nil
+}
+
+func (sel *HiveDbCache) exec() {
+	sel.Lock()
+	waitSaveList := sel.cachePool[sel.poolIdx]
+	sel.cachePool[sel.poolIdx] = sel.cachePool[sel.poolIdx][:0]
+	sel.poolIdx++
+	if sel.poolIdx >= 3 {
+		sel.poolIdx = 0
+	}
+	sel.Unlock()
+
+	tempCacheMap := waitSaveList.distribute()
+	for tbName, v := range tempCacheMap {
+		//vlog.INFO("插入到数据库 %s %d", tbName, len(v))
+		err := sel.do.Exec(tbName, v)
+		if err != nil {
+			//vlog.ERROR("save data to db table %s len:%d error %s", tbName, len(v), err.Error())
+			//_, _ = sel.errFile.WriteString(sqlStr + ";\n")
+			continue
+		}
+	}
+	tempCacheMap = nil
+	return
+}
+
+func (sel *HiveDbCache) Insert(tableName string, val interface{}) error {
+	sel.Lock()
+	sel.cachePool[sel.poolIdx] = append(sel.cachePool[sel.poolIdx], &cacheElm{TableName: tableName, Record: val})
+	sel.Unlock()
 	return nil
 }

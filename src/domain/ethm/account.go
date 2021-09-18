@@ -57,28 +57,6 @@ func (sel *AccountManager) TxWrite(txData *model.TransactionData) error {
 	//return nil
 }
 
-// contractAccountUpdater 处理合约账户
-func (sel *AccountManager) contractAccountUpdater(txData *model.TransactionData) error {
-
-	//accountRepo.FromBalance = balance
-	//// 在数据库中是否存在该合约账户
-	//if sel.accountRepo.IsContractAccountExist() {
-	//	// 如果存在就直接更新余额
-	//	if err = sel.accountRepo.UpdateContract(act); err != nil {
-	//		return err
-	//	}
-	//}
-	//
-	//// 如果不存在就需要获取该合约相关的东西
-	//totalSupply, err := sel.ethCli.GetContractTotalSupply(act.Address)
-	//if err != nil {
-	//	return err
-	//}
-
-	//sel.ethCl
-	return nil
-}
-
 // contractAccountManager 以太坊合约账户管理
 type contractAccountManager struct {
 	ethCli        ethrpc.EthRPC
@@ -214,11 +192,8 @@ type normalAccountManager struct {
 	lock          sync.Mutex
 }
 
-// 以太坊正常的交易账户写入，这里就不判断该账户是不是合约账户了直接写入 from 和 to
+// 以太坊正常的交易账户写入，这里就不判断该账户是不是合约账户了直接写入 to
 func (sel *normalAccountManager) UpdateAccount(txData *model.TransactionData) error {
-	//if err := sel.writeAccount(txData.From, txData.TimeStamp, txData.Hash, txData.IsLatest()); err != nil {
-	//	return errors.Wrap(err, "write normal account from address")
-	//}
 	if err := sel.writeAccount(txData.To, txData.TimeStamp, txData.Hash, txData.IsLatest()); err != nil {
 		return errors.Wrap(err, "write normal account to address")
 	}

@@ -38,6 +38,7 @@ type OptionConfig struct {
 	MaxSyncThreads   int
 	EthRpcCli        ethrpc.EthRPC
 	BknRepo          SyncConfigDataPersist
+	Puller           SyncBlockPuller
 }
 
 type SyncBlockControl struct {
@@ -61,15 +62,22 @@ type SyncBlockControl struct {
 	rpcNotOpen bool
 }
 
+func (sel *SyncBlockControl) Scheme() string {
+	return "SyncBlockControl"
+}
+
+func (sel *SyncBlockControl) Init() error {
+	return nil
+}
+
 func NewSyncBlockControl(maxSyncNum int, ethRpcCli ethrpc.EthRPC, bknRepo SyncConfigDataPersist) *SyncBlockControl {
 	sbn := &SyncBlockControl{
 		ethRpcCli:           ethRpcCli,
 		bknRepo:             bknRepo,
 		maxSyncThreads:      maxSyncNum,
 		syncBlockNumberChan: make(chan int64, maxSyncNum),
-		//syncBlockNumberChanNoLimit: make(chan int64),
-		stopCh:     make(chan int),
-		syncStopCh: make(chan int, maxSyncNum),
+		stopCh:              make(chan int),
+		syncStopCh:          make(chan int, maxSyncNum),
 	}
 	return sbn
 }
@@ -84,11 +92,12 @@ func NewSyncBlockControlWithOpt(opt *OptionConfig) *SyncBlockControl {
 		syncBlockNumberChan:  make(chan int64, opt.MaxSyncThreads),
 		stopCh:               make(chan int),
 		syncStopCh:           make(chan int, opt.MaxSyncThreads),
+		puller:               opt.Puller,
 	}
 	return sbn
 }
 
-func (sel *SyncBlockControl) Start() {
+func (sel *SyncBlockControl) Start() error {
 	cntNumber, err := sel.bknRepo.GetCntSyncBlockNumber()
 	// 获取已经同步到的最近区块
 	if sel.startSyncBlockNumber > 0 {
@@ -110,6 +119,7 @@ func (sel *SyncBlockControl) Start() {
 	runner.Go(func() {
 		sel.loopGenSyncNumberOneSecond()
 	})
+	return nil
 }
 
 // loopSyncLatestBlockNumber 获取最新区块号
@@ -363,9 +373,9 @@ func (sel *SyncBlockControl) WaitExit() {
 	}
 }
 
-func (sel *SyncBlockControl) Exit() {
+func (sel *SyncBlockControl) Exit(ctx context.Context) error {
 	if sel.isStop {
-		return
+		return nil
 	}
 	sel.isStop = true
 	close(sel.stopCh)
@@ -377,5 +387,5 @@ func (sel *SyncBlockControl) Exit() {
 	_ = sel.bknRepo.UpdateSyncBlockNUmber(sel.beforeSyncNumber)
 	sel.WaitExit()
 	vlog.INFO("sync block number control exited")
-
+	return nil
 }

@@ -3,6 +3,7 @@ package hive
 //
 import (
 	"context"
+	"fmt"
 	"github.com/beltran/gohive"
 	"github.com/pkg/errors"
 	"reflect"
@@ -42,39 +43,43 @@ func New(opt HiveConfigOption) (*HiveCLI, error) {
 	return hcli, err
 }
 
-func (sel *HiveCLI) ExecInRes(stm string, obj interface{}) error {
-	if obj == nil {
-		return errors.New("obj is nil")
+func (sel *HiveCLI) Close() {
+	sel.conn.Close()
+}
+
+func (sel *HiveCLI) Find(stm string, res interface{}) error {
+	if res == nil {
+		return errors.New("res is nil")
 	}
 
-	objType := reflect.TypeOf(obj)
-	objValPtr := reflect.ValueOf(obj)
+	objType := reflect.TypeOf(res)
+	objValPtr := reflect.ValueOf(res)
 
 	if objType.Kind() != reflect.Ptr {
-		return errors.New("obj is must ptr")
+		return errors.New("res is must ptr")
 	}
 	objVal := objValPtr.Elem()
 	objType = objType.Elem()
 
 	var dataMap map[string]interface{}
-	dataMap = map[string]interface{}{
-		"top1000_erc20_token.index":                  int32(1234),
-		"top1000_erc20_token.token_contract_address": "0x0000000000004946c0e9F43F4Dee607b0eF1fA1c"}
-	//cursor := sel.conn.Cursor()
-	//defer cursor.Close()
-	//cursor.Exec(sel.defaultCtx, stm)
-	//if cursor.Err != nil {
-	//	return errors.Wrap(cursor.Err, "hive exec")
-	//}
-	//for cursor.HasMore(sel.defaultCtx) {
-	//	if cursor.Err != nil {
-	//		return errors.Wrap(cursor.Err, "hive exec has more")
-	//	}
-	//	dataMap = cursor.RowMap(sel.defaultCtx)
-	//	if cursor.Err != nil {
-	//		return errors.Wrap(cursor.Err, "hive exec row map")
-	//	}
-	for i := 0; i < 3; i++ {
+	//dataMap = map[string]interface{}{
+	//	"top1000_erc20_token.index":                  int32(1234),
+	//	"top1000_erc20_token.token_contract_address": "0x0000000000004946c0e9F43F4Dee607b0eF1fA1c"}
+	cursor := sel.conn.Cursor()
+	defer cursor.Close()
+	cursor.Exec(sel.defaultCtx, stm)
+	if cursor.Err != nil {
+		return errors.Wrap(cursor.Err, "hive exec")
+	}
+	for cursor.HasMore(sel.defaultCtx) {
+		if cursor.Err != nil {
+			return errors.Wrap(cursor.Err, "hive exec has more")
+		}
+		dataMap = cursor.RowMap(sel.defaultCtx)
+		if cursor.Err != nil {
+			return errors.Wrap(cursor.Err, "hive exec row map")
+		}
+
 		if objType.Kind() == reflect.Slice {
 			elm := objType.Elem()
 			if elm.Kind() == reflect.Ptr {
@@ -95,7 +100,20 @@ func (sel *HiveCLI) ExecInRes(stm string, obj interface{}) error {
 	return nil
 }
 
-func (sel *HiveCLI) ExecNoRes(stm string) error {
+func (sel *HiveCLI) Count(tableName string) int64 {
+	cursor := sel.conn.Cursor()
+	defer cursor.Close()
+
+	cursor.Exec(sel.defaultCtx, fmt.Sprintf("select count(*) as total from %s", tableName))
+
+	datas := cursor.RowMap(sel.defaultCtx)
+
+	total, _ := datas["total"].(int64)
+
+	return total
+}
+
+func (sel *HiveCLI) Exec(stm string) error {
 	cursor := sel.conn.Cursor()
 	defer cursor.Close()
 	cursor.Exec(sel.defaultCtx, stm)

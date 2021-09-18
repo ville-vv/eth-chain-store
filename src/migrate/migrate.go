@@ -16,20 +16,16 @@ func Create(_ *cli.Context) {
 	//vlog.INFO("create db name %s", businessDbCfg.DbName)
 	//businessDb.CreateDB()
 
-	ethereumDbCfg := conf.GetEthereumDbConfig()
-	ethereumDb := vstore.MakeDBUtil(ethereumDbCfg)
-	vlog.INFO("create db name %s", ethereumDbCfg.DbName)
-	ethereumDb.CreateDB()
+	create := func(dbConf *conf.MysqlConf) {
+		db := vstore.MakeDBUtil(dbConf)
+		vlog.INFO("create db name %s", dbConf.DbName)
+		db.CreateDB()
+	}
 
-	contractTxDbCfg := conf.GetEthContractTransactionDbConfig()
-	contractTxDb := vstore.MakeDBUtil(contractTxDbCfg)
-	vlog.INFO("create db name %s", contractTxDbCfg.DbName)
-	contractTxDb.CreateDB()
-
-	transactionDbCfg := conf.GetEthTransactionDbConfig()
-	transactionDb := vstore.MakeDBUtil(transactionDbCfg)
-	vlog.INFO("create db name %s", transactionDbCfg.DbName)
-	transactionDb.CreateDB()
+	create(conf.GetEthereumDbConfig())
+	create(conf.GetEthContractTransactionDbConfig())
+	create(conf.GetEthTransactionDbConfig())
+	create(conf.GetEthereumHiveMapDbConfig())
 }
 
 func drop(mysqlCfg *conf.MysqlConf) {
@@ -48,6 +44,7 @@ func Drop(_ *cli.Context) {
 	drop(conf.GetEthereumDbConfig())
 	drop(conf.GetEthContractTransactionDbConfig())
 	drop(conf.GetEthTransactionDbConfig())
+	drop(conf.GetEthereumHiveMapDbConfig())
 }
 
 func Migrate(_ *cli.Context) {
@@ -55,19 +52,7 @@ func Migrate(_ *cli.Context) {
 	ethereumDbMigrate()
 	contractTxDbDbMigrate()
 	transactionDbMigrate()
-}
-
-func businessDbMigrate() {
-	cfg := conf.GetEthBusinessDbConfig()
-	mysqlDb := vstore.MakeDb(cfg)
-	vlog.INFO("migrate db name %s", cfg.DbName)
-	db := mysqlDb.GetDB().Debug()
-	err := db.AutoMigrate(
-		&model.Erc20ContractConfig{},
-	)
-	if err != nil {
-		panic(err)
-	}
+	ethereumHiveMapDbMigrate()
 
 }
 
@@ -88,8 +73,6 @@ func ethereumDbMigrate() {
 	if err != nil {
 		panic(err)
 	}
-	//model.ContractAccountBind
-	//createMyISAMTable(db, &model.ContractAddressRecord{})
 }
 
 func contractTxDbDbMigrate() {
@@ -121,6 +104,23 @@ func transactionDbMigrate() {
 	//db.Set("gorm:table_options", "ENGINE=MyISAM").AutoMigrate(&model.TransactionRecord{})
 	//db.Set("gorm:table_options", "ENGINE=MyISAM").AutoMigrate(&model.TransactionRecord{})
 
+	if err != nil {
+		panic(err)
+	}
+}
+
+func ethereumHiveMapDbMigrate() {
+	cfg := conf.GetEthereumHiveMapDbConfig()
+	mysqlDb := vstore.MakeDb(cfg)
+	vlog.INFO("migrate db name %s", cfg.DbName)
+	db := mysqlDb.GetDB().Debug()
+	err := db.AutoMigrate(
+		&model.SyncBlockConfig{},
+		&model.SplitTableInfo{},
+		&model.ContractAccountBind{},
+		&model.EthereumAccount{},
+		&model.SyncErrorRecord{},
+	)
 	if err != nil {
 		panic(err)
 	}

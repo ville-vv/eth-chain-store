@@ -116,3 +116,9 @@ func GetEthTransactionDbConfig() *MysqlConf {
 	mysqlConfig.ReSetDbName("transaction")
 	return mysqlConfig
 }
+
+func GetEthereumHiveMapDbConfig() *MysqlConf {
+	mysqlConfig := NewMysqlConf()
+	mysqlConfig.ReSetDbName("ethereum_hive_map")
+	return mysqlConfig
+}

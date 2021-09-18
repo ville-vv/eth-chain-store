@@ -108,7 +108,7 @@ type txAnnounce struct {
 type txRequest struct {
 	hashes []common.Hash            // Transactions having been requested
 	stolen map[common.Hash]struct{} // Deliveries by someone else (don't re-request)
-	time   mclock.AbsTime           // Timestamp of the request
+	time   mclock.AbsTime           // TxTime of the request
 }
 
 // txDelivery is the notification that a batch of transactions have been added

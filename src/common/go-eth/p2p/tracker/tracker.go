@@ -53,7 +53,7 @@ type request struct {
 	reqCode uint64 // Protocol message code of the request
 	resCode uint64 // Protocol message code of the expected response
 
-	time   time.Time     // Timestamp when the request was made
+	time   time.Time     // TxTime when the request was made
 	expire *list.Element // Expiration marker to untrack it
 }
 
