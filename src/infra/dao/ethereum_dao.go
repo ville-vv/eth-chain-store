@@ -55,11 +55,6 @@ func (sel *EthereumDao) CreateContractRecord(contractCtx *model.ContractContent)
 	_ = sel.cacheDb.Insert(tbName, &model.ContractAddressRecord{
 		ContractContent: *contractCtx,
 	})
-	//if err = sel.db.GetDB().Table(tbName).Create(&model.ContractAddressRecord{
-	//	ContractContent: *contractCtx,
-	//}).Error; err != nil {
-	//	return err
-	//}
 	sel.contractRecordTb.Inc()
 	return nil
 }
@@ -91,9 +86,6 @@ func (sel *EthereumDao) CreateContractAccount(contractAccount *model.ContractAcc
 	if err != nil {
 		return errors.Wrap(err, "ethereum dao create contract account bind")
 	}
-	//if err = sel.db.GetDB().Table(tbName).Create(contractAccount).Error; err != nil {
-	//	return err
-	//}
 	_ = sel.cacheDb.Insert(tbName, contractAccount)
 	sel.contractBindTb.Inc()
 	return nil

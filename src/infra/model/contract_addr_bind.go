@@ -8,7 +8,7 @@ type ContractAccountBind struct {
 	ID              int64      `gorm:"primary_key"`
 	CreatedAt       time.Time  `json:"created_at" gorm:"column:created_at;COMMENT:" name:""`                                                          // 记录创建时间
 	UpdatedAt       time.Time  `json:"updated_at" gorm:"column:updated_at;COMMENT:" name:""`                                                          // 记录更新时间
-	Timestamp       *time.Time `json:"timestamp" gorm:"column:timestamp;COMMENT:" name:""`                                                            // 第一笔交易时间
+	TxTime          *time.Time `json:"tx_time" gorm:"column:tx_time;COMMENT:" name:""`                                                                // 第一笔交易时间
 	Address         string     `json:"address" gorm:"column:address;type:varchar(128);index:idx_cab_addr_crtaddr;COMMENT:" name:""`                   // 钱包地址
 	ContractAddress string     `json:"contract_address" gorm:"column:contract_address;type:varchar(128);index:idx_cab_addr_crtaddr;COMMENT:" name:""` // 合约代币地址
 	Symbol          string     `json:"symbol" gorm:"column:symbol;type:varchar(128);COMMENT:" name:""`                                                // 合约代币标识

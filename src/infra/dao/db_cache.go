@@ -172,28 +172,20 @@ type Executor interface {
 	Exec(tbName string, record []interface{}) error
 }
 
-type InsertSqlFormatter interface {
-	FormatInsertSql(tbName string, datas []interface{}) string
-}
-
 type HiveDbCache struct {
 	sync.Mutex
 	*TickTask
-	do              Executor
-	cachePool       [3]cacheList
-	poolIdx         int
-	errFile         *os.File
-	insertFormatter InsertSqlFormatter
+	do        Executor
+	cachePool [3]cacheList
+	poolIdx   int
 }
 
 func NewHiveDbCache(do Executor) *HiveDbCache {
 	cachePool := [3]cacheList{make(cacheList, 0, 100000), make(cacheList, 0, 100000), make(cacheList, 0, 100000)}
 	thd := &HiveDbCache{
-		do:              do,
-		cachePool:       cachePool,
-		poolIdx:         0,
-		errFile:         nil,
-		insertFormatter: nil,
+		do:        do,
+		cachePool: cachePool,
+		poolIdx:   0,
 	}
 	thd.TickTask = NewTickTask("HiveDbCache", time.Second*time.Duration(2), thd.exec)
 	return thd
@@ -216,12 +208,16 @@ func (sel *HiveDbCache) exec() {
 	tempCacheMap := waitSaveList.distribute()
 	for tbName, v := range tempCacheMap {
 		//vlog.INFO("插入到数据库 %s %d", tbName, len(v))
-		err := sel.do.Exec(tbName, v)
-		if err != nil {
-			//vlog.ERROR("save data to db table %s len:%d error %s", tbName, len(v), err.Error())
-			//_, _ = sel.errFile.WriteString(sqlStr + ";\n")
-			continue
+
+		if len(v) > 0 {
+			err := sel.do.Exec(tbName, v)
+			if err != nil {
+				//vlog.ERROR("save data to db table %s len:%d error %s", tbName, len(v), err.Error())
+				//_, _ = sel.errFile.WriteString(sqlStr + ";\n")
+				continue
+			}
 		}
+
 	}
 	tempCacheMap = nil
 	return

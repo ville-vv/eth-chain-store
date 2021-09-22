@@ -20,24 +20,15 @@ type ContractService struct {
 	rpcCli       ethrpc.EthRPC
 	dataCursor   TxDataGetter
 	contractRepo repo.ContractRepository
-	errorRepo    repo.SyncErrorRepository
 }
 
 func (sel *ContractService) Process(data *model.TransactionRecord) error {
-	return sel.process(data.ContractAddress, data.TxTime)
-}
-
-func (sel *ContractService) process(address string, timestamp string) error {
-	// 判断是数据否存在
-	if sel.contractRepo.IsContractExist(address) {
-		return nil
-	}
 	contract := entity.NewContract(sel.rpcCli, sel.contractRepo)
-	contract.SetAddress(address)
-	contract.SetPublishTime(timestamp)
-	if err := contract.SetErc20ContentFromRpc(); err != nil {
+	contract.SetAddress(data.ContractAddress)
+	contract.SetPublishTime(data.TxTime)
+	// 创建合约信息
+	if err := contract.CreateRecord(); err != nil {
 		return err
 	}
-	// 数据不存在就创建
-	return contract.CreateRecord()
+	return nil
 }

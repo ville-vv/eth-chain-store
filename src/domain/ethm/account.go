@@ -2,15 +2,14 @@ package ethm
 
 import (
 	"github.com/pkg/errors"
+	"github.com/ville-vv/eth-chain-store/src/common/utils"
 	"github.com/ville-vv/eth-chain-store/src/domain/repo"
 	"github.com/ville-vv/eth-chain-store/src/infra/cache"
 	"github.com/ville-vv/eth-chain-store/src/infra/ethrpc"
 	"github.com/ville-vv/eth-chain-store/src/infra/model"
 	"github.com/ville-vv/vilgo/vlog"
-	"strconv"
 	"strings"
 	"sync"
-	"time"
 )
 
 type Account struct {
@@ -22,21 +21,21 @@ type Account struct {
 // 以太坊账户
 type AccountManager struct {
 	ethCli         ethrpc.EthRPC
-	contractActMng *contractAccountManager
-	normalActMng   *normalAccountManager
+	contractActMng *ContractAccountManager
+	normalActMng   *NormalAccountManager
 }
 
 func NewAccountManager(ethCli ethrpc.EthRPC, contractAccountRepo *repo.ContractAccountRepo, normalAccountRepo *repo.NormalAccountRepo) *AccountManager {
 	ac := &AccountManager{
 		ethCli: ethCli,
 		//contractMng: contractMng,
-		contractActMng: &contractAccountManager{
+		contractActMng: &ContractAccountManager{
 			ethCli:        ethCli,
 			accountRepo:   contractAccountRepo,
 			haveWriteList: NewRingStrListV2(),
 			contractCache: cache.NewRingCache(),
 		},
-		normalActMng: &normalAccountManager{
+		normalActMng: &NormalAccountManager{
 			ethCli:        ethCli,
 			accountRepo:   normalAccountRepo,
 			haveWriteList: NewRingStrListV2(),
@@ -57,17 +56,21 @@ func (sel *AccountManager) TxWrite(txData *model.TransactionData) error {
 	//return nil
 }
 
-// contractAccountManager 以太坊合约账户管理
-type contractAccountManager struct {
+// ContractAccountManager 以太坊合约账户管理
+type ContractAccountManager struct {
 	ethCli        ethrpc.EthRPC
-	accountRepo   *repo.ContractAccountRepo
+	accountRepo   repo.ContractAccountRepository
 	haveWriteList *RingStrListV2
 	contractCache *cache.RingCache
 	sync.Mutex
 }
 
+func NewContractAccountManager(ethCli ethrpc.EthRPC, accountRepo repo.ContractAccountRepository, haveWriteList *RingStrListV2, contractCache *cache.RingCache) *ContractAccountManager {
+	return &ContractAccountManager{ethCli: ethCli, accountRepo: accountRepo, haveWriteList: haveWriteList, contractCache: contractCache}
+}
+
 // UpdateAccount 合约代币交易账户信息写入, contractAddress 是合约地址
-func (sel *contractAccountManager) UpdateAccount(txData *model.TransactionData) error {
+func (sel *ContractAccountManager) UpdateAccount(txData *model.TransactionData) error {
 	//if err := sel.writeAccount(txData.From, txData.ContractAddress, txData.IsLatest()); err != nil {
 	//	return errors.Wrap(err, "write contract account from address")
 	//}
@@ -77,7 +80,7 @@ func (sel *contractAccountManager) UpdateAccount(txData *model.TransactionData) 
 	return nil
 }
 
-func (sel *contractAccountManager) writeAccount(accountAddr string, contractAddress string, timestamp string, isLatest bool) error {
+func (sel *ContractAccountManager) writeAccount(accountAddr string, contractAddress string, timestamp string, isLatest bool) error {
 	var exist bool
 	var err error
 	var tableName string
@@ -132,7 +135,7 @@ func (sel *contractAccountManager) writeAccount(accountAddr string, contractAddr
 	return nil
 }
 
-func (sel *contractAccountManager) createAccount(accountAddr string, contractAddress string, timestamp string) error {
+func (sel *ContractAccountManager) createAccount(accountAddr string, contractAddress string, timestamp string) error {
 	balance, err := sel.ethCli.GetContractBalance(contractAddress, accountAddr)
 	if err != nil {
 		vlog.WARN("create contract address balance failed addr:%s contract:%s error:%s", accountAddr, contractAddress, err.Error())
@@ -151,13 +154,12 @@ func (sel *contractAccountManager) createAccount(accountAddr string, contractAdd
 	//	return err
 	//}
 
-	unixTm, _ := strconv.ParseInt(timestamp, 10, 64)
-	timeFm := time.Unix(unixTm, 0)
+	timeFm, _ := utils.ParseLocal(timestamp)
 
-	err = sel.accountRepo.CreateEthAccount(&model.ContractAccountBind{
+	err = sel.accountRepo.CreateContractAccount(&model.ContractAccountBind{
 		Address:         accountAddr,
 		ContractAddress: contractAddress,
-		Timestamp:       &timeFm,
+		TxTime:          &timeFm,
 		Balance:         balance,
 	})
 	if err != nil {
@@ -166,7 +168,7 @@ func (sel *contractAccountManager) createAccount(accountAddr string, contractAdd
 	return nil
 }
 
-func (sel *contractAccountManager) getContractSymbol(contractAddress string) (string, error) {
+func (sel *ContractAccountManager) getContractSymbol(contractAddress string) (string, error) {
 	var symbol string
 	var err error
 	val, ok := sel.contractCache.Get(contractAddress)
@@ -184,23 +186,27 @@ func (sel *contractAccountManager) getContractSymbol(contractAddress string) (st
 	return symbol, err
 }
 
-// normalAccountManager 以太坊账户管理
-type normalAccountManager struct {
+// NormalAccountManager 以太坊账户管理
+type NormalAccountManager struct {
 	ethCli        ethrpc.EthRPC
-	accountRepo   *repo.NormalAccountRepo
+	accountRepo   repo.EthAccountRepository
 	haveWriteList *RingStrListV2
 	lock          sync.Mutex
 }
 
+func NewNormalAccountManager(ethCli ethrpc.EthRPC, accountRepo repo.EthAccountRepository, haveWriteList *RingStrListV2) *NormalAccountManager {
+	return &NormalAccountManager{ethCli: ethCli, accountRepo: accountRepo, haveWriteList: haveWriteList}
+}
+
 // 以太坊正常的交易账户写入，这里就不判断该账户是不是合约账户了直接写入 to
-func (sel *normalAccountManager) UpdateAccount(txData *model.TransactionData) error {
+func (sel *NormalAccountManager) UpdateAccount(txData *model.TransactionData) error {
 	if err := sel.writeAccount(txData.To, txData.TimeStamp, txData.Hash, txData.IsLatest()); err != nil {
 		return errors.Wrap(err, "write normal account to address")
 	}
 	return nil
 }
 
-func (sel *normalAccountManager) writeAccount(accountAddr string, timeStamp string, hash string, isLatest bool) error {
+func (sel *NormalAccountManager) writeAccount(accountAddr string, timeStamp string, hash string, isLatest bool) error {
 	var exist bool
 	var err error
 	var tableName string

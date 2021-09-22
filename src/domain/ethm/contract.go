@@ -143,12 +143,12 @@ func (sel *Erc20Contract) IsErc20() bool {
 
 type ContractManager struct {
 	rpcCli        ethrpc.EthRPC
-	contractRepo  *repo.ContractRepo
+	contractRepo  repo.ContractRepository
 	haveWriteList *RingStrListV2
 	sync.Mutex
 }
 
-func NewContractManager(rpcCli ethrpc.EthRPC, contractRepo *repo.ContractRepo) *ContractManager {
+func NewContractManager(rpcCli ethrpc.EthRPC, contractRepo repo.ContractRepository) *ContractManager {
 	return &ContractManager{rpcCli: rpcCli, contractRepo: contractRepo, haveWriteList: NewRingStrListV2()}
 }
 
@@ -160,56 +160,23 @@ func (sel *ContractManager) GetErc20ContractInfo(contractAddr string) (*Erc20Con
 		return nil, err
 	}
 	supply = common.HexToHash(supply).Big().String()
-
-	name, err := sel.rpcCli.GetContractName(contractAddr)
-	if err != nil {
-		// 没有获取到合约的 name 不返回
-		// vlog.WARN("not get contract name")
-		//
-		//return nil, err
-	}
-
-	symbol, err := sel.rpcCli.GetContractSymbol(contractAddr)
-	if err != nil {
-		// 没有获取到合约的 symbol 不返回
-		//return nil, err
-	}
-
-	balance, err := sel.rpcCli.GetContractBalance(contractAddr, contractAddr)
-	if err != nil {
-		return nil, err
-	}
-
+	//name, _ := sel.rpcCli.GetContractName(contractAddr)
+	symbol, _ := sel.rpcCli.GetContractSymbol(contractAddr)
 	decimal, err := sel.rpcCli.GetContractDecimals(contractAddr)
 	if err != nil {
 		// 获取小数位错误
 		decimal = "0x0"
-		//return nil, err
 	}
 	decimal = common.HexToHash(decimal).Big().String()
-
-	// vlog.DEBUG("get erc20 information decimal %s", decimal)
-
 	var decimalInt int64
-	decimalInt, err = strconv.ParseInt(decimal, 10, 64)
-	if err != nil {
-		// 获取小数位错误不返回
-		//return nil, errors.Wrap(err, "parse int contract decimal value "+decimal)
-	}
-	//if decimal != "0x" {
-	//	decimalInt, err = strconv.ParseInt(decimal, 10, 64)
-	//	if err != nil {
-	//		return nil, errors.Wrap(err, "parse int contract decimal value "+decimal)
-	//	}
-	//}
+	decimalInt, _ = strconv.ParseInt(decimal, 10, 64)
 
 	return &Erc20Contract{
-		Address:     contractAddr,
-		Name:        name,
+		Address: contractAddr,
+		//Name:        name,
 		Symbol:      symbol,
 		TotalSupply: supply,
 		Decimal:     int(decimalInt),
-		Balance:     balance,
 	}, nil
 }
 
@@ -257,13 +224,7 @@ func (sel *ContractManager) writeTokenContractInfo(addr string, timeStamp string
 
 	// erc20 合约
 	erc20ContractInfo, _ := sel.GetErc20ContractInfo(addr)
-	//if err != nil {
-	//	//sel.haveWriteList.Del(addr)
-	//	//vlog.ERROR("ContractManager.writeTokenContractInfo get erc20 contract info address:%s error:%s", addr, err.Error())
-	//	//return errors.Wrap(err, "get erc20 contract info")
-	//	//return nil
-	//	err = nil
-	//}
+
 	contractInfo := &model.ContractContent{
 		Address:     addr,
 		PublishTime: timeStamp,
@@ -282,48 +243,3 @@ func (sel *ContractManager) writeTokenContractInfo(addr string, timeStamp string
 	}
 	return
 }
-
-//func (sel *ContractManager) writeOtherContractInfo(addr string, timeStamp string) (err error) {
-//	if sel.haveWriteList.Exist(addr) {
-//		return nil
-//	}
-//
-//	sel.haveWriteList.Set(addr)
-//
-//	// 如果存在合约地址，也要到主链中判断该地址是不是合约地址
-//	codeData, err := sel.rpcCli.GetCode(addr)
-//	if err != nil {
-//		sel.haveWriteList.Del(addr)
-//		return err
-//	}
-//	if codeData == "0x" || codeData == "" {
-//		// 不是合约地址直接返回
-//		return nil
-//	}
-//
-//	// 查询是否已经存在记录
-//	if sel.contractRepo.IsContractExist(addr) {
-//		return nil
-//	}
-//
-//	// erc20 合约
-//	erc20ContractInfo, err := sel.GetErc20ContractInfo(addr)
-//	if err != nil {
-//		sel.haveWriteList.Del(addr)
-//		return errors.Wrap(err, "other get erc20 contract info")
-//	}
-//
-//	err = sel.contractRepo.CreateContract(&model.ContractContent{
-//		Symbol:      erc20ContractInfo.Symbol,
-//		Address:     addr,
-//		PublishTime: timeStamp,
-//		IsErc20:     erc20ContractInfo.IsErc20(),
-//		TotalSupply: erc20ContractInfo.TotalSupply,
-//	})
-//	if err != nil {
-//		sel.haveWriteList.Del(addr)
-//		return err
-//	}
-//
-//	return
-//}

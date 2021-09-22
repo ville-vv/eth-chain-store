@@ -54,6 +54,7 @@ func (sel *Contract) SetErc20ContentFromRpc() error {
 	var decimalInt int64
 	decimalInt, _ = strconv.ParseInt(decimal, 10, 64)
 
+	sel.TotalSupply = supply
 	sel.Symbol = symbol
 	sel.Address = addr
 	sel.IsErc20 = true
@@ -63,5 +64,16 @@ func (sel *Contract) SetErc20ContentFromRpc() error {
 }
 
 func (sel *Contract) CreateRecord() error {
-	return nil
+
+	if sel.contractRepo.IsContractExist(sel.Address) {
+		return nil
+	}
+
+	// 不存在合约信息
+	if err := sel.SetErc20ContentFromRpc(); err != nil {
+		return err
+	}
+
+	// 创建合约信息
+	return sel.contractRepo.CreateContract(&sel.ContractContent)
 }

@@ -2,7 +2,6 @@ package dao
 
 import (
 	"context"
-	"fmt"
 	"github.com/ville-vv/eth-chain-store/src/common/hive"
 	"github.com/ville-vv/eth-chain-store/src/infra/model"
 	"github.com/ville-vv/vilgo/vfile"
