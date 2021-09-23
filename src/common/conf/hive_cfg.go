@@ -20,6 +20,10 @@ func NewHivConfig() *HiveConfig {
 		Port:      "10000",
 		DbName:    "default",
 	}
+
+	h.discoverFromEnv()
+	h.discoverFromFlag()
+
 	return h
 }
 
@@ -77,6 +81,6 @@ func (sel *HiveConfig) ReSetDbName(dbName string) {
 
 func GetHiveEthereumDb() *HiveConfig {
 	cfg := NewHivConfig()
-	cfg.ReSetDbName("ethereum")
+	cfg.ReSetDbName("ethereum_orc")
 	return cfg
 }

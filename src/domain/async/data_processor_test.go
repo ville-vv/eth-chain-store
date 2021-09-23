@@ -33,7 +33,8 @@ func (e *EthAccountRepositoryMock) UpdateAccountBalance(addr string, balance str
 }
 
 func TestDataProcessorCtl_Process(t *testing.T) {
-	//ethAccountProcess := NewEthAccountService(ethrpc.NewClient("http://172.16.16.115:8545"), &EthAccountRepositoryMock{})
+
+	//ethAccountProcess := NewEthAccountService(ethrpc.NewClient("http://172.16.16.115:8545"))
 	//prc := NewDataProcessorCtl(ethAccountProcess, &EthAccountRepositoryMock{}, nil)
 	//prc.Process()
 }

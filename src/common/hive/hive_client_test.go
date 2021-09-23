@@ -10,7 +10,7 @@ type MockHiveConfigOption struct {
 }
 
 func (m *MockHiveConfigOption) GetHost() string {
-	return "localhost"
+	return "172.16.16.155"
 }
 
 func (m *MockHiveConfigOption) GetPort() int {
@@ -18,15 +18,15 @@ func (m *MockHiveConfigOption) GetPort() int {
 }
 
 func (m *MockHiveConfigOption) GetDBName() string {
-	return "ethereum"
+	return "etherum_orc"
 }
 
 func (m *MockHiveConfigOption) GetAuthMode() string {
-	return "NONE"
+	return "NOSASL"
 }
 
 func (m *MockHiveConfigOption) GetUserName() string {
-	return ""
+	return "hadoop"
 }
 
 func (m *MockHiveConfigOption) GetPassword() string {
@@ -47,7 +47,7 @@ func TestHiveClient_New(t *testing.T) {
 		return
 	}
 	res := make([]*ResultTst, 0, 0)
-	err = hCli.Find("select * from top1000_erc20_token", &res)
+	err = hCli.Find("select * from top1000_erc20_token_orc limit 1000", &res)
 	if err != nil {
 		t.Error(err)
 		return

@@ -42,10 +42,10 @@ func (sel *TransactionHiveDao) Exit(ctx context.Context) error {
 	return nil
 }
 
-func NewTransactionHiveDao(errFile string, option hive.HiveConfigOption) *TransactionHiveDao {
+func NewTransactionHiveDao(errFile string, option hive.HiveConfigOption, wrInterval int) *TransactionHiveDao {
 	var err error
 	thd := &TransactionHiveDao{}
-	thd.dbCache = NewHiveDbCache(thd)
+	thd.dbCache = NewHiveDbCache(thd, wrInterval)
 	thd.hiveCli, err = hive.New(option)
 	if err != nil {
 		panic(err)

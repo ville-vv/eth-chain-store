@@ -69,7 +69,7 @@ func (sel *HiveCLI) Find(stm string, res interface{}) error {
 	defer cursor.Close()
 	cursor.Exec(sel.defaultCtx, stm)
 	if cursor.Err != nil {
-		return errors.Wrap(cursor.Err, "hive exec")
+		return errors.Wrap(cursor.Err, "HiveCLI hive exec")
 	}
 	for cursor.HasMore(sel.defaultCtx) {
 		if cursor.Err != nil {

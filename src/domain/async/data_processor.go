@@ -1,32 +1,66 @@
 package async
 
 import (
+	"context"
+	"github.com/ville-vv/eth-chain-store/src/common/go_exec"
 	"github.com/ville-vv/eth-chain-store/src/domain/repo"
-	"github.com/ville-vv/eth-chain-store/src/infra/ethrpc"
 	"github.com/ville-vv/eth-chain-store/src/infra/model"
+	"github.com/ville-vv/vilgo/vlog"
+	"time"
 )
+
+type TxDataGetter interface {
+	GetTxData() ([]*model.TransactionRecord, error)
+	Finish() error
+}
 
 type DataProcessor interface {
 	Process(latestNumber int64, record *model.TransactionRecord) error
 }
 
-// 数据处理控制器
-type DataProcessorCtl struct {
-	rpcCli     ethrpc.EthRPC
-	processor  DataProcessor
-	dataCursor TxDataGetter
-	errorRepo  repo.SyncErrorRepository
+type BlockNumberGetter interface {
+	GetBlockNumber() (uint64, error)
 }
 
-func NewDataProcessorCtl(processor DataProcessor, dataCursor TxDataGetter, errorRepo repo.SyncErrorRepository) *DataProcessorCtl {
-	return &DataProcessorCtl{processor: processor, dataCursor: dataCursor, errorRepo: errorRepo}
+// 数据处理控制器
+type DataProcessorCtl struct {
+	processor  DataProcessor
+	dataCursor TxDataGetter
+	blockNum   BlockNumberGetter
+	errorRepo  repo.SyncErrorRepository
+	isStop     bool
+	waitFinish chan int
+	name       string
+}
+
+func NewDataProcessorCtl(processor DataProcessor, dataCursor TxDataGetter, errorRepo repo.SyncErrorRepository, blockNum BlockNumberGetter) *DataProcessorCtl {
+	return &DataProcessorCtl{processor: processor, dataCursor: dataCursor, errorRepo: errorRepo, blockNum: blockNum, waitFinish: make(chan int)}
+}
+
+func (sel *DataProcessorCtl) SetName(name string) {
+	sel.name = name
+}
+
+func (sel *DataProcessorCtl) Start() error {
+	go_exec.Go(func() {
+		for {
+			time.Sleep(time.Millisecond * 100)
+			if sel.isStop {
+				<-sel.waitFinish
+				break
+			}
+			if err := sel.Process(); err != nil {
+				vlog.ERROR("[%s] Process error %s", sel.name, err.Error())
+			}
+		}
+	})
+	return nil
 }
 
 func (sel *DataProcessorCtl) Process() error {
 	// 获取最新区块
-	latestNumber, err := sel.rpcCli.GetBlockNumber()
+	latestNumber, err := sel.blockNum.GetBlockNumber()
 	if err != nil {
-
 		return err
 	}
 	// 1.获取交易数据
@@ -34,7 +68,7 @@ func (sel *DataProcessorCtl) Process() error {
 	if err != nil {
 		return err
 	}
-
+	vlog.INFO("获取到数量：", len(dataList))
 	for _, data := range dataList {
 		if err := sel.processor.Process(int64(latestNumber), data); err != nil {
 			// 记录错误的数据
@@ -43,5 +77,14 @@ func (sel *DataProcessorCtl) Process() error {
 	}
 	//
 	_ = sel.dataCursor.Finish()
+	return nil
+}
+
+func (sel *DataProcessorCtl) Exit(ctx context.Context) error {
+	sel.isStop = true
+	vlog.INFO("等待 [%s] 写入完成", sel.name)
+	<-sel.waitFinish
+	vlog.INFO("[%s] 写入完成", sel.name)
+	close(sel.waitFinish)
 	return nil
 }

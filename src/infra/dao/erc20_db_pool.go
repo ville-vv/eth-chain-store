@@ -7,7 +7,7 @@ import (
 
 type DB interface {
 	vstore.DB
-	GetName() string
+	//GetName() string
 }
 
 type MysqlDB struct {

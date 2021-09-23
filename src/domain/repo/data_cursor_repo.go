@@ -5,9 +5,9 @@ import (
 )
 
 type DataCursorRepository interface {
-	GetTxRecordAroundBlockNo(blockNo int64, blockSize int64) ([]*model.TransactionRecord, error)
+	GetTxRecordAroundBlockNo(tbName string, blockNo int64, blockSize int64) ([]*model.TransactionRecord, error)
 
-	UpdateFinishInfo(blockNo int64) error
+	UpdateFinishInfo(typ string, content string) error
 
 	QueryCursorInfo(typ string) (string, error)
 

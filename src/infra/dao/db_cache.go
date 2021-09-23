@@ -180,14 +180,14 @@ type HiveDbCache struct {
 	poolIdx   int
 }
 
-func NewHiveDbCache(do Executor) *HiveDbCache {
+func NewHiveDbCache(do Executor, wrInterval int) *HiveDbCache {
 	cachePool := [3]cacheList{make(cacheList, 0, 100000), make(cacheList, 0, 100000), make(cacheList, 0, 100000)}
 	thd := &HiveDbCache{
 		do:        do,
 		cachePool: cachePool,
 		poolIdx:   0,
 	}
-	thd.TickTask = NewTickTask("HiveDbCache", time.Second*time.Duration(2), thd.exec)
+	thd.TickTask = NewTickTask("HiveDbCache", time.Second*time.Duration(wrInterval), thd.exec)
 	return thd
 }
 

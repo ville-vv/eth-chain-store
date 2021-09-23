@@ -7,19 +7,17 @@ import (
 	"github.com/ville-vv/eth-chain-store/src/infra/model"
 )
 
-type TxDataGetter interface {
-	GetTxData() ([]*model.TransactionRecord, error)
-	Finish() error
-}
-
 type ContractExistChecker interface {
 	Exist(key string) bool
 }
 
 type ContractService struct {
 	rpcCli       ethrpc.EthRPC
-	dataCursor   TxDataGetter
 	contractRepo repo.ContractRepository
+}
+
+func NewContractService(rpcCli ethrpc.EthRPC, contractRepo repo.ContractRepository) *ContractService {
+	return &ContractService{rpcCli: rpcCli, contractRepo: contractRepo}
 }
 
 func (sel *ContractService) Process(data *model.TransactionRecord) error {

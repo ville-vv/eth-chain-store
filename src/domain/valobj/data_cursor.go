@@ -1,5 +1,7 @@
 package valobj
 
+import jsoniter "github.com/json-iterator/go"
+
 //
 type DataCursor struct {
 	// 异步处理数据获取器
@@ -7,4 +9,9 @@ type DataCursor struct {
 	BlockNo   int64
 	StartTime string
 	EndTime   string
+}
+
+func (sel *DataCursor) ToString() string {
+	str, _ := jsoniter.MarshalToString(sel)
+	return str
 }
