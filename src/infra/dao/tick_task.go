@@ -36,7 +36,8 @@ func (t *TickTask) Start() error {
 		select {
 		case <-t.stopCh:
 			t.exec()
-			t.waithStop <- 1
+			vlog.INFO("tick task %s existed", t.name)
+			close(t.waithStop)
 			return nil
 		case <-tmk.C:
 			t.exec()
@@ -47,6 +48,10 @@ func (t *TickTask) Start() error {
 func (t *TickTask) Exit(ctx context.Context) error {
 	close(t.stopCh)
 	vlog.INFO("waiting tick task %s exist", t.name)
-	<-t.waithStop
-	return nil
+	select {
+	case <-time.After(time.Second * 10):
+		return nil
+	case <-t.waithStop:
+		return nil
+	}
 }

@@ -40,9 +40,9 @@ func (sel *TransactionHiveDao) Start() error {
 
 func (sel *TransactionHiveDao) Exit(ctx context.Context) error {
 	sel.dbCache.Exit(ctx)
-	sel.errFile.Close()
 	sel.hiveCli.Close()
 	vlog.INFO("hive transaction data thread  exit")
+	sel.errFile.Close()
 	return nil
 }
 
@@ -67,13 +67,13 @@ func NewTransactionHiveDao(errFile string, option hive.HiveConfigOption, wrInter
 	if err != nil {
 		panic(err)
 	}
+	_, _ = thd.errFile.WriteString(fmt.Sprintf("use %s;\n", option.GetDBName()))
 
 	return thd
 }
 
 func (sel *TransactionHiveDao) Exec(tableName string, record []interface{}) error {
 	insertSql := BatchInsertToSqlStrNeedID(tableName, record)
-	fmt.Println(insertSql)
 	err := sel.hiveCli.Exec(insertSql)
 	if err != nil {
 		vlog.ERROR("save data to hive db table %s len:%d error %s", tableName, len(record), err.Error())

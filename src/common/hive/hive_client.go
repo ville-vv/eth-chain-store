@@ -113,7 +113,7 @@ func (sel *HiveCLI) Count(tableName string) int64 {
 func (sel *HiveCLI) Exec(stm string) error {
 	cursor := sel.conn.Cursor()
 	defer cursor.Close()
-	cursor.Exec(sel.defaultCtx, stm)
+	cursor.Execute(sel.defaultCtx, stm, false)
 	if cursor.Err != nil {
 		return errors.Wrap(cursor.Err, "hive exec")
 	}
