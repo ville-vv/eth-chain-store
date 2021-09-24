@@ -12,6 +12,7 @@ import (
 	"github.com/ville-vv/eth-chain-store/src/infra/dao"
 	"github.com/ville-vv/eth-chain-store/src/infra/monitor"
 	"github.com/ville-vv/eth-chain-store/src/server"
+	"github.com/ville-vv/vilgo/runner"
 	"github.com/ville-vv/vilgo/vlog"
 	"github.com/ville-vv/vilgo/vstore"
 	"os"
@@ -34,6 +35,12 @@ var (
 	isMaxProcs        bool
 	isHelp            bool
 	writeToDbInterval int
+	txDataInHive      bool
+	withTxBalance     bool
+	startBlockNumber  int64 // 开始区块
+	endBlockNumber    int64 // 结束区块
+	saveAccount       bool
+	saveContract      bool
 )
 
 func cmdFlagParse() {
@@ -51,6 +58,14 @@ func cmdFlagParse() {
 	flag.BoolVar(&debug, "debug", false, "open debug logs")
 	flag.BoolVar(&isHelp, "help", false, "help")
 	flag.BoolVar(&isMaxProcs, "max_procs", false, "the max process core the value is true or false")
+	flag.BoolVar(&txDataInHive, "txdata_inhive", false, "whether save transaction data to hive, must create the database ethereum_orc in hive db")
+	flag.BoolVar(&withTxBalance, "with_tx_balance", false, "transaction data will pull balance information from eth rpc")
+	flag.BoolVar(&saveAccount, "save_account", true, "save the eth account data and contract data to mysql db, ex: false is not save")
+	flag.BoolVar(&saveContract, "save_contract", true, "save the contract information to mysql db, ex: false is not save")
+
+	flag.Int64Var(&startBlockNumber, "start_number", 0, "the start block number need to sync")
+	flag.Int64Var(&endBlockNumber, "end_number", 0, "the end block number need to sync ")
+
 	flag.Parse()
 	fmt.Println(rpcEndpoint, logFile)
 	if isHelp {
@@ -74,18 +89,24 @@ func buildService() go_exec.Runner {
 	var (
 		normalTxDbCache   = dao.NewDbCache("err_data/normal_traction.sql", writeToDbInterval, transactionDb)
 		contractTxDbCache = dao.NewDbCache("err_data/contract_traction.sql", writeToDbInterval, contractTxDb)
-
-		normalTranDao = dao.NewEthereumTransactionDao(transactionDb, contractTxDb, normalTxDbCache, contractTxDbCache)
+		normalTranDao     = dao.NewEthereumTransactionDao(transactionDb, contractTxDb, normalTxDbCache, contractTxDbCache)
 
 		ethereumCacheDb   = dao.NewDbCache("err_data/ethereum_other.sql", writeToDbInterval, ethereumDb)
 		ethereumDao       = dao.NewEthereumDao(ethereumDb, ethereumCacheDb)
 		ethBlockNumberDao = dao.NewEthereumBlockNumberDao(ethereumDb)
 		errorDao          = dao.NewSyncErrorDao(ethereumDb)
 	)
+
 	var (
-		contractMng       = ethm.NewContractManager(ethm.NewEthRpcExecutor(rpcEndpoint), repo.NewContractRepo(ethereumDao))
-		accountMng        = ethm.NewAccountManager(ethm.NewEthRpcExecutor(rpcEndpoint), repo.NewContractAccountRepo(ethereumDao), repo.NewNormalAccountRepo(ethereumDao))
-		transactionWriter = ethm.NewTransactionWriter(ethm.NewEthRpcExecutor(rpcEndpoint), repo.NewTransactionRepo(normalTranDao))
+		transactionRepoFactory = repo.NewTransactionRepositoryFactory(txDataInHive, writeToDbInterval, "err_data/transaction_data.sql", normalTranDao)
+		transactionRepo        = transactionRepoFactory.NewTransactionRepository()
+	)
+
+	var (
+		contractMng = ethm.NewContractManager(ethm.NewEthRpcExecutor(rpcEndpoint), repo.NewContractRepo(ethereumDao))
+		accountMng  = ethm.NewAccountManager(ethm.NewEthRpcExecutor(rpcEndpoint), repo.NewContractAccountRepo(ethereumDao), repo.NewNormalAccountRepo(ethereumDao))
+		//transactionWriter = ethm.NewTransactionWriter(ethm.NewEthRpcExecutor(rpcEndpoint), repo.NewTransactionRepo(normalTranDao))
+		transactionWriter = ethm.NewTransactionWriter(ethm.NewEthRpcExecutor(rpcEndpoint), transactionRepo)
 		errorRepo         = repo.NewSyncErrorRepository(errorDao)
 
 		accountMngWriter    = ethm.NewRetryProcess("account", accountMng, errorRepo)
@@ -94,21 +115,49 @@ func buildService() go_exec.Runner {
 
 		ethWriterCtl = ethm.NewEthWriterControl(maxWriteNum, accountMngWriter, contractMngWriter, transactionReWriter)
 
-		ethMng       = ethm.NewEthereumManager(ethm.NewEthRpcExecutor(rpcEndpoint), ethWriterCtl)
-		bkNumCounter = ethm.NewSyncBlockControl(maxPullNum, ethm.NewEthRpcExecutor(rpcEndpoint), repo.NewBlockNumberRepo(ethBlockNumberDao))
-		serviceRun   = server.NewSyncBlockChainServiceV2(ethMng, bkNumCounter)
+		ethMng = ethm.NewEthereumManager(ethm.NewEthRpcExecutor(rpcEndpoint), ethWriterCtl)
+		//bkNumCounter = ethm.NewSyncBlockControl(maxPullNum, ethm.NewEthRpcExecutor(rpcEndpoint), repo.NewBlockNumberRepo(ethBlockNumberDao))
+
+		syncControl = ethm.NewSyncBlockControlWithOpt(
+			&ethm.OptionConfig{
+				StartBlockNumber: startBlockNumber,
+				EndBlockNumber:   endBlockNumber,
+				MaxSyncThreads:   maxPullNum,
+				EthRpcCli:        ethm.NewEthRpcExecutor(rpcEndpoint),
+				BknRepo:          repo.NewBlockNumberRepo(ethBlockNumberDao),
+			},
+		)
+
+		serviceRun = server.NewSyncBlockChainServiceV2(ethMng, syncControl)
 	)
+
+	transactionWriter.SetWithBalance(withTxBalance)
 
 	svr := &server.Server{}
 	svr.Add(serviceRun)
 
-	svr.Add(accountMngWriter)
-	svr.Add(contractMngWriter)
+	if saveAccount {
+		svr.Add(accountMngWriter)
+	}
+
+	if saveContract {
+		svr.Add(contractMngWriter)
+	}
+
 	svr.Add(transactionReWriter)
+
 	svr.Add(ethereumCacheDb)
 	svr.Add(ethWriterCtl)
-	svr.Add(normalTxDbCache)
-	svr.Add(contractTxDbCache)
+
+	if txDataInHive {
+		r, ok := transactionRepo.(runner.Runner)
+		if ok {
+			svr.Add(r)
+		}
+	} else {
+		svr.Add(normalTxDbCache)
+		svr.Add(contractTxDbCache)
+	}
 
 	return svr
 }

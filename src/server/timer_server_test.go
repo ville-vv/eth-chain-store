@@ -28,7 +28,12 @@ func buildService() go_exec.Runner {
 	dbMysql := vstore.MakeDb(conf.GetEthereumHiveMapDbConfig())
 	hiveConfig := conf.GetHiveEthereumDb()
 	hiveConfig.DbName = "etherum_orc"
-	hiveCli, err := hive.New(hiveConfig)
+	hiveCliContractAccount, err := hive.New(hiveConfig)
+	if err != nil {
+		panic(err)
+	}
+
+	hiveCliEthereumAccount, err := hive.New(hiveConfig)
 	if err != nil {
 		panic(err)
 	}
@@ -37,25 +42,36 @@ func buildService() go_exec.Runner {
 		ethereumCacheDb = dao.NewDbCache("err_data/ethereum_map_hive_01.sql", 1, dbMysql)
 		ethereumDao     = dao.NewEthereumDao(dbMysql, ethereumCacheDb)
 
-		cursorRepo           = dao.NewEthereumMapHive("err_data/ethereum_map_hive_02.sql", dbMysql, hiveCli, 1)
 		errorDao             = dao.NewSyncErrorDao(dbMysql)
 		errorRepo            = repo.NewSyncErrorRepository(errorDao)
 		latestBlockNumGetter = async.NewLatestBlockNumberCache(ethrpc.NewClient(rpcEndpoint))
 	)
+	var (
+		// ethereum  Process Control
+		ethcursorRepo = dao.NewEthereumMapHive("err_data/ethereum_map_hive_03.sql", dbMysql, hiveCliEthereumAccount, 1)
+		ethDataCursor = async.NewDataCursorAggregate(async.CursorTypeEthereumTx, ethcursorRepo)
+		ethAccountPcr = async.NewDataProcessorCtl(ethDataCursor, errorRepo, ethrpc.NewClient(rpcEndpoint))
+
+		// contract Process Control
+		contractcursorRepo = dao.NewEthereumMapHive("err_data/ethereum_map_hive_02.sql", dbMysql, hiveCliContractAccount, 1)
+		contractDataCursor = async.NewDataCursorAggregate(async.CursorTypeContractTx, contractcursorRepo)
+		contractPcr        = async.NewDataProcessorCtl(contractDataCursor, errorRepo, ethrpc.NewClient(rpcEndpoint))
+	)
+	contractDataCursor.Init()
+	ethDataCursor.Init()
 
 	var (
-		contractDataCursor = async.NewDataCursorAggregate(async.CursorTypeContractTx, cursorRepo)
-		contractAccount    = async.NewContractAccountService(ethrpc.NewClient(rpcEndpoint), repo.NewContractAccountRepo(ethereumDao))
-		contractPcr        = async.NewDataProcessorCtl(contractAccount, contractDataCursor, errorRepo, ethrpc.NewClient(rpcEndpoint))
+		ethAccount      = async.NewEthAccountService(ethrpc.NewClient(rpcEndpoint), repo.NewNormalAccountRepo(ethereumDao))
+		contractAccount = async.NewContractAccountService(ethrpc.NewClient(rpcEndpoint), repo.NewContractAccountRepo(ethereumDao))
+		contractInfo    = async.NewContractService(ethrpc.NewClient(rpcEndpoint), repo.NewContractRepo(ethereumDao))
 	)
+	contractPcr.AddProcess(contractAccount)
+	contractPcr.AddProcess(contractInfo)
+	ethAccountPcr.AddProcess(ethAccount)
 
-	var (
-		ethDataCursor = async.NewDataCursorAggregate(async.CursorTypeEthereumTx, cursorRepo)
-		ethAccount    = async.NewEthAccountService(ethrpc.NewClient(rpcEndpoint), repo.NewNormalAccountRepo(ethereumDao))
-		ethAccountPcr = async.NewDataProcessorCtl(ethAccount, ethDataCursor, errorRepo, ethrpc.NewClient(rpcEndpoint))
-	)
 	timerSvr := NewTimerServer()
-	timerSvr.Add(latestBlockNumGetter, cursorRepo, contractPcr, ethAccountPcr)
+	timerSvr.Add(ethcursorRepo, contractcursorRepo)
+	timerSvr.Add(latestBlockNumGetter, ethereumCacheDb, contractPcr, ethAccountPcr)
 
 	return timerSvr
 }
@@ -63,6 +79,8 @@ func buildService() go_exec.Runner {
 func TestNewTimerServer(t *testing.T) {
 	log.Init()
 	start := buildService()
-	start.Start(context.Background())
+
+	go_exec.Run(context.Background(), start)
+
 	select {}
 }

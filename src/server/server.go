@@ -15,7 +15,7 @@ func (s *Server) Schema() string {
 
 func (s *Server) Init(ctx context.Context) error {
 	for _, r := range s.runner {
-		return r.Init()
+		_ = r.Init()
 	}
 	return nil
 }

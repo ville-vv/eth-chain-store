@@ -43,6 +43,10 @@ type ContractRepositoryImpl struct {
 	contractDao *dao.EthereumMapHive
 }
 
+func NewContractRepositoryImpl(contractDao *dao.EthereumMapHive) *ContractRepositoryImpl {
+	return &ContractRepositoryImpl{contractDao: contractDao}
+}
+
 func (sel *ContractRepositoryImpl) IsContractExist(addr string) bool {
 	var contractInfo model.ContractAddressRecord
 	if err := sel.contractDao.QueryContractInfo(addr, &contractInfo); err != nil {

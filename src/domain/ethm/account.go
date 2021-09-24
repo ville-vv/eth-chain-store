@@ -138,7 +138,7 @@ func (sel *ContractAccountManager) writeAccount(accountAddr string, contractAddr
 func (sel *ContractAccountManager) createAccount(accountAddr string, contractAddress string, timestamp string) error {
 	balance, err := sel.ethCli.GetContractBalance(contractAddress, accountAddr)
 	if err != nil {
-		vlog.WARN("create contract address balance failed addr:%s contract:%s error:%s", accountAddr, contractAddress, err.Error())
+		vlog.WARN("create contract address get balance failed addr:%s contract:%s error:%s", accountAddr, contractAddress, err.Error())
 		if strings.Contains(err.Error(), "invalid opcode") {
 			return nil
 		}

@@ -24,17 +24,21 @@ type BlockNumberGetter interface {
 
 // 数据处理控制器
 type DataProcessorCtl struct {
-	processor  DataProcessor
-	dataCursor TxDataGetter
-	blockNum   BlockNumberGetter
-	errorRepo  repo.SyncErrorRepository
-	isStop     bool
-	waitFinish chan int
-	name       string
+	processorList []DataProcessor
+	dataCursor    TxDataGetter
+	blockNum      BlockNumberGetter
+	errorRepo     repo.SyncErrorRepository
+	isStop        bool
+	waitFinish    chan int
+	name          string
 }
 
-func NewDataProcessorCtl(processor DataProcessor, dataCursor TxDataGetter, errorRepo repo.SyncErrorRepository, blockNum BlockNumberGetter) *DataProcessorCtl {
-	return &DataProcessorCtl{processor: processor, dataCursor: dataCursor, errorRepo: errorRepo, blockNum: blockNum, waitFinish: make(chan int)}
+func NewDataProcessorCtl(dataCursor TxDataGetter, errorRepo repo.SyncErrorRepository, blockNum BlockNumberGetter) *DataProcessorCtl {
+	return &DataProcessorCtl{dataCursor: dataCursor, errorRepo: errorRepo, blockNum: blockNum, waitFinish: make(chan int)}
+}
+
+func (sel *DataProcessorCtl) AddProcess(prcList ...DataProcessor) {
+	sel.processorList = append(sel.processorList, prcList...)
 }
 
 func (sel *DataProcessorCtl) SetName(name string) {
@@ -44,7 +48,7 @@ func (sel *DataProcessorCtl) SetName(name string) {
 func (sel *DataProcessorCtl) Start() error {
 	go_exec.Go(func() {
 		for {
-			time.Sleep(time.Millisecond * 100)
+			time.Sleep(time.Second)
 			if sel.isStop {
 				<-sel.waitFinish
 				break
@@ -68,11 +72,13 @@ func (sel *DataProcessorCtl) Process() error {
 	if err != nil {
 		return err
 	}
-	vlog.INFO("获取到数量：", len(dataList))
+	vlog.INFO("获取到数量：%d", len(dataList))
 	for _, data := range dataList {
-		if err := sel.processor.Process(int64(latestNumber), data); err != nil {
-			// 记录错误的数据
-			_ = sel.errorRepo.WriterErrorRecord("", data.TxHash, data.BlockNumber, err)
+		for _, prc := range sel.processorList {
+			if err := prc.Process(int64(latestNumber), data); err != nil {
+				// 记录错误的数据
+				_ = sel.errorRepo.WriterErrorRecord("", data.TxHash, data.BlockNumber, err)
+			}
 		}
 	}
 	//

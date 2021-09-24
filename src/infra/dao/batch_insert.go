@@ -10,6 +10,7 @@ import (
 )
 
 var flowIgnoreFields = []string{"Wall", "Ext", "Loc", "wall", "ext", "loc", "ID", "Id", "DeletedAt"}
+var flowIgnoreFieldsNeedID = []string{"Wall", "Ext", "Loc", "wall", "ext", "loc", "DeletedAt"}
 
 // data must be slice
 func DoBatchInsert(tableName string, data interface{}, db *gorm.DB) error {
@@ -24,6 +25,17 @@ func DoBatchInsert(tableName string, data interface{}, db *gorm.DB) error {
 
 func BatchInsertToSqlStr(tableName string, data interface{}) string {
 	batch := NewBatchInsertSql(tableName)
+	rv := reflect.ValueOf(data)
+	rvLen := rv.Len()
+	for i := 0; i < rvLen; i++ {
+		batch.Add(rv.Index(i).Interface())
+	}
+	return batch.InsertSql
+}
+
+func BatchInsertToSqlStrNeedID(tableName string, data interface{}) string {
+	batch := NewBatchInsertSql(tableName)
+	batch.NeedID()
 	rv := reflect.ValueOf(data)
 	rvLen := rv.Len()
 	for i := 0; i < rvLen; i++ {
@@ -49,6 +61,18 @@ type BatchInsertSql struct {
 	InsertSql string
 
 	createdAt string
+	needID    bool
+}
+
+func (b *BatchInsertSql) NeedID() {
+	b.needID = true
+}
+
+func (b *BatchInsertSql) ignoreFields() []string {
+	if b.needID {
+		return flowIgnoreFieldsNeedID
+	}
+	return flowIgnoreFields
 }
 
 func (b *BatchInsertSql) Add(obj interface{}) {
@@ -59,7 +83,7 @@ func (b *BatchInsertSql) Add(obj interface{}) {
 
 	// 尚未初始化时，初始化sql
 	if len(b.Fields) == 0 {
-		fieldNames, insertS := getInsertFieldStr(rv.Type(), flowIgnoreFields)
+		fieldNames, insertS := getInsertFieldStr(rv.Type(), b.ignoreFields())
 		b.Fields = fieldNames
 		b.InsertSql = "insert into " + b.TableName + insertS + " values " + b.getObjValuesForSql(rv, b.Fields)
 	} else {

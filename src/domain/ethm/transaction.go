@@ -8,8 +8,9 @@ import (
 )
 
 type TransactionWriter struct {
-	ethCli ethrpc.EthRPC
-	txRepo repo.TransactionRepository
+	ethCli      ethrpc.EthRPC
+	txRepo      repo.TransactionRepository
+	withBalance bool
 }
 
 func NewTransactionWriter(ethCli ethrpc.EthRPC, txRepo repo.TransactionRepository) *TransactionWriter {
@@ -20,14 +21,20 @@ func NewTransactionWriter(ethCli ethrpc.EthRPC, txRepo repo.TransactionRepositor
 	return txw
 }
 
+func (sel *TransactionWriter) SetWithBalance(withBalance bool) {
+	sel.withBalance = withBalance
+}
+
 func (sel *TransactionWriter) TxWrite(txData *model.TransactionData) error {
-	blockNumber, _ := strconv.ParseInt(txData.BlockNumber, 10, 63)
-	if txData.IsContractToken {
-		txData.FromBalance, _ = sel.ethCli.GetContractBalanceByBlockNumber(txData.ContractAddress, txData.From, blockNumber)
-		txData.ToBalance, _ = sel.ethCli.GetContractBalanceByBlockNumber(txData.ContractAddress, txData.To, blockNumber)
-	} else {
-		txData.FromBalance, _ = sel.ethCli.GetBalanceByBlockNumber(txData.From, blockNumber)
-		txData.ToBalance, _ = sel.ethCli.GetBalanceByBlockNumber(txData.To, blockNumber)
+	if sel.withBalance {
+		blockNumber, _ := strconv.ParseInt(txData.BlockNumber, 10, 63)
+		if txData.IsContractToken {
+			txData.FromBalance, _ = sel.ethCli.GetContractBalanceByBlockNumber(txData.ContractAddress, txData.From, blockNumber)
+			txData.ToBalance, _ = sel.ethCli.GetContractBalanceByBlockNumber(txData.ContractAddress, txData.To, blockNumber)
+		} else {
+			txData.FromBalance, _ = sel.ethCli.GetBalanceByBlockNumber(txData.From, blockNumber)
+			txData.ToBalance, _ = sel.ethCli.GetBalanceByBlockNumber(txData.To, blockNumber)
+		}
 	}
 	// 写入交易信息
 	return sel.txRepo.CreateTransactionRecord(txData)

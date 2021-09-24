@@ -99,12 +99,13 @@ func (sel *RetryProcessor) Init() error {
 func (sel *RetryProcessor) Exit(ctx context.Context) error {
 	sel.mTask.Stop()
 	close(sel.stopCh)
-	vlog.INFO("retry processor exited %s,", sel.name)
+	vlog.INFO("retry processor exited [%s]", sel.name)
 	return nil
 }
 
 func (sel *RetryProcessor) Start() error {
 	sel.mTask.Start()
+	vlog.INFO("retry processor started [%s]", sel.name)
 	//for i := 0; i < sel.maxNum; i++ {
 	//	go func() {
 	//		for {

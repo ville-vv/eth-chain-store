@@ -62,9 +62,6 @@ func (sel *HiveCLI) Find(stm string, res interface{}) error {
 	objType = objType.Elem()
 
 	var dataMap map[string]interface{}
-	//dataMap = map[string]interface{}{
-	//	"top1000_erc20_token.index":                  int32(1234),
-	//	"top1000_erc20_token.token_contract_address": "0x0000000000004946c0e9F43F4Dee607b0eF1fA1c"}
 	cursor := sel.conn.Cursor()
 	defer cursor.Close()
 	cursor.Exec(sel.defaultCtx, stm)
@@ -73,11 +70,11 @@ func (sel *HiveCLI) Find(stm string, res interface{}) error {
 	}
 	for cursor.HasMore(sel.defaultCtx) {
 		if cursor.Err != nil {
-			return errors.Wrap(cursor.Err, "hive exec has more")
+			return errors.Wrap(cursor.Err, "HiveCLI hive has more")
 		}
 		dataMap = cursor.RowMap(sel.defaultCtx)
 		if cursor.Err != nil {
-			return errors.Wrap(cursor.Err, "hive exec row map")
+			return errors.Wrap(cursor.Err, "HiveCLI hive row map")
 		}
 
 		if objType.Kind() == reflect.Slice {
@@ -133,10 +130,12 @@ func mapToStru(oType reflect.Type, dataMap map[string]interface{}) reflect.Value
 		if tempObj.Type().Field(i).Tag.Get("sql") == "-" {
 			continue
 		}
+		//fmt.Println(tempObj.Type().Field(i).Tag.Get("gorm"))
 		columnName = tempObj.Type().Field(i).Tag.Get("column")
 		if columnName == "" {
-			columnName = ToDbName(tempObj.Type().Name())
+			columnName = ToDbName(tempObj.Type().Field(i).Name)
 		}
+		//fmt.Println("columnName:", columnName)
 		tempData := dataMap[columnName]
 		if tempData == nil {
 			continue

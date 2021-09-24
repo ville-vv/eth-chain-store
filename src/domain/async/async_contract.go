@@ -20,7 +20,7 @@ func NewContractService(rpcCli ethrpc.EthRPC, contractRepo repo.ContractReposito
 	return &ContractService{rpcCli: rpcCli, contractRepo: contractRepo}
 }
 
-func (sel *ContractService) Process(data *model.TransactionRecord) error {
+func (sel *ContractService) Process(latestNum int64, data *model.TransactionRecord) error {
 	contract := entity.NewContract(sel.rpcCli, sel.contractRepo)
 	contract.SetAddress(data.ContractAddress)
 	contract.SetPublishTime(data.TxTime)

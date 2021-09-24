@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"fmt"
 	"github.com/ville-vv/eth-chain-store/src/common/hive"
 	"github.com/ville-vv/eth-chain-store/src/infra/model"
 	"github.com/ville-vv/vilgo/vfile"
@@ -25,27 +26,31 @@ func (sel *TransactionHiveDao) Scheme() string {
 }
 
 func (sel *TransactionHiveDao) Init() error {
-	vlog.INFO("正在统计 transaction_records 总数")
+	vlog.INFO("正在统计 hive transaction_records 总数")
 	sel.ethTxCnt.Store(sel.hiveCli.Count("transaction_records"))
-	vlog.INFO("正在统计 contract_transaction_records 总数")
+	vlog.INFO("正在统计 hive contract_transaction_records 总数")
 	sel.contractTxCnt.Store(sel.hiveCli.Count("contract_transaction_records"))
 	return nil
 }
 
 func (sel *TransactionHiveDao) Start() error {
+	vlog.INFO("Start transaction data save to hive thread ")
 	return sel.dbCache.Start()
 }
 
 func (sel *TransactionHiveDao) Exit(ctx context.Context) error {
 	sel.dbCache.Exit(ctx)
 	sel.errFile.Close()
+	sel.hiveCli.Close()
+	vlog.INFO("hive transaction data thread  exit")
 	return nil
 }
 
 func NewTransactionHiveDao(errFile string, option hive.HiveConfigOption, wrInterval int) *TransactionHiveDao {
 	var err error
 	thd := &TransactionHiveDao{}
-	thd.dbCache = NewHiveDbCache(thd, wrInterval)
+	thd.dbCache = NewHiveDbCache(wrInterval)
+	thd.dbCache.SetExec(thd)
 	thd.hiveCli, err = hive.New(option)
 	if err != nil {
 		panic(err)
@@ -67,8 +72,8 @@ func NewTransactionHiveDao(errFile string, option hive.HiveConfigOption, wrInter
 }
 
 func (sel *TransactionHiveDao) Exec(tableName string, record []interface{}) error {
-	insertSql := BatchInsertToSqlStr(tableName, record)
-	//fmt.Println(insertSql)
+	insertSql := BatchInsertToSqlStrNeedID(tableName, record)
+	fmt.Println(insertSql)
 	err := sel.hiveCli.Exec(insertSql)
 	if err != nil {
 		vlog.ERROR("save data to hive db table %s len:%d error %s", tableName, len(record), err.Error())

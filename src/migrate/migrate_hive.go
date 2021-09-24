@@ -23,7 +23,7 @@ func (sel *HiveMigrate) Create() {
 func (sel *HiveMigrate) Migrate() {
 	tables := []string{
 		`
- CREATE TABLE transaction_records(                
+ CREATE TABLE  if not exists transaction_records(                
    id bigint,                                     
    created_at string,                             
    block_number string,                           
@@ -36,9 +36,9 @@ func (sel *HiveMigrate) Migrate() {
    gas_price string,                              
    value string,                                  
    from_addr_balance string,                      
-   to_addr_balance string)
+   to_addr_balance string)STORED AS ORC;
 `,
-		` CREATE TABLE contract_transaction_records(                
+		` CREATE TABLE  if not exists contract_transaction_records(                
    id bigint,                                     
    created_at string,                             
    block_number string,                           
@@ -51,7 +51,7 @@ func (sel *HiveMigrate) Migrate() {
    gas_price string,                              
    value string,                                  
    from_addr_balance string,                      
-   to_addr_balance string)
+   to_addr_balance string)STORED AS ORC;
 `,
 	}
 	for _, tb := range tables {

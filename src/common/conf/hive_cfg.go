@@ -21,9 +21,6 @@ func NewHivConfig() *HiveConfig {
 		DbName:    "default",
 	}
 
-	h.discoverFromEnv()
-	h.discoverFromFlag()
-
 	return h
 }
 
@@ -64,6 +61,7 @@ func (sel *HiveConfig) discoverFromEnv() {
 	ReadEnv(&sel.Host, "HIVE2_HOST")
 	ReadEnv(&sel.Port, "HIVE2_PORT")
 	ReadEnv(&sel.AuthModel, "HIVE2_AUTH_MODEL")
+	ReadEnv(&sel.DbName, "HIVE2_DB_NAME")
 }
 
 func (sel *HiveConfig) discoverFromFlag() {
@@ -81,6 +79,7 @@ func (sel *HiveConfig) ReSetDbName(dbName string) {
 
 func GetHiveEthereumDb() *HiveConfig {
 	cfg := NewHivConfig()
-	cfg.ReSetDbName("ethereum_orc")
+	cfg.ReSetDbName("etherum_orc")
+	cfg.Dcv()
 	return cfg
 }

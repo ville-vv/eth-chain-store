@@ -117,6 +117,7 @@ func ethereumHiveMapDbMigrate() {
 	err := db.AutoMigrate(
 		&model.SyncBlockConfig{},
 		&model.SplitTableInfo{},
+		&model.ContractAddressRecord{},
 		&model.ContractAccountBind{},
 		&model.EthereumAccount{},
 		&model.SyncErrorRecord{},

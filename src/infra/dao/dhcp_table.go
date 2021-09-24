@@ -47,7 +47,7 @@ func (sel *dhcpTable) intCntTxTable() error {
 		}
 		err = sel.createTxTable(sel.id)
 		if err != nil {
-			return nil
+			return err
 		}
 		sel.id = 1
 	} else {
