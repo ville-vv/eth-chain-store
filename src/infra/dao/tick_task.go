@@ -12,6 +12,7 @@ type TickTask struct {
 	interval  time.Duration
 	stopCh    chan int
 	waithStop chan int
+	trigger   chan int
 }
 
 func NewTickTask(name string, interval time.Duration, exec func()) *TickTask {
@@ -35,23 +36,30 @@ func (t *TickTask) Start() error {
 	for {
 		select {
 		case <-t.stopCh:
+			vlog.INFO("waiting task %s existed", t.name)
 			t.exec()
 			vlog.INFO("tick task %s existed", t.name)
 			close(t.waithStop)
 			return nil
 		case <-tmk.C:
 			t.exec()
+		case <-t.trigger:
+			t.exec()
 		}
 	}
 }
 
 func (t *TickTask) Exit(ctx context.Context) error {
+	vlog.INFO("waiting tick task %s exist, after 5 minute not any response will force exited", t.name)
 	close(t.stopCh)
-	vlog.INFO("waiting tick task %s exist", t.name)
 	select {
-	case <-time.After(time.Second * 10):
+	case <-time.After(time.Minute * 5):
 		return nil
 	case <-t.waithStop:
 		return nil
 	}
+}
+
+func (t *TickTask) Trigger() {
+	t.trigger <- 1
 }

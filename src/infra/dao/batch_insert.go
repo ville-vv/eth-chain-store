@@ -44,6 +44,17 @@ func BatchInsertToSqlStrNeedID(tableName string, data interface{}) string {
 	return batch.InsertSql
 }
 
+func BatchInsertToSqlNoTitle(tableName string, data interface{}) string {
+	batch := NewBatchInsertSql(tableName)
+	batch.NeedID()
+	rv := reflect.ValueOf(data)
+	rvLen := rv.Len()
+	for i := 0; i < rvLen; i++ {
+		batch.AddV2(rv.Index(i).Interface())
+	}
+	return batch.InsertSql
+}
+
 // 每次批量插入都要new一个
 func NewBatchInsertSql(tableName string) *BatchInsertSql {
 	nowT := time.Now()
@@ -86,6 +97,22 @@ func (b *BatchInsertSql) Add(obj interface{}) {
 		fieldNames, insertS := getInsertFieldStr(rv.Type(), b.ignoreFields())
 		b.Fields = fieldNames
 		b.InsertSql = "insert into " + b.TableName + insertS + " values " + b.getObjValuesForSql(rv, b.Fields)
+	} else {
+		b.InsertSql += "," + b.getObjValuesForSql(rv, b.Fields)
+	}
+}
+
+func (b *BatchInsertSql) AddV2(obj interface{}) {
+	rv := reflect.ValueOf(obj)
+	if rv.Kind() == reflect.Ptr {
+		rv = rv.Elem()
+	}
+
+	// 尚未初始化时，初始化sql
+	if len(b.Fields) == 0 {
+		fieldNames, _ := getInsertFieldStr(rv.Type(), b.ignoreFields())
+		b.Fields = fieldNames
+		b.InsertSql = "insert into " + b.TableName + " values " + b.getObjValuesForSql(rv, b.Fields)
 	} else {
 		b.InsertSql += "," + b.getObjValuesForSql(rv, b.Fields)
 	}

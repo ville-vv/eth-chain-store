@@ -80,6 +80,7 @@ func (sel *HiveConfig) ReSetDbName(dbName string) {
 func GetHiveEthereumDb() *HiveConfig {
 	cfg := NewHivConfig()
 	cfg.ReSetDbName("etherum_orc")
+	cfg.ReSetDbName("eth_test")
 	cfg.Dcv()
 	return cfg
 }

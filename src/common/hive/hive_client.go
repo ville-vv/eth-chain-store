@@ -27,7 +27,9 @@ type HiveCLI struct {
 
 func New(opt HiveConfigOption) (*HiveCLI, error) {
 	cfg := gohive.NewConnectConfiguration()
+	cfg.FetchSize = 2000
 	cfg.Service = "hive"
+	cfg.Username = opt.GetUserName()
 	cfg.Database = opt.GetDBName()
 
 	ghConn, err := gohive.Connect(opt.GetHost(), opt.GetPort(), opt.GetAuthMode(), cfg)
@@ -113,9 +115,19 @@ func (sel *HiveCLI) Count(tableName string) int64 {
 func (sel *HiveCLI) Exec(stm string) error {
 	cursor := sel.conn.Cursor()
 	defer cursor.Close()
-	cursor.Execute(sel.defaultCtx, stm, false)
+	cursor.Execute(context.Background(), stm, false)
 	if cursor.Err != nil {
 		return errors.Wrap(cursor.Err, "hive exec")
+	}
+	return nil
+}
+
+func (sel *HiveCLI) ExecAsync(stm string) error {
+	cursor := sel.conn.Cursor()
+	defer cursor.Close()
+	cursor.Execute(context.Background(), stm, true)
+	if cursor.Err != nil {
+		return errors.Wrap(cursor.Err, "Async hive exec")
 	}
 	return nil
 }

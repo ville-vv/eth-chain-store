@@ -30,7 +30,7 @@ func (sel *TransactionRepositoryFactory) NewTransactionRepository() TransactionR
 	switch sel.SaveType {
 	case "InHive":
 		fmt.Println("inHive")
-		return dao.NewTransactionHiveDao(sel.ErrFile, conf.GetHiveEthereumDb(), sel.WriteToDbInterval)
+		return dao.NewTransactionHiveDao(sel.ErrFile, conf.GetHiveEthereumDb(), sel.WriteToDbInterval, conf.MaxBatchInsertNum)
 	default:
 		return NewTransactionRepo(sel.EthereumTranDao)
 	}

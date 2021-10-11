@@ -32,7 +32,7 @@ func NewEthereumMapHive(errFile string, db vstore.DB, hiveCli *hive.HiveCLI, wrI
 	}
 	var err error
 	e := &EthereumMapHive{db: db, hiveCli: hiveCli}
-	e.dbCache = NewHiveDbCache(wrInterval)
+	e.dbCache = NewHiveDbCacheWithMaxCache(wrInterval, 2)
 	e.dbCache.SetExec(e)
 	dirPath := path.Dir(errFile)
 	if !vfile.PathExists(dirPath) {
@@ -65,7 +65,7 @@ func (sel *EthereumMapHive) QueryContractInfo(addr string, contractInfo *model.C
 }
 
 func (sel *EthereumMapHive) CreateContractRecord(contractCtx *model.ContractContent) error {
-	return sel.dbCache.Insert("contract_address_records", &model.ContractAddressRecord{ContractContent: *contractCtx})
+	return sel.dbCache.InsertAndWait("contract_address_records", &model.ContractAddressRecord{ContractContent: *contractCtx})
 }
 
 func (sel *EthereumMapHive) Exec(tableName string, record []interface{}) error {
