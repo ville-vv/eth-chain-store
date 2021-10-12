@@ -61,8 +61,9 @@ func cmdFlagParse() {
 	flag.BoolVar(&conf.IsMaxProcs, "max_procs", false, "the max process core the value is true or false")
 	flag.BoolVar(&conf.TxDataInHive, "txdata_inhive", false, "whether save transaction data to hive, must create the database ethereum_orc in hive db")
 	flag.BoolVar(&conf.WithTxBalance, "with_tx_balance", false, "transaction data will pull balance information from eth rpc")
-	flag.BoolVar(&conf.SaveAccount, "save_account", true, "save the eth account data and contract data to mysql db, ex: false is not save")
-	flag.BoolVar(&conf.SaveContract, "save_contract", true, "save the contract information to mysql db, ex: false is not save")
+	flag.BoolVar(&conf.SaveAccount, "save_account", true, "save the eth account data and contract data to mysql db, ex: -save_account=false is not save")
+	flag.BoolVar(&conf.SaveContract, "save_contract", true, "save the contract information to mysql db, ex: -save_contract=false is not save")
+	flag.BoolVar(&conf.SaveTransaction, "save_tx", true, "save the transaction information to mysql or hive db, ex: -save_tx=false is not save")
 
 	flag.Int64Var(&conf.StartBlockNumber, "start_number", 0, "the start block number need to sync")
 	flag.Int64Var(&conf.EndBlockNumber, "end_number", 0, "the end block number need to sync ")
@@ -78,9 +79,17 @@ func cmdFlagParse() {
 		flag.PrintDefaults()
 		os.Exit(-1)
 	}
+
+}
+
+func argPrint() {
+	vlog.INFO("SaveAccount %t", conf.SaveAccount)
+	vlog.INFO("SaveContract %t", conf.SaveContract)
+	vlog.INFO("SaveTransaction %t", conf.SaveTransaction)
 }
 
 func buildService() go_exec.Runner {
+
 	var (
 		ethereumDb    = dao.NewMysqlDB(vstore.MakeDb(conf.GetEthereumDbConfig()), "ethereum")
 		contractTxDb  = dao.NewMysqlDB(vstore.MakeDb(conf.GetEthContractTransactionDbConfig()), "contract_transaction")
@@ -137,28 +146,31 @@ func buildService() go_exec.Runner {
 	svr := &server.Server{}
 	svr.Add(serviceRun)
 
+	// 保存账户数据
 	if conf.SaveAccount {
 		svr.Add(accountMngWriter)
 	}
 
+	// 保存合约数据
 	if conf.SaveContract {
 		svr.Add(contractMngWriter)
 	}
 
-	svr.Add(transactionReWriter)
+	if conf.SaveTransaction {
+		svr.Add(transactionReWriter)
+		if conf.TxDataInHive {
+			r, ok := transactionRepo.(runner.Runner)
+			if ok {
+				svr.Add(r)
+			}
+		} else {
+			svr.Add(normalTxDbCache)
+			svr.Add(contractTxDbCache)
+		}
+	}
 
 	svr.Add(ethereumCacheDb)
 	svr.Add(ethWriterCtl)
-
-	if conf.TxDataInHive {
-		r, ok := transactionRepo.(runner.Runner)
-		if ok {
-			svr.Add(r)
-		}
-	} else {
-		svr.Add(normalTxDbCache)
-		svr.Add(contractTxDbCache)
-	}
 
 	return svr
 }
@@ -169,6 +181,8 @@ func main() {
 		runtime.GOMAXPROCS(runtime.NumCPU())
 	}
 	log.Init() //12900839
+	argPrint()
+
 	go_exec.Go(monitor.StartMonitor)
 	ctx, cancel := context.WithCancel(context.Background())
 	go_exec.Go(func() {

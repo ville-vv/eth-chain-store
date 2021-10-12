@@ -79,6 +79,25 @@ func (sel *EthereumDao) QueryBindContractAccount(addr, contractAddr string, bind
 	return "", nil
 }
 
+// QueryBindContractAccountInCurrentTb 查询合约绑定账户信息
+func (sel *EthereumDao) QueryBindContractAccountInCurrentTb(addr, contractAddr string, bindInfo *model.ContractAccountBind) (string, error) {
+	tbName, err := sel.contractBindTb.TbName()
+	if err != nil {
+		return "", err
+	}
+	var db = sel.db.GetDB().Where("address=? and contract_address=?", addr, contractAddr)
+	if err = db.Table(tbName).Select("id, address, balance").First(&bindInfo).Error; err != nil {
+		if err.Error() != gorm.ErrRecordNotFound.Error() {
+			return "", errors.Wrap(err, "ethereum dao for update and query contract account exist")
+		}
+	}
+	if bindInfo.ID > 0 {
+		return tbName, nil
+	}
+
+	return tbName, nil
+}
+
 // CreateContractAccount 普通钱包地址与合约地址绑定
 func (sel *EthereumDao) CreateContractAccount(contractAccount *model.ContractAccountBind) error {
 	//fmt.Println("绑定钱包地址与合约地址", contractAccount)
@@ -138,6 +157,24 @@ func (sel *EthereumDao) QueryNormalAccount(addr string, info *model.EthereumAcco
 		}
 	}
 	return "", nil
+}
+
+// QueryNormalAccountInCurrentTb 查询普通的以太坊账户地址信息
+func (sel *EthereumDao) QueryNormalAccountInCurrentTb(addr string, info *model.EthereumAccount) (string, error) {
+	tbName, err := sel.normalAccountTb.TbName()
+	if err != nil {
+		return "", err
+	}
+	var db = sel.db.GetDB().Where("address=?", addr)
+	if err = db.Table(tbName).Select("id, address, balance").First(&info).Error; err != nil {
+		if err.Error() != gorm.ErrRecordNotFound.Error() {
+			return "", errors.Wrap(err, "ethereum dao for update and query contract account exist")
+		}
+	}
+	if info.ID > 0 {
+		return tbName, nil
+	}
+	return tbName, nil
 }
 
 // UpdateNativeBalance 更新以太坊

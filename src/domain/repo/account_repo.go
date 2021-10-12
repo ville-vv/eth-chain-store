@@ -26,7 +26,7 @@ func NewNormalAccountRepo(accountDao *dao.EthereumDao) *NormalAccountRepo {
 
 func (sel *NormalAccountRepo) QueryNormalAccount(addr string) (*model.EthereumAccount, string, error) {
 	var info model.EthereumAccount
-	tbName, err := sel.accountDao.QueryNormalAccount(addr, &info)
+	tbName, err := sel.accountDao.QueryNormalAccountInCurrentTb(addr, &info)
 	if err != nil {
 		return nil, "", err
 	}

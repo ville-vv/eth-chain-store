@@ -24,7 +24,7 @@ func NewContractAccountRepo(accountDao *dao.EthereumDao) *ContractAccountRepo {
 
 func (sel *ContractAccountRepo) QueryBindContractAccount(addr string, contractAddr string) (*model.ContractAccountBind, string, error) {
 	var info model.ContractAccountBind
-	tbName, err := sel.accountDao.QueryBindContractAccount(addr, contractAddr, &info)
+	tbName, err := sel.accountDao.QueryBindContractAccountInCurrentTb(addr, contractAddr, &info)
 	if err != nil {
 		return nil, "", err
 	}

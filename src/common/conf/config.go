@@ -28,6 +28,7 @@ var (
 	EndBlockNumber    int64 // 结束区块
 	SaveAccount       bool
 	SaveContract      bool
+	SaveTransaction   bool
 )
 
 func ReadEnv(val *string, key string) {

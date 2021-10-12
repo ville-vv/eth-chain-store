@@ -22,7 +22,7 @@ func newDhcpTable(db *gorm.DB, templateTable string) *dhcpTable {
 	tb := &dhcpTable{
 		db:            db,
 		lock:          sync.Mutex{},
-		maxNum:        20000000,
+		maxNum:        10000000,
 		counter:       0,
 		templateTable: templateTable,
 	}
