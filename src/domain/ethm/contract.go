@@ -81,19 +81,23 @@ func NewRingStrListV2() *RingStrListV2 {
 		for {
 			select {
 			case <-tmr.C:
-				if r.length > 10000000 {
+				if r.length > 30000000 {
 					cp := 0
 					list := make(map[string]int)
+					r.RLock()
 					for k, val := range r.list {
 						if val > 5000 {
 							list[k] = 10
 						}
 						cp++
-						if cp > 500000 {
+						if cp > 2000000 {
 							break
 						}
 					}
+					r.Unlock()
+					r.Lock()
 					r.list = list
+					r.Unlock()
 				}
 			case <-conf.GlobalExitSignal:
 				return
@@ -105,8 +109,8 @@ func NewRingStrListV2() *RingStrListV2 {
 }
 
 func (sel *RingStrListV2) Exist(str string) bool {
-	sel.RLock()
-	defer sel.RUnlock()
+	sel.Lock()
+	defer sel.Unlock()
 	n, ok := sel.list[str]
 	sel.list[str] = n + 1
 	return ok

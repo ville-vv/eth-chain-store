@@ -6,7 +6,6 @@ require (
 	github.com/Azure/azure-storage-blob-go v0.14.0
 	github.com/StackExchange/wmi v0.0.0-20210224194228-fe8f1750fd46 // indirect
 	github.com/VictoriaMetrics/fastcache v1.6.0
-	github.com/apache/thrift v0.14.1
 	github.com/aws/aws-sdk-go-v2 v1.7.0
 	github.com/aws/aws-sdk-go-v2/config v1.4.1
 	github.com/aws/aws-sdk-go-v2/credentials v1.3.0
@@ -16,7 +15,6 @@ require (
 	github.com/cespare/cp v1.1.1
 	github.com/cloudflare/cloudflare-go v0.18.0
 	github.com/davecgh/go-spew v1.1.1
-	github.com/dazheng/gohive v0.0.0-20190904024313-b1810177c8f2
 	github.com/deckarep/golang-set v1.7.1
 	github.com/docker/docker v20.10.7+incompatible
 	github.com/dop251/goja v0.0.0-20210630164231-8f81471d5d0b
@@ -56,6 +54,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/cors v1.8.0
 	github.com/shirou/gopsutil v3.21.6+incompatible
+	github.com/spf13/cobra v0.0.3
 	github.com/status-im/keycard-go v0.0.0-20200402102358-957c09536969
 	github.com/stretchr/testify v1.7.0
 	github.com/syndtr/goleveldb v1.0.0
