@@ -22,7 +22,7 @@ const (
 type EthereumMapHive struct {
 	db      vstore.DB
 	hiveCli *hive.HiveCLI
-	dbCache *HiveDbCache
+	dbCache *DbCacheV2
 	errFile *os.File
 }
 
@@ -32,7 +32,7 @@ func NewEthereumMapHive(errFile string, db vstore.DB, hiveCli *hive.HiveCLI, wrI
 	}
 	var err error
 	e := &EthereumMapHive{db: db, hiveCli: hiveCli}
-	e.dbCache = NewHiveDbCacheWithMaxCache(wrInterval, 2)
+	e.dbCache = NewDbCacheV2WithMaxCache(wrInterval, 2)
 	e.dbCache.SetExec(e)
 	dirPath := path.Dir(errFile)
 	if !vfile.PathExists(dirPath) {

@@ -36,11 +36,11 @@ func (sel *SyncBlockChainServiceV2) Exit(ctx context.Context) error {
 	return nil
 }
 
-func (sel *SyncBlockChainServiceV2) Pull(cntBKNum int64, laterBKNum int64) error {
-	var err error
-	if err = sel.ethMng.Pull(cntBKNum, laterBKNum); err != nil {
+func (sel *SyncBlockChainServiceV2) Pull(cntBKNum int64, laterBKNum int64) (int64, error) {
+	n, err := sel.ethMng.Pull(cntBKNum, laterBKNum)
+	if err != nil {
 		vlog.ERROR("sync block number data failed %d %s", cntBKNum, err.Error())
-		return err
+		return n, err
 	}
-	return nil
+	return n, nil
 }

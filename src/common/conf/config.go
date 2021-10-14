@@ -19,6 +19,7 @@ var (
 	MaxPullNum        int
 	MaxWriteNum       int
 	MaxBatchInsertNum int
+	MaxSqlFileSize    int
 	IsMaxProcs        bool
 	IsHelp            bool
 	WriteToDbInterval int
@@ -29,6 +30,7 @@ var (
 	SaveAccount       bool
 	SaveContract      bool
 	SaveTransaction   bool
+	SaveType          string
 )
 
 func ReadEnv(val *string, key string) {

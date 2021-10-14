@@ -16,12 +16,21 @@ type EthereumDao struct {
 
 func NewEthereumDao(db DB, cacheDb *DbCache) *EthereumDao {
 	return &EthereumDao{
-		db:               db,
-		contractRecordTb: newDhcpTable(db.GetDB(), "contract_address_records"),
-		contractBindTb:   newDhcpTable(db.GetDB(), "contract_account_binds"),
-		normalAccountTb:  newDhcpTable(db.GetDB(), "ethereum_accounts"),
-		cacheDb:          cacheDb,
+		db:      db,
+		cacheDb: cacheDb,
 	}
+}
+
+func (sel *EthereumDao) InitContractAccountTb() {
+	sel.contractBindTb = newDhcpTable(sel.db.GetDB(), "contract_account_binds")
+}
+
+func (sel *EthereumDao) InitEthAccountTb() {
+	sel.normalAccountTb = newDhcpTable(sel.db.GetDB(), "ethereum_accounts")
+}
+
+func (sel *EthereumDao) InitContractRecordTb() {
+	sel.contractRecordTb = newDhcpTable(sel.db.GetDB(), "contract_address_records")
 }
 
 // QueryContractInfo 查询合约信息

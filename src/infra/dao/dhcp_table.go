@@ -53,7 +53,22 @@ func (sel *dhcpTable) intCntTxTable() error {
 	} else {
 		sel.cntTable = tb.TableName
 		sel.id = tb.ID
+		if err := sel.count(); err != nil {
+			return err
+		}
 	}
+
+	return nil
+}
+
+func (sel *dhcpTable) count() error {
+	db := sel.db
+	var count int64
+	err := db.Table(sel.cntTable).Count(&count).Error
+	if err != nil {
+		return err
+	}
+	sel.counter = count
 	return nil
 }
 

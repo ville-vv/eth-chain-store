@@ -85,7 +85,7 @@ func buildService() go_exec.Runner {
 		ethereumHiveMapDb = dao.NewMysqlDB(vstore.MakeDb(conf.GetEthereumHiveMapDbConfig()), "ethereum_hive_map")
 		ethBlockNumberDao = dao.NewEthereumBlockNumberDao(ethereumHiveMapDb)
 
-		txDataRepo = dao.NewTransactionHiveDao("err_data/transaction_hive.sql", conf.GetHiveEthereumDb(), writeToDbInterval)
+		txDataRepo = dao.NewTransactionHiveDao("err_data/transaction_hive.sql", conf.GetHiveEthereumDb(), writeToDbInterval, 1000)
 		errorRepo  = repo.NewSyncErrorRepository(dao.NewSyncErrorDao(ethereumHiveMapDb))
 
 		transactionWriter   = ethm.NewTransactionWriter(ethm.NewEthRpcExecutor(rpcEndpoint), txDataRepo)

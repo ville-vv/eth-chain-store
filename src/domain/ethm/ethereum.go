@@ -17,21 +17,23 @@ type EthereumDataPuller struct {
 func NewEthereumManager(ethRpcCli ethrpc.EthRPC, txWrite TxWriter) *EthereumDataPuller {
 	return &EthereumDataPuller{ethRpcCli: ethRpcCli, txWrite: txWrite}
 }
-func (sel *EthereumDataPuller) Pull(bkNumber int64, latestBkNum int64) error {
+func (sel *EthereumDataPuller) Pull(bkNumber int64, latestBkNum int64) (int64, error) {
 	// 获取块信息
 	block, err := sel.ethRpcCli.GetBlockByNumber(bkNumber)
 	if err != nil {
 		vlog.ERROR("get block by number %d error %s", bkNumber, err.Error())
-		return err
+		return 0, err
 	}
 	block.LatestBlockNumber = fmt.Sprintf("%d", latestBkNum)
 	return sel.dealBlock(block)
 }
 
 // 处理块数据
-func (sel *EthereumDataPuller) dealBlock(block *ethrpc.EthBlock) error {
+func (sel *EthereumDataPuller) dealBlock(block *ethrpc.EthBlock) (int64, error) {
+	var totalNum int64
+
 	if block == nil {
-		return nil
+		return 0, nil
 	}
 	var err error
 
@@ -40,6 +42,7 @@ func (sel *EthereumDataPuller) dealBlock(block *ethrpc.EthBlock) error {
 	block.TimeStamp = block.TimeStampFormatTmString()
 	// 一个块存n条交易数据
 	for _, trfData := range block.Transactions {
+		totalNum++
 		// 写入以太坊原生交易信息
 		if err = sel.txWrites(&model.TransactionData{
 			LatestNumber: block.LatestBlockNumber,
@@ -53,25 +56,26 @@ func (sel *EthereumDataPuller) dealBlock(block *ethrpc.EthBlock) error {
 			Value:        common.HexToHash(trfData.Value).Big().String(),
 		}); err != nil {
 			vlog.ERROR("处理以太坊原生交易错误：hash=%s %s", trfData.Hash, err.Error())
-			return err
+			return 0, err
 		}
 
 		// 该条以太坊交易信息是否存在合约交易信息
 		if trfData.IsContractToken() {
 			// 这笔交易存在合约代币交易，需要获取合约里面的交易内容
-			if err = sel.contractTransaction(&block.EthBlockHeader, trfData); err != nil {
+			if err = sel.contractTransaction(&totalNum, &block.EthBlockHeader, trfData); err != nil {
 				vlog.ERROR("处理以太坊合约交易错误：hash=%s %s", trfData.Hash, err.Error())
-				return err
+				return totalNum, err
 			}
 		}
 
 	}
-	return err
+	return totalNum, err
 }
 
 // contractTransaction 合约代币交易
-func (sel *EthereumDataPuller) contractTransaction(header *ethrpc.EthBlockHeader, tfData *ethrpc.EthTransaction) error {
+func (sel *EthereumDataPuller) contractTransaction(totalNum *int64, header *ethrpc.EthBlockHeader, tfData *ethrpc.EthTransaction) error {
 	if tfData.IsTransfer() {
+		*totalNum++
 		// 这个是 ERC20单笔的 token 转账
 		to, val := ethrpc.TransferParser(tfData.Input).TransferParse()
 		return sel.txWrites(&model.TransactionData{
@@ -90,11 +94,11 @@ func (sel *EthereumDataPuller) contractTransaction(header *ethrpc.EthBlockHeader
 		})
 	}
 	// 非单笔转账交易，就要获取凭证数据
-	return sel.txReceipt(header.LatestBlockNumber, header.TimeStamp, tfData.Hash)
+	return sel.txReceipt(totalNum, header.LatestBlockNumber, header.TimeStamp, tfData.Hash)
 }
 
 // txReceipt 多笔凭证交易
-func (sel *EthereumDataPuller) txReceipt(latestNum, timeStamp string, hash string) error {
+func (sel *EthereumDataPuller) txReceipt(totalNum *int64, latestNum, timeStamp string, hash string) error {
 	// 如果不是直接的转账交易，就获取合约的交易收据信息
 	tfReceipt, err := sel.ethRpcCli.GetTransactionReceipt(hash)
 	if err != nil {
@@ -107,6 +111,7 @@ func (sel *EthereumDataPuller) txReceipt(latestNum, timeStamp string, hash strin
 	if len(tfReceipt.Logs) > 0 {
 		for _, lg := range tfReceipt.Logs {
 			if lg.IsTransfer() {
+				*totalNum++
 				// 转账凭证处理
 				if err = sel.txWrites(&model.TransactionData{
 					LatestNumber:    latestNum,

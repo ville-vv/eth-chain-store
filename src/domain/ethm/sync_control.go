@@ -22,14 +22,14 @@ type SyncConfigDataPersist interface {
 	UpdateSyncBlockNUmber(n int64) error
 }
 
-type SyncBlockPullFunc func(cntBKNum int64, laterBKNum int64) error
+type SyncBlockPullFunc func(cntBKNum int64, laterBKNum int64) (int64, error)
 
-func (sel SyncBlockPullFunc) Pull(cntBKNum int64, laterBKNum int64) error {
+func (sel SyncBlockPullFunc) Pull(cntBKNum int64, laterBKNum int64) (int64, error) {
 	return sel(cntBKNum, laterBKNum)
 }
 
 type SyncBlockPuller interface {
-	Pull(cntBKNum int64, laterBKNum int64) error
+	Pull(cntBKNum int64, laterBKNum int64) (int64, error)
 }
 
 type OptionConfig struct {
@@ -46,6 +46,7 @@ type SyncBlockControl struct {
 	ethRpcCli            ethrpc.EthRPC
 	bknRepo              SyncConfigDataPersist
 	latestNum            int64      // 最新区块
+	intervalTotalNum     int64      // 间隔时间内总条数
 	beforeSyncNumber     int64      // 上一次同步的区块号
 	cntSyncBlockNumber   int64      // 当前同步的区块号
 	startSyncBlockNumber int64      // 开始同步区块号
@@ -166,6 +167,7 @@ func (sel *SyncBlockControl) loopSyncConfigUpdate() {
 	var latestNumber = int64(0)
 	var diffNum = int64(0)
 	var interval = int64(5)
+	var intervalTotalNum int64
 	for {
 		select {
 		case <-conf.GlobalExitSignal:
@@ -190,12 +192,13 @@ func (sel *SyncBlockControl) loopSyncConfigUpdate() {
 		sel.finishLock.Lock()
 		diffNum = sel.beforeSyncNumber - cntBKNum
 		cntBKNum = sel.beforeSyncNumber
+		intervalTotalNum = sel.intervalTotalNum
 		sel.finishLock.Unlock()
 		if cntBKNum > 0 {
 			if cntBKNum >= sel.endSyncBlockNumber && sel.endSyncBlockNumber > 0 {
 				break
 			}
-			vlog.INFO("blocks=[%d], total=[%d], latest=[%d]", diffNum, cntBKNum, latestNumber)
+			vlog.INFO("blocks=[%d], record total num=[%d], current sync block no=[%d], latest=[%d]", diffNum, intervalTotalNum, cntBKNum, latestNumber)
 			_ = sel.bknRepo.UpdateSyncBlockNUmber(sel.beforeSyncNumber)
 		}
 	}
@@ -281,6 +284,7 @@ func (sel *SyncBlockControl) startPull() {
 		go func(seq int) {
 			var err error
 			var bkNumber int64
+			var totalNum int64
 			waitGp.Done()
 			sel.threadNum.Inc()
 			vlog.INFO("pull thread [%d] start", seq)
@@ -289,12 +293,12 @@ func (sel *SyncBlockControl) startPull() {
 				// 定时生成需要同步的区块号，在这里捕捉
 				case bkNumber = <-sel.syncBlockNumberChan:
 					//vlog.INFO("同步区块：%d", bkNumber)
-					err = sel.puller.Pull(bkNumber, sel.GetLatestBlockNumber())
+					totalNum, err = sel.puller.Pull(bkNumber, sel.GetLatestBlockNumber())
 					if err != nil {
 						vlog.ERROR("sync block number data failed %d %s", bkNumber, err.Error())
 						continue
 					}
-					if err = sel.FinishSync(bkNumber); err != nil {
+					if err = sel.FinishSync(bkNumber, totalNum); err != nil {
 						vlog.ERROR("update finished sync block number error %s", err.Error())
 						continue
 					}
@@ -311,13 +315,14 @@ func (sel *SyncBlockControl) startPull() {
 	waitGp.Wait()
 }
 
-func (sel *SyncBlockControl) SetSyncFunc(ctx context.Context, syncFunc func(cntBKNum, laterBKNum int64) error) {
+func (sel *SyncBlockControl) SetSyncFunc(ctx context.Context, syncFunc func(cntBKNum, laterBKNum int64) (int64, error)) {
 	var waitGp sync.WaitGroup
 	waitGp.Add(sel.maxSyncThreads)
 	for i := 0; i < sel.maxSyncThreads; i++ {
 		go func(seq int) {
 			var err error
 			var bkNumber int64
+			var totalNum int64
 			waitGp.Done()
 			sel.threadNum.Inc()
 			vlog.INFO("pull thread [%d] start", seq)
@@ -325,12 +330,12 @@ func (sel *SyncBlockControl) SetSyncFunc(ctx context.Context, syncFunc func(cntB
 				select {
 				// 定时生成需要同步的区块号，在这里捕捉
 				case bkNumber = <-sel.syncBlockNumberChan:
-					err = syncFunc(bkNumber, sel.GetLatestBlockNumber())
+					totalNum, err = syncFunc(bkNumber, sel.GetLatestBlockNumber())
 					if err != nil {
 						vlog.ERROR("sync block number data failed %d %s", bkNumber, err.Error())
 						continue
 					}
-					if err = sel.FinishSync(bkNumber); err != nil {
+					if err = sel.FinishSync(bkNumber, totalNum); err != nil {
 						vlog.ERROR("update finished sync block number error %s", err.Error())
 						continue
 					}
@@ -355,12 +360,13 @@ func (sel *SyncBlockControl) GetLatestBlockNumber() int64 {
 	return lbn
 }
 
-func (sel *SyncBlockControl) FinishSync(bkNum int64) error {
+func (sel *SyncBlockControl) FinishSync(bkNum int64, totalNum int64) error {
 	sel.finishLock.Lock()
 	defer sel.finishLock.Unlock()
 	if bkNum > sel.beforeSyncNumber {
 		sel.beforeSyncNumber = bkNum
 	}
+	sel.intervalTotalNum += totalNum
 	return nil
 }
 
@@ -380,11 +386,16 @@ func (sel *SyncBlockControl) Exit(ctx context.Context) error {
 	sel.isStop = true
 	close(sel.stopCh)
 	close(sel.syncStopCh)
-	// 更新数据库
-	if err := sel.bknRepo.UpdateLatestBlockNumber(sel.latestNum); err != nil {
-		vlog.ERROR("get block number is error %s", err.Error())
+	if sel.latestNum > 0 {
+		// 更新数据库
+		if err := sel.bknRepo.UpdateLatestBlockNumber(sel.latestNum); err != nil {
+			vlog.ERROR("get block number is error %s", err.Error())
+		}
 	}
-	_ = sel.bknRepo.UpdateSyncBlockNUmber(sel.beforeSyncNumber)
+	if sel.beforeSyncNumber > 0 {
+		_ = sel.bknRepo.UpdateSyncBlockNUmber(sel.beforeSyncNumber)
+	}
+
 	sel.WaitExit()
 	vlog.INFO("sync block number control exited")
 	return nil

@@ -174,7 +174,7 @@ type Executor interface {
 	Exec(tbName string, record []interface{}) error
 }
 
-type HiveDbCache struct {
+type DbCacheV2 struct {
 	sync.Mutex
 	*TickTask
 	do         Executor
@@ -184,34 +184,34 @@ type HiveDbCache struct {
 	insertChan chan cacheElm
 }
 
-func NewHiveDbCache(wrInterval int) *HiveDbCache {
-	return NewHiveDbCacheWithMaxCache(wrInterval, 0)
+func NewDbCacheV2(wrInterval int) *DbCacheV2 {
+	return NewDbCacheV2WithMaxCache(wrInterval, 0)
 }
 
-func NewHiveDbCacheWithMaxCache(wrInterval int, maxCache int) *HiveDbCache {
+func NewDbCacheV2WithMaxCache(wrInterval int, maxCache int) *DbCacheV2 {
 	if maxCache <= 0 {
 		maxCache = 500000
 	}
 	cachePool := [3]cacheList{make(cacheList, 0, maxCache), make(cacheList, 0, maxCache), make(cacheList, 0, maxCache)}
-	thd := &HiveDbCache{
+	thd := &DbCacheV2{
 		cachePool:  cachePool,
 		poolIdx:    0,
 		maxCache:   maxCache,
 		insertChan: make(chan cacheElm, maxCache),
 	}
-	thd.TickTask = NewTickTask("HiveDbCache", time.Second*time.Duration(wrInterval), thd.exec)
+	thd.TickTask = NewTickTask("DbCacheV2", time.Second*time.Duration(wrInterval), thd.exec)
 	return thd
 }
 
-func (sel *HiveDbCache) SetExec(do Executor) {
+func (sel *DbCacheV2) SetExec(do Executor) {
 	sel.do = do
 }
 
-func (sel *HiveDbCache) Init() error {
+func (sel *DbCacheV2) Init() error {
 	return nil
 }
 
-func (sel *HiveDbCache) Start() error {
+func (sel *DbCacheV2) Start() error {
 	go_exec.Go(sel.loopInsert)
 	go_exec.Go(func() {
 		sel.TickTask.Start()
@@ -219,12 +219,12 @@ func (sel *HiveDbCache) Start() error {
 	return nil
 }
 
-func (sel *HiveDbCache) Exit(ctx context.Context) error {
+func (sel *DbCacheV2) Exit(ctx context.Context) error {
 	close(sel.insertChan)
 	return sel.TickTask.Exit(ctx)
 }
 
-func (sel *HiveDbCache) exec() {
+func (sel *DbCacheV2) exec() {
 	sel.Lock()
 	waitSaveList := sel.cachePool[sel.poolIdx]
 	sel.cachePool[sel.poolIdx] = make([]*cacheElm, 0, sel.maxCache)
@@ -238,8 +238,6 @@ func (sel *HiveDbCache) exec() {
 		if len(v) > 0 {
 			err := sel.do.Exec(tbName, v)
 			if err != nil {
-				//vlog.ERROR("save data to db table %s len:%d error %s", tbName, len(v), err.Error())
-				//_, _ = sel.errFile.WriteString(sqlStr + ";\n")
 				continue
 			}
 		}
@@ -248,14 +246,14 @@ func (sel *HiveDbCache) exec() {
 	return
 }
 
-func (sel *HiveDbCache) Insert(tableName string, val interface{}) error {
+func (sel *DbCacheV2) Insert(tableName string, val interface{}) error {
 	sel.Lock()
 	sel.cachePool[sel.poolIdx] = append(sel.cachePool[sel.poolIdx], &cacheElm{TableName: tableName, Record: val})
 	sel.Unlock()
 	return nil
 }
 
-func (sel *HiveDbCache) loopInsert() {
+func (sel *DbCacheV2) loopInsert() {
 	for {
 		select {
 		case val, ok := <-sel.insertChan:
@@ -269,7 +267,7 @@ func (sel *HiveDbCache) loopInsert() {
 	}
 }
 
-func (sel *HiveDbCache) InsertAndWait(tableName string, val interface{}) error {
+func (sel *DbCacheV2) InsertAndWait(tableName string, val interface{}) error {
 	// 限制插入如果 insertChan满了就等待
 	sel.insertChan <- cacheElm{TableName: tableName, Record: val}
 	return nil
