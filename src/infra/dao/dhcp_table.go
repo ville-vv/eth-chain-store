@@ -4,7 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ville-vv/eth-chain-store/src/infra/model"
+	"github.com/ville-vv/vilgo/vlog"
 	"gorm.io/gorm"
+	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -19,6 +22,9 @@ type dhcpTable struct {
 }
 
 func newDhcpTable(db *gorm.DB, templateTable string) *dhcpTable {
+	if templateTable == "" {
+		panic(errors.New("template table is empty"))
+	}
 	tb := &dhcpTable{
 		db:            db,
 		lock:          sync.Mutex{},
@@ -26,14 +32,12 @@ func newDhcpTable(db *gorm.DB, templateTable string) *dhcpTable {
 		counter:       0,
 		templateTable: templateTable,
 	}
-	err := tb.intCntTxTable()
-	if err != nil {
-		panic(err)
-	}
-	if templateTable == "" {
-		panic(errors.New("template table is empty"))
-	}
+
 	return tb
+}
+
+func (sel *dhcpTable) Init() error {
+	return sel.intCntTxTable()
 }
 
 // intCntTxTable 初始化
@@ -52,7 +56,14 @@ func (sel *dhcpTable) intCntTxTable() error {
 		sel.id = 1
 	} else {
 		sel.cntTable = tb.TableName
-		sel.id = tb.ID
+		strList := strings.Split(tb.TableName, "_")
+		if len(strList)> 0{
+			tbSeqStr := strList[len(strList)-1]
+			tbSeq, _ := strconv.Atoi(tbSeqStr)
+			sel.id = int64(tbSeq)
+		}else{
+			sel.id = tb.ID
+		}
 		if err := sel.count(); err != nil {
 			return err
 		}
@@ -61,6 +72,7 @@ func (sel *dhcpTable) intCntTxTable() error {
 	return nil
 }
 
+// count 统计当前表的总数
 func (sel *dhcpTable) count() error {
 	db := sel.db
 	var count int64
@@ -69,6 +81,7 @@ func (sel *dhcpTable) count() error {
 		return err
 	}
 	sel.counter = count
+	vlog.INFO("current table %s total record %d", sel.cntTable, count)
 	return nil
 }
 
@@ -90,7 +103,7 @@ func (sel *dhcpTable) createTxTable(id int64) error {
 	return db.Commit().Error
 }
 
-// 表格覆盖
+// TbName 表格覆盖
 func (sel *dhcpTable) TbName() (string, error) {
 	sel.lock.Lock()
 	if sel.counter > sel.maxNum {

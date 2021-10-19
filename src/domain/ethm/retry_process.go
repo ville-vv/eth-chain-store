@@ -106,20 +106,6 @@ func (sel *RetryProcessor) Exit(ctx context.Context) error {
 func (sel *RetryProcessor) Start() error {
 	sel.mTask.Start()
 	vlog.INFO("retry processor started [%s]", sel.name)
-	//for i := 0; i < sel.maxNum; i++ {
-	//	go func() {
-	//		for {
-	//			select {
-	//			case data, ok := <-sel.dataChan:
-	//				if !ok {
-	//					return
-	//				}
-	//				_ = sel.TxWrite(data)
-	//				sel.runCounter.Dec()
-	//			}
-	//		}
-	//	}()
-	//}
 	return nil
 }
 

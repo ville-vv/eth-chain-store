@@ -44,14 +44,15 @@ var (
 )
 
 func cmdFlagParse() {
-	//flag.StringVar(&syncInterval, "si", "15", "the interval to sync latest block number")
-	//flag.StringVar(&fastSyncInterval, "fsi", "1000", "the interval fast to sync the block number  before  the latest ms")
+
 	flag.StringVar(&conf.RpcUrl, "rpc_url", "", "eth rpc endpoint")
 	flag.StringVar(&conf.DbUser, "db_user", "", "the database user")
 	flag.StringVar(&conf.DbPassword, "db_passwd", "", "the database password")
 	flag.StringVar(&conf.DbHost, "db_host", "", "the database host")
 	flag.StringVar(&conf.DbPort, "db_port", "", "the database port")
 	flag.StringVar(&conf.LogFile, "logFile", "", "the log file path and file name")
+	flag.StringVar(&conf.SaveToSqlFileDbName, "sql_file_db_name", "", "save type must be InSqlFile, write to sql file head, ex: use dbname; ")
+
 	flag.IntVar(&conf.MaxPullNum, "max_pull_num", 1, "the max thread number for sync block information from chain")
 	flag.IntVar(&conf.MaxWriteNum, "max_write_num", 5, "the max thread number for write block information to db")
 	flag.IntVar(&conf.MaxBatchInsertNum, "max_insert_num", 4000, "the maximum insert number for sql data")
@@ -95,8 +96,6 @@ func buildService() go_exec.Runner {
 
 	var (
 		ethereumDb        = dao.NewMysqlDB(vstore.MakeDb(conf.GetEthereumDbConfig()), "ethereum")
-		ethereumCacheDb   = dao.NewDbCache("err_data/ethereum_other.sql", conf.WriteToDbInterval, ethereumDb)
-		ethereumDao       = dao.NewEthereumDao(ethereumDb, ethereumCacheDb)
 		ethBlockNumberDao = dao.NewEthereumBlockNumberDao(ethereumDb)
 		errorDao          = dao.NewSyncErrorDao(ethereumDb)
 		errorRepo         = repo.NewSyncErrorRepository(errorDao)
@@ -117,10 +116,19 @@ func buildService() go_exec.Runner {
 		serviceRun = server.NewSyncBlockChainServiceV2(ethMng, syncControl)
 		svr        = &server.Server{}
 	)
-
 	svr.Add(serviceRun)
 	svr.Add(ethWriterCtl)
-	svr.Add(ethereumCacheDb)
+
+	var (
+		ethereumCacheDb *dao.DbCache
+		ethereumDao     *dao.EthereumDao
+	)
+
+	if conf.SaveContract || conf.SaveAccount {
+		ethereumCacheDb = dao.NewDbCache("err_data/ethereum_other.sql", conf.WriteToDbInterval, ethereumDb)
+		ethereumDao = dao.NewEthereumDao(ethereumDb, ethereumCacheDb)
+		svr.Add(ethereumCacheDb)
+	}
 
 	if conf.SaveContract {
 		ethereumDao.InitContractRecordTb()
@@ -147,7 +155,6 @@ func buildService() go_exec.Runner {
 			contractTxDbCache = dao.NewDbCache("err_data/contract_traction.sql", conf.WriteToDbInterval, contractTxDb)
 			normalTranDao     = dao.NewEthereumTransactionDao(transactionDb, contractTxDb, normalTxDbCache, contractTxDbCache)
 		)
-
 		var (
 			transactionRepoFactory = repo.NewTransactionRepositoryFactory(conf.SaveType, conf.WriteToDbInterval, "err_data/transaction_data.sql", normalTranDao)
 			transactionRepo        = transactionRepoFactory.NewTransactionRepository()
@@ -164,6 +171,7 @@ func buildService() go_exec.Runner {
 				svr.Add(r)
 			}
 		default:
+			normalTranDao.Init()
 			svr.Add(normalTxDbCache)
 			svr.Add(contractTxDbCache)
 		}

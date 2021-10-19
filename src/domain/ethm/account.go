@@ -142,17 +142,12 @@ func (sel *ContractAccountManager) createAccount(accountAddr string, contractAdd
 		if strings.Contains(err.Error(), "invalid opcode") {
 			return nil
 		}
-		if err.Error() != "execution reverted" {
+		if strings.Contains(err.Error(), "execution reverted") {
 			//vlog.ERROR("writeAccount.createAccount get contract balance failed addr:%s contract:%s error:%s", accountAddr, contractAddress, err.Error())
-			return err
+			return nil
 		}
-		return nil
+		return err
 	}
-	//symbol, err := sel.getContractSymbol(contractAddress)
-	//if err != nil {
-	//	vlog.ERROR("writeAccount get contract symbol failed contract:%s error:%s", contractAddress, err.Error())
-	//	return err
-	//}
 
 	timeFm, _ := utils.ParseLocal(timestamp)
 

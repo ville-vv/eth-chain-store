@@ -66,14 +66,12 @@ func (sel *RingStrList) Del(str string) {
 
 type RingStrListV2 struct {
 	sync.RWMutex
-	list   map[string]int
-	length int
+	list map[string]int
 }
 
 func NewRingStrListV2() *RingStrListV2 {
 	r := &RingStrListV2{
-		list:   make(map[string]int),
-		length: 0,
+		list: make(map[string]int),
 	}
 
 	go func() {
@@ -81,7 +79,7 @@ func NewRingStrListV2() *RingStrListV2 {
 		for {
 			select {
 			case <-tmr.C:
-				if r.length > 30000000 {
+				if len(r.list) > 10000000 {
 					cp := 0
 					list := make(map[string]int)
 					r.RLock()
@@ -119,14 +117,12 @@ func (sel *RingStrListV2) Exist(str string) bool {
 func (sel *RingStrListV2) Set(str string) {
 	sel.Lock()
 	sel.list[str] = 1
-	sel.length++
 	sel.Unlock()
 }
 
 func (sel *RingStrListV2) Del(str string) {
 	sel.Lock()
 	delete(sel.list, str)
-	sel.length--
 	sel.Unlock()
 }
 

@@ -25,6 +25,16 @@ func NewEthereumTransactionDao(txDb DB, contractTxDb DB, normalTxCache *DbCache,
 	return e
 }
 
+func (sel *EthereumTransactionDao) Init() {
+	if err := sel.normalTxDao.tb.Init(); err != nil {
+		panic(err)
+	}
+
+	if err := sel.contractTxDao.tb.Init(); err != nil {
+		panic(err)
+	}
+}
+
 func (sel *EthereumTransactionDao) CreateTransactionRecord(txData *model.TransactionData) error {
 	if txData.IsContractToken {
 		return sel.contractTxDao.createTransactionRecord(txData)

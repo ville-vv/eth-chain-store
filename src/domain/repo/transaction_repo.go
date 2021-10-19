@@ -35,7 +35,7 @@ func (sel *TransactionRepositoryFactory) NewTransactionRepository() TransactionR
 	case SaveTypeInHive:
 		return dao.NewTransactionHiveDao(sel.ErrFile, conf.GetHiveEthereumDb(), sel.WriteToDbInterval, conf.MaxBatchInsertNum)
 	case SaveTypeInSqlFile:
-		return dao.NewTransactionSQLFileDao(sel.WriteToDbInterval, conf.MaxBatchInsertNum, conf.MaxSqlFileSize)
+		return dao.NewTransactionSQLFileDao(sel.WriteToDbInterval, conf.MaxBatchInsertNum, conf.MaxSqlFileSize, conf.SaveToSqlFileDbName)
 	default:
 		return NewTransactionRepo(sel.EthereumTranDao)
 	}

@@ -9,28 +9,29 @@ import (
 var (
 	//syncInterval      string
 	//fastSyncInterval  string
-	RpcUrl            string
-	DbUser            string
-	DbPassword        string
-	DbHost            string
-	DbPort            string
-	LogFile           string
-	Debug             bool
-	MaxPullNum        int
-	MaxWriteNum       int
-	MaxBatchInsertNum int
-	MaxSqlFileSize    int
-	IsMaxProcs        bool
-	IsHelp            bool
-	WriteToDbInterval int
-	TxDataInHive      bool
-	WithTxBalance     bool
-	StartBlockNumber  int64 // 开始区块
-	EndBlockNumber    int64 // 结束区块
-	SaveAccount       bool
-	SaveContract      bool
-	SaveTransaction   bool
-	SaveType          string
+	RpcUrl              string
+	DbUser              string
+	DbPassword          string
+	DbHost              string
+	DbPort              string
+	LogFile             string
+	SaveToSqlFileDbName string
+	Debug               bool
+	MaxPullNum          int
+	MaxWriteNum         int
+	MaxBatchInsertNum   int
+	MaxSqlFileSize      int
+	IsMaxProcs          bool
+	IsHelp              bool
+	WriteToDbInterval   int
+	TxDataInHive        bool
+	WithTxBalance       bool
+	StartBlockNumber    int64 // 开始区块
+	EndBlockNumber      int64 // 结束区块
+	SaveAccount         bool
+	SaveContract        bool
+	SaveTransaction     bool
+	SaveType            string
 )
 
 func ReadEnv(val *string, key string) {

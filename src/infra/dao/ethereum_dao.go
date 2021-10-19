@@ -23,14 +23,26 @@ func NewEthereumDao(db DB, cacheDb *DbCache) *EthereumDao {
 
 func (sel *EthereumDao) InitContractAccountTb() {
 	sel.contractBindTb = newDhcpTable(sel.db.GetDB(), "contract_account_binds")
+	err := sel.contractBindTb.Init()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (sel *EthereumDao) InitEthAccountTb() {
 	sel.normalAccountTb = newDhcpTable(sel.db.GetDB(), "ethereum_accounts")
+	err := sel.normalAccountTb.Init()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (sel *EthereumDao) InitContractRecordTb() {
 	sel.contractRecordTb = newDhcpTable(sel.db.GetDB(), "contract_address_records")
+	err := sel.contractRecordTb.Init()
+	if err != nil {
+		panic(err)
+	}
 }
 
 // QueryContractInfo 查询合约信息

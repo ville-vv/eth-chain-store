@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 )
 
 // AutoSplitFile 自动根据文件大小分割文件，在写文件前会判断一下当前文件大小，如果超过设定值会先分割一下
@@ -61,7 +62,11 @@ func NewAutoSplitFile(fileName string, maxSize int64) (*AutoSplitFile, error) {
 		fileType:          fileType,
 	}
 
-	return af, af.createDataFile()
+	return af, nil
+}
+
+func (sel *AutoSplitFile) Init() error {
+	return sel.createDataFile()
 }
 
 // SetSingleFileMaxSize
@@ -101,7 +106,7 @@ func (sel *AutoSplitFile) split() error {
 	if size > sel.singleFileMaxSize && sel.singleFileMaxSize > 0 {
 		_ = sel.File.Close()
 		oldName := path.Join(sel.filePath, info.Name())
-		newName := path.Join(sel.filePath, fmt.Sprintf("%s_%d%s", sel.dataFileName, sel.splitIdx, sel.fileType))
+		newName := path.Join(sel.filePath, fmt.Sprintf("%s_%s%s", sel.dataFileName, time.Now().Format("060102150405"), sel.fileType))
 		err := os.Rename(oldName, newName)
 		if err != nil {
 			return errors.Wrap(err, "rename data file")
@@ -112,6 +117,10 @@ func (sel *AutoSplitFile) split() error {
 	return nil
 }
 
+func (sel *AutoSplitFile) splitNewFileName() string {
+	return path.Join(sel.filePath, fmt.Sprintf("%s_%s%s", sel.dataFileName, time.Now().Format("060102150405"), sel.fileType))
+}
+
 func (sel *AutoSplitFile) createDataFile() error {
 	fileName := path.Join(sel.filePath, sel.dataFileName+sel.fileType)
 	f, err := os.OpenFile(fileName, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
@@ -119,8 +128,16 @@ func (sel *AutoSplitFile) createDataFile() error {
 		return err
 	}
 	sel.File = f
-	if sel.FileHeaderWriteFun != nil {
-		return sel.FileHeaderWriteFun(f)
+	stat, err := sel.File.Stat()
+	if err != nil {
+		return err
+	}
+
+	//fmt.Println("file size", stat.Size())
+	if stat.Size() == 0 {
+		if sel.FileHeaderWriteFun != nil {
+			return sel.FileHeaderWriteFun(f)
+		}
 	}
 	return nil
 }

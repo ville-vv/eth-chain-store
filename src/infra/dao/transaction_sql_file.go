@@ -25,16 +25,18 @@ type TransactionSQLFileDao struct {
 	dataFile        *file.AutoSplitFile
 	infoFile        *os.File
 	maxDataFileSize int64 // 单位 mb
+	sqlFileDbName   string
 	dataFileName    string
 	isExist         bool
 	isFileOpen      bool
 }
 
-func NewTransactionSQLFileDao(wrInterval int, maxInsertNum int, maxDataFileSize int) *TransactionSQLFileDao {
+func NewTransactionSQLFileDao(wrInterval int, maxInsertNum int, maxDataFileSize int, dbName string) *TransactionSQLFileDao {
 
 	tx := &TransactionSQLFileDao{
 		maxInsertNum:    maxInsertNum,
 		maxDataFileSize: int64(maxDataFileSize),
+		sqlFileDbName:   dbName,
 		dataFileName:    "data/transaction_data.sql",
 		schema:          "TransactionSQLFileDao",
 	}
@@ -64,10 +66,18 @@ func (sel *TransactionSQLFileDao) Init() error {
 		panic(err)
 	}
 	dataFile.SetMaxSizeMb(sel.maxDataFileSize)
-	//dataFile.FileHeaderWriteFun = func(w io.Writer) error {
-	//	w.Write([]byte(fmt.Sprintf("use %s\n;", "")))
-	//	return nil
-	//}
+	dataFile.FileHeaderWriteFun = func(w io.Writer) error {
+		if sel.sqlFileDbName != "" {
+			//vlog.INFO(fmt.Sprintf("use %s;\n", sel.sqlFileDbName))
+			_, err := w.Write([]byte(fmt.Sprintf("use %s;\n", sel.sqlFileDbName)))
+			return err
+		}
+		return nil
+	}
+
+	if err := dataFile.Init(); err != nil {
+		return err
+	}
 	sel.dataFile = dataFile
 
 	if err := sel.initInfoFile(); err != nil {
