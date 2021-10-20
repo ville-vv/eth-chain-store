@@ -43,31 +43,61 @@ func (sel *dhcpTable) Init() error {
 // intCntTxTable 初始化
 func (sel *dhcpTable) intCntTxTable() error {
 	db := sel.db
-	tb := &model.SplitTableInfo{}
-	err := db.Model(tb).Select("id, table_name").Where("template_name=?", sel.templateTable).Last(tb).Error
-	if err != nil {
-		if err.Error() != gorm.ErrRecordNotFound.Error() {
-			return err
-		}
-		err = sel.createTxTable(sel.id)
+	var tbCount int64
+	err := db.Model( &model.SplitTableInfo{}).Where("template_name=?", sel.templateTable).Count(&tbCount).Error
+	if err != nil{
+		return err
+	}
+	if tbCount == 0{
+		return sel.createTxTable(tbCount)
+	}else{
+		tb :=  &model.SplitTableInfo{}
+		err = db.Model(&tb).Select("table_name").Where("template_name=?", sel.templateTable).Last(tb).Error
 		if err != nil {
 			return err
 		}
-		sel.id = 1
-	} else {
 		sel.cntTable = tb.TableName
+
 		strList := strings.Split(tb.TableName, "_")
 		if len(strList)> 0{
 			tbSeqStr := strList[len(strList)-1]
 			tbSeq, _ := strconv.Atoi(tbSeqStr)
-			sel.id = int64(tbSeq)
+			sel.id = int64(tbSeq)+1
 		}else{
-			sel.id = tb.ID
+			sel.id = tbCount
 		}
-		if err := sel.count(); err != nil {
+
+		if err = sel.count(); err != nil {
 			return err
 		}
 	}
+
+
+
+
+
+	//err := db.Model(tb).Select("id, table_name").Where("template_name=?", sel.templateTable).Last(tb).Error
+	//if err != nil {
+	//	if err.Error() != gorm.ErrRecordNotFound.Error() {
+	//		return err
+	//	}
+	//
+	//} else {
+		//sel.cntTable = tb.TableName
+		//strList := strings.Split(tb.TableName, "_")
+		//if len(strList)> 0{
+		//	tbSeqStr := strList[len(strList)-1]
+		//	tbSeq, _ := strconv.Atoi(tbSeqStr)
+		//	sel.id = int64(tbSeq)
+		//}else{
+		//	sel.id = tb.ID
+		//}
+		//if err := sel.count(); err != nil {
+		//	return err
+		//}
+	//}
+	fmt.Println("当前id号：%d 当前表名称:%s",sel.id, sel.cntTable)
+
 
 	return nil
 }
@@ -85,10 +115,14 @@ func (sel *dhcpTable) count() error {
 	return nil
 }
 
+func (sel *dhcpTable)newTbName(id int64)string{
+	return fmt.Sprintf("%s_%0.4d", sel.templateTable, id)
+}
+
 func (sel *dhcpTable) createTxTable(id int64) error {
 	db := sel.db.Begin()
 	defer db.Rollback()
-	tbName := fmt.Sprintf("%s_%0.4d", sel.templateTable, id)
+	tbName := sel.newTbName(id)
 	err := db.Exec(fmt.Sprintf("create table if not exists %s like %s", tbName, sel.templateTable)).Error
 	if err != nil {
 		return err
@@ -98,8 +132,10 @@ func (sel *dhcpTable) createTxTable(id int64) error {
 	if err != nil {
 		return err
 	}
-	sel.id = tb.ID
+	// 分表记录插入成功
+	sel.id = id+1
 	sel.cntTable = tb.TableName
+	sel.counter = 0
 	return db.Commit().Error
 }
 
@@ -109,10 +145,11 @@ func (sel *dhcpTable) TbName() (string, error) {
 	if sel.counter > sel.maxNum {
 		err := sel.createTxTable(sel.id)
 		if err != nil {
+			sel.lock.Unlock()
 			return "", err
 		}
-		sel.id++
-		sel.counter = 0
+		//sel.id++
+		//sel.counter = 0
 	}
 	sel.lock.Unlock()
 	return sel.cntTable, nil
