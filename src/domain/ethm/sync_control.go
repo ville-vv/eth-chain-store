@@ -12,13 +12,13 @@ import (
 )
 
 type SyncConfigDataPersist interface {
-	//
+	// InitLatestBlockNumber
 	InitLatestBlockNumber(bkNum int64) error
 
 	UpdateLatestBlockNumber(bkNum int64) error
-	// 获取当前同步了最区块号
+	// GetCntSyncBlockNumber 获取当前同步了最区块号
 	GetCntSyncBlockNumber() (int64, error)
-	// 更新当前同步了的区块号
+	// UpdateSyncBlockNUmber 更新当前同步了的区块号
 	UpdateSyncBlockNUmber(n int64) error
 }
 
@@ -101,7 +101,7 @@ func NewSyncBlockControlWithOpt(opt *OptionConfig) *SyncBlockControl {
 func (sel *SyncBlockControl) Start() error {
 	cntNumber, err := sel.bknRepo.GetCntSyncBlockNumber()
 	// 获取已经同步到的最近区块
-	if sel.startSyncBlockNumber > 0 {
+	if sel.startSyncBlockNumber > cntNumber  {
 		cntNumber = sel.startSyncBlockNumber
 	}
 	if err != nil {
