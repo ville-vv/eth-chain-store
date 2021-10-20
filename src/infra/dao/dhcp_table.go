@@ -72,33 +72,6 @@ func (sel *dhcpTable) intCntTxTable() error {
 		}
 	}
 
-
-
-
-
-	//err := db.Model(tb).Select("id, table_name").Where("template_name=?", sel.templateTable).Last(tb).Error
-	//if err != nil {
-	//	if err.Error() != gorm.ErrRecordNotFound.Error() {
-	//		return err
-	//	}
-	//
-	//} else {
-		//sel.cntTable = tb.TableName
-		//strList := strings.Split(tb.TableName, "_")
-		//if len(strList)> 0{
-		//	tbSeqStr := strList[len(strList)-1]
-		//	tbSeq, _ := strconv.Atoi(tbSeqStr)
-		//	sel.id = int64(tbSeq)
-		//}else{
-		//	sel.id = tb.ID
-		//}
-		//if err := sel.count(); err != nil {
-		//	return err
-		//}
-	//}
-	fmt.Println("当前id号：%d 当前表名称:%s",sel.id, sel.cntTable)
-
-
 	return nil
 }
 
